@@ -25,6 +25,7 @@ import {
   insertRows,
   insertSqlite,
   journalRow,
+  LEDGER_SEED,
   NON_INTEGER,
   openLedger,
   openTenant,
@@ -112,7 +113,7 @@ describe('migration v3 : grand livre CGNC (Doc_06 § 05) ajoutée sans toucher a
   const v3 = TENANT_MIGRATIONS[2];
 
   it('est la troisième migration, après la v1 et la v2', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version).slice(0, 3)).toEqual([1, 2, 3]);
     expect(v3?.name).toBe('tenant_part3_general_ledger_cgnc_paf_triggers');
   });
 
@@ -140,7 +141,7 @@ describe('migration v3 : grand livre CGNC (Doc_06 § 05) ajoutée sans toucher a
     expect(v3?.viewNames).toEqual(['v_cgnc_trial_balance_6col']);
     expect(TENANT_TABLE_NAMES.slice(-7)).toEqual([...LEDGER_TABLES]);
     expect(TENANT_INDEX_NAMES).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir', 'idx_je_fy_status_seq', 'idx_jel_entry_account']);
-    expect([...TENANT_TRIGGER_NAMES]).toEqual([...TRIGGERS]);
+    expect([...TENANT_TRIGGER_NAMES].slice(0, TRIGGERS.length)).toEqual([...TRIGGERS]);
     expect([...TENANT_VIEW_NAMES]).toEqual(['v_cgnc_trial_balance_6col']);
   });
 
@@ -251,13 +252,15 @@ describe('pii_restricted_flag sur le grand livre (ERRATA D-19, Doc_11 § 06)', (
     }
   });
 
-  it('le drapeau d\'une pièce POSTED ne peut plus changer (trigger d\'immuabilité) : il se pose avant le scellement', () => {
+  it('le drapeau d\'une pièce POSTED ne peut plus descendre de 1 à 0 (trigger d\'immuabilité) ; il se pose avant le scellement ou monte ensuite (v4)', () => {
     const db = openLedger();
     insertRows(db, simpleEntry('je-a', 1, 'jrn-vte', 'acc-3421', 'acc-7111', 5000));
     db.prepare(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-a'`).run();
     post(db, 'je-a');
     expect(messageOf(db, `UPDATE journal_entries SET pii_restricted_flag = 0 WHERE id = 'je-a'`, [])).toBe(MSG_ENTRY_UPDATE);
-    expect(messageOf(db, `UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE entry_id = 'je-a'`, [])).toBe(MSG_LINE_UPDATE);
+    // Migration v4 (décision du pilote) : la montée 0 vers 1 d'une ligne POSTED est admise (DSAR), la descente reste refusée.
+    db.prepare(`UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE entry_id = 'je-a'`).run();
+    expect(messageOf(db, `UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE entry_id = 'je-a'`, [])).toBe(MSG_LINE_UPDATE);
     expect(all(db, `SELECT pii_restricted_flag AS f FROM journal_entries WHERE id = 'je-a'`)).toEqual([{ f: 1 }]);
   });
 });
@@ -602,8 +605,9 @@ describe('triggers PAF (Doc_06 § 05) : chaque règle prouvée par l\'erreur lev
     ]);
   });
 
-  it('exercice CLOSED : Doc_06 § 05 ne le fixe par aucun trigger ni CHECK sur les pièces ; seul le CHECK de statut de fiscal_years existe', () => {
-    const db = openLedger();
+  it('exercice CLOSED, migrations v1 à v3 : Doc_06 § 05 ne le fixe par aucun trigger ni CHECK sur les pièces ; seul le CHECK de statut de fiscal_years existe (la v4 y ajoute ses triggers)', () => {
+    const db = openTenant(3);
+    insertRows(db, LEDGER_SEED);
     const triggerSql = all(db, `SELECT sql FROM sqlite_master WHERE type = 'trigger'`).map((row) => String(row['sql'])).join('\n');
     expect(triggerSql).not.toMatch(/fiscal_years/);
     db.prepare(`UPDATE fiscal_years SET status = 'CLOSED' WHERE id = 'fy-2026'`).run();

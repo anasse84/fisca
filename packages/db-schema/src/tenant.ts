@@ -3,7 +3,8 @@
  * (enveloppes de clés E2EE, référentiel des tiers, commandes, bons de livraison, factures et lignes), ticket T-S1B-02.
  * Les tickets suivants AJOUTENT des migrations au tableau `TENANT_MIGRATIONS` : la v2 (T-S1B-03) porte la caisse Fisca POS
  * (Doc_06 § 04), la v3 (T-S1B-04) le grand livre CGNC immuable, sa vue à 6 colonnes et ses triggers PAF (Doc_06 § 05) ; les
- * sous-livres suivent en v4.
+ * sous-livres suivent en v5 (T-S1B-05) ; la v4 porte les corrections du pilote sur les tickets T-S1B-01 à 04 (comble
+ * l'INSERT de lignes dans une pièce POSTED, drapeau DSAR monotone, exercice clos, statuts de facture, POS : voir la migration 4).
  *
  * Règles tenues ici (mêmes que `control-plane.ts`) :
  * - migrations IMMUABLES : une migration appliquée ne se modifie jamais, toute correction est une migration de numéro
@@ -70,8 +71,18 @@ export interface TenantMigration {
   readonly tableNames: readonly string[];
   /** Index nommés créés par CETTE migration (hors index automatiques des contraintes). */
   readonly indexNames: readonly string[];
-  /** Triggers créés par CETTE migration, dans leur ordre de création ; absent des migrations v1 et v2 (aucun trigger). */
+  /**
+   * Triggers créés par CETTE migration, dans leur ordre de création ; absent des migrations v1 et v2 (aucun trigger).
+   * Un trigger REMPLACÉ (DROP puis CREATE du même nom, v4) figure ici et dans la migration qui l'a créé d'abord.
+   */
   readonly triggerNames?: readonly string[];
+  /**
+   * Parmi `triggerNames`, les triggers que SQLite seul porte : PostgreSQL les remplace par une contrainte CHECK nommée
+   * (`ALTER TABLE ... ADD CONSTRAINT`), SQLite ne pouvant pas ajouter un CHECK à une colonne existante.
+   */
+  readonly sqliteOnlyTriggerNames?: readonly string[];
+  /** Contraintes CHECK nommées que PostgreSQL ajoute à la place des `sqliteOnlyTriggerNames`. */
+  readonly postgresConstraintNames?: readonly string[];
   /** Vues créées par CETTE migration ; absent des migrations v1 et v2 (aucune vue). */
   readonly viewNames?: readonly string[];
   /**
@@ -588,9 +599,17 @@ function raiseSqlite(message: string): string {
   return `SELECT RAISE(ABORT, '${message}');`;
 }
 
-function postgresTrigger(name: string, event: string, table: string, when: string | null, body: string, declarations = ''): string {
+function postgresTrigger(
+  name: string,
+  event: string,
+  table: string,
+  when: string | null,
+  body: string,
+  declarations = '',
+  replace = false,
+): string {
   const clause = when === null ? '' : ` WHEN (${when})`;
-  return `CREATE FUNCTION fisca_${name}() RETURNS trigger LANGUAGE plpgsql AS $fisca$
+  return `CREATE ${replace ? 'OR REPLACE ' : ''}FUNCTION fisca_${name}() RETURNS trigger LANGUAGE plpgsql AS $fisca$
 ${declarations}BEGIN
 ${body}
 END;
@@ -774,6 +793,387 @@ const MIGRATION_3_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
   ]),
 ]);
 
+// ---------------------------------------------------------------------------
+// Migration 4 : corrections du pilote sur les tickets T-S1B-01 à 04 (ERRATA D-03, D-11, B-11)
+//
+// Les migrations v1, v2 et v3 sont IMMUABLES (empreintes SHA-256 figées, testées) : tout passe ici, par DROP TRIGGER puis
+// CREATE TRIGGER (même nom, même texte d'erreur de refus) ou par de nouveaux triggers. Chaque trigger a son équivalent PL/pgSQL
+// (même texte, RAISE EXCEPTION, SQLSTATE P0001) dans `postgresOverrides`, une instruction PostgreSQL par instruction SQLite.
+// 1. `prevent_posted_lines_mutation_insert` : l'INSERT d'une ligne dans une pièce POSTED est refusé (trou de v3, écart 6).
+//    Une pièce se construit lignes d'abord, puis passe à POSTED.
+// 2. `pii_restricted_flag` (Doc_11 § 06 : restriction fiscale = 1 après demande DSAR, jusqu'à 10 ans après la clôture de
+//    l'exercice, puis effacement cryptographique) : le SEUL changement admis sur une pièce ou une ligne POSTED est la montée
+//    monotone 0 vers 1, toutes les autres colonnes strictement inchangées (comparaison `IS NOT` colonne par colonne, NULL compris).
+//    `prevent_posted_entry_update` et `prevent_posted_lines_mutation_update` sont remplacés. `invoices` ne porte aucun trigger
+//    d'immuabilité : rien à y modifier. Le drapeau doit encore exister sur `payroll_annual_subledger` et `archival_packages`
+//    (état 9421 et paquets AIP, Doc_11 § 06) : ces tables naissent au ticket T-S1B-05, qui y ajoutera la colonne ; elles ne sont
+//    PAS créées ici.
+// 4. POS (Art. 145 CGI) : suppression interdite d'un ticket et d'une clôture Z. Le DDL de v2 ne distingue pas « signé » de
+//    « non signé » (ecdsa_signature_b64 et ticket_sha256 sont NOT NULL partout) ni « scellée » de « non scellée » (z_sha256 NOT
+//    NULL partout, la ligne n'existe qu'à la clôture) : l'interdiction vise donc TOUT ticket et TOUTE clôture Z. L'UPDATE
+//    n'est admis que par exception (la conversion B2C vers B2B de la skill fisca-pos-offline-sce § 4
+//    exige un UPDATE de `b2b_conversion_state` et `converted_invoice_id`, et Doc_06 § 04 laisse `gl_journal_entry_id` et
+//    `aip_archive_id` nullables) : le pilote a tranché (option b), exception étroite et monotone, échec fermé. Voir
+//    `prevent_pos_ticket_update` (seule NONE vers CONVERTI_B2B_AVANT_Z ou CONVERTI_B2B_POST_Z_NEUTRALISE, FSM 10 de Doc_02 § 13,
+//    avec converted_invoice_id NULL vers valeur, toutes les autres colonnes inchangées) et `prevent_pos_z_closure_update`
+//    (seule la pose NULL vers valeur de gl_journal_entry_id et/ou aip_archive_id, jamais modifiées ensuite). Aucun format ni formule de chaînage n'est défini. Format 64 caractères hexadécimaux minuscules
+//    des quatre colonnes de hachage : le CHECK de v2 sur `ticket_sha256` et `z_sha256` (longueur 64, minuscules) n'est PAS
+//    doublé ; les triggers n'ajoutent que ce qui manque (caractères hors 0-9a-f ; le format entier pour `prev_ticket_sha256`
+//    et `prev_z_sha256`, sans CHECK en v2). Un CHECK ne s'ajoute pas à une colonne SQLite existante, d'où les triggers.
+// 5. Exercice clos (Doc_02 § 04 : OPEN → CLOSING → CLOSED ; Doc_06 § 05 : statuts 'OPEN', 'CLOSING', 'CLOSED') : tout UPDATE
+//    d'une ligne `fiscal_years` dont l'ANCIEN statut est CLOSED est refusé (la transition CLOSING → CLOSED reste un UPDATE d'une
+//    ligne d'ancien statut CLOSING) ; l'INSERT d'une pièce rattachée à un exercice CLOSED est refusé. Le journal d'ouverture AN
+//    est inséré dans le NOUVEL exercice (Doc_02 § 04, « CLOSED → OPEN N+1 »), non concerné.
+// 6. Statuts de facture : CHECK sur des colonnes EXISTANTES de `invoices`. SQLite ne sait pas ajouter un CHECK à une colonne
+//    existante : deux triggers par colonne (BEFORE INSERT et BEFORE UPDATE OF <colonne>) lèvent un texte IDENTIQUE à celui que
+//    PostgreSQL produit pour la contrainte nommée ; PostgreSQL ajoute `ALTER TABLE ... ADD CONSTRAINT ... CHECK` (NOT VALID, puis
+//    VALIDATE CONSTRAINT à l'instruction de rang suivant). `clearance_state` porte les 8 statuts de la FSM 01 de Doc_02 § 02
+//    (diagramme et tableau), `cdv_lifecycle_status` porte NONE et les 5 sous-états commerciaux CDV de Doc_02 § 02.
+// ---------------------------------------------------------------------------
+
+export const INVOICE_CLEARANCE_STATES = [
+  'BROUILLON',
+  'NUMEROTEE_VERROUILLEE',
+  'SIGNEE_LOI_43_20',
+  'DEPOSEE_CERTIFIEE_DGI',
+  'REJETEE_XHUB',
+  'APPROUVEE',
+  'ANNULEE_BROUILLON',
+  'ENCAISSEE',
+] as const;
+export const INVOICE_CDV_LIFECYCLE_STATUSES = [
+  'NONE',
+  'MISE_A_DISPOSITION',
+  'PRISE_EN_CHARGE',
+  'APPROUVEE_PARTIELLEMENT',
+  'EN_LITIGE_SUSPENDUE',
+  'REFUSEE',
+] as const;
+
+/** Textes des RAISE de la migration v4 ; identiques sous PostgreSQL. Les deux derniers sont ceux de PostgreSQL pour un CHECK. */
+export const TENANT_V4_TRIGGER_MESSAGES = {
+  lineInsert: 'VIOLATION_PAF_CGI_ART_145: Insertion de ligne interdite sur pièce POSTED.',
+  closedFiscalYearUpdate: 'VIOLATION_PAF_CGI_ART_145: Exercice clos immuable. Ouvrez un nouvel exercice.',
+  closedFiscalYearEntryInsert: 'CGNC_FISCAL_YEAR_CLOSED: Écriture refusée car cet exercice est clos.',
+  posTicketDelete: 'VIOLATION_PAF_CGI_ART_145: Suppression de ticket POS interdite. Retour par avoir lié.',
+  posZClosureDelete: 'VIOLATION_PAF_CGI_ART_145: Suppression de clôture Z scellée interdite.',
+  posTicketUpdate: 'VIOLATION_PAF_CGI_ART_145: Modification de ticket POS signé interdite. Seule la conversion B2B est admise.',
+  posZClosureUpdate: 'VIOLATION_PAF_CGI_ART_145: Modification de clôture Z scellée interdite. Seule la pose des références GL et AIP est admise.',
+  posHashFormat: 'POS_HASH_FORMAT: Empreinte SHA-256 attendue : 64 caractères hexadécimaux minuscules.',
+  clearanceState: 'new row for relation "invoices" violates check constraint "invoices_clearance_state_check"',
+  cdvLifecycleStatus: 'new row for relation "invoices" violates check constraint "invoices_cdv_lifecycle_status_check"',
+} as const;
+
+const MESSAGES_V4 = TENANT_V4_TRIGGER_MESSAGES;
+
+/** Colonnes de `journal_entries` hors `pii_restricted_flag` : toutes doivent rester inchangées sous l'exception monotone. */
+const JOURNAL_ENTRY_COLUMNS_EXCEPT_FLAG = [
+  'id',
+  'fiscal_year_id',
+  'journal_id',
+  'sequence_number',
+  'entry_reference',
+  'entry_date',
+  'validated_at',
+  'review_cycle',
+  'status',
+  'source_document_type',
+  'invoice_id',
+  'dgi_clearance_uuid',
+  'partner_id',
+  'reversal_of_entry_id',
+  'total_debit_cents',
+  'total_credit_cents',
+  'previous_entry_hash',
+  'entry_hash',
+] as const;
+
+/** Colonnes de `journal_entry_lines` hors `pii_restricted_flag`. */
+const JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG = [
+  'id',
+  'entry_id',
+  'line_number',
+  'account_id',
+  'auxiliary_account',
+  'description_enc',
+  'debit_cents',
+  'credit_cents',
+  'is_tax_deductible',
+  'table3_reintegration_code',
+  'reconciliation_code',
+  'reconciled_at',
+] as const;
+
+/** Vrai quand le changement n'est PAS la seule montée 0 vers 1 du drapeau (SQLite : `IS NOT`, NULL compris). */
+function notMonotoneFlagRiseSqlite(columns: readonly string[]): string {
+  return `(NOT (OLD.pii_restricted_flag = 0 AND NEW.pii_restricted_flag = 1) OR ${columns.map((column) => `OLD.${column} IS NOT NEW.${column}`).join(' OR ')})`;
+}
+
+/** Même condition sous PostgreSQL : `IS DISTINCT FROM` est l'équivalent de `IS NOT` de SQLite. */
+function notMonotoneFlagRisePostgres(columns: readonly string[]): string {
+  return `(NOT (OLD.pii_restricted_flag = 0 AND NEW.pii_restricted_flag = 1) OR ${columns.map((column) => `OLD.${column} IS DISTINCT FROM NEW.${column}`).join(' OR ')})`;
+}
+
+/** Condition de refus d'une empreinte : format complet quand aucun CHECK n'existe (`full`), partie hexadécimale seule sinon. */
+function hashRejectedSqlite(column: string, full: boolean): string {
+  if (full) {
+    return `(${column} IS NOT NULL AND (length(${column}) <> 64 OR ${column} GLOB '*[^0-9a-f]*'))`;
+  }
+  return `(${column} IS NOT NULL AND length(${column}) = 64 AND ${column} = lower(${column}) AND ${column} GLOB '*[^0-9a-f]*')`;
+}
+
+function hashRejectedPostgres(column: string, full: boolean): string {
+  if (full) {
+    return `(${column} IS NOT NULL AND ${column} !~ '^[0-9a-f]{64}$')`;
+  }
+  return `(${column} IS NOT NULL AND length(${column}) = 64 AND ${column} = lower(${column}) AND ${column} !~ '^[0-9a-f]{64}$')`;
+}
+
+/** Colonnes de `pos_tickets` hors `b2b_conversion_state` et `converted_invoice_id` : toutes doivent rester inchangées. */
+const POS_TICKET_COLUMNS_EXCEPT_CONVERSION = [
+  'id',
+  'session_id',
+  'terminal_id',
+  'terminal_seq_number',
+  'issued_at',
+  'ticket_kind',
+  'origin_ticket_id',
+  'ht_20_cents',
+  'vat_20_cents',
+  'ht_10_cents',
+  'vat_10_cents',
+  'ht_0_cents',
+  'stamp_duty_cents',
+  'total_ttc_cents',
+  'paid_cash_cents',
+  'paid_card_tpe_cents',
+  'paid_delivery_app_cents',
+  'qr_conversion_token',
+  'prev_ticket_sha256',
+  'ticket_sha256',
+  'ecdsa_signature_b64',
+] as const;
+
+/** Colonnes de `pos_z_closures` hors `gl_journal_entry_id` et `aip_archive_id`. */
+const POS_Z_CLOSURE_COLUMNS_EXCEPT_REFERENCES = [
+  'id',
+  'session_id',
+  'terminal_id',
+  'closure_number',
+  'business_date',
+  'net_b2c_ht_20_cents',
+  'net_b2c_vat_20_cents',
+  'net_b2c_ht_10_cents',
+  'net_b2c_vat_10_cents',
+  'net_b2c_ht_0_cents',
+  'total_stamp_duty_cents',
+  'tpe_gross_cents',
+  'prev_z_sha256',
+  'z_sha256',
+] as const;
+
+/** Cibles de conversion admises depuis NONE (Doc_02 § 13, FSM 10 : avant Z, ou scan QR après clôture Z). Aucune autre transition. */
+const POS_CONVERSION_TARGETS = POS_B2B_CONVERSION_STATES.filter((state) => state !== 'NONE');
+
+/**
+ * Condition de refus d'un UPDATE de ticket : tout, SAUF NONE vers un état converti avec converted_invoice_id de NULL vers une
+ * valeur, toutes les autres colonnes inchangées. Jamais NULL (IS NOT / IS DISTINCT FROM, colonnes NOT NULL), donc échec fermé.
+ */
+function posTicketUpdateRejected(distinct: (column: string) => string): string {
+  const unchanged = POS_TICKET_COLUMNS_EXCEPT_CONVERSION.map(distinct).join(' OR ');
+  return `(NOT (OLD.b2b_conversion_state = 'NONE' AND NEW.b2b_conversion_state IN (${quoteList(POS_CONVERSION_TARGETS)}) AND OLD.converted_invoice_id IS NULL AND NEW.converted_invoice_id IS NOT NULL) OR ${unchanged})`;
+}
+
+/** Condition de refus d'un UPDATE de clôture Z : seule la pose NULL vers valeur de gl_journal_entry_id et/ou aip_archive_id est admise. */
+function posZClosureUpdateRejected(distinct: (column: string) => string): string {
+  const others = POS_Z_CLOSURE_COLUMNS_EXCEPT_REFERENCES.map(distinct).join(' OR ');
+  const glRewritten = `(OLD.gl_journal_entry_id IS NOT NULL AND ${distinct('gl_journal_entry_id')})`;
+  const aipRewritten = `(OLD.aip_archive_id IS NOT NULL AND ${distinct('aip_archive_id')})`;
+  const glPosed = `(OLD.gl_journal_entry_id IS NULL AND NEW.gl_journal_entry_id IS NOT NULL)`;
+  const aipPosed = `(OLD.aip_archive_id IS NULL AND NEW.aip_archive_id IS NOT NULL)`;
+  return `(${others} OR ${glRewritten} OR ${aipRewritten} OR NOT (${glPosed} OR ${aipPosed}))`;
+}
+
+const distinctSqlite = (column: string): string => `OLD.${column} IS NOT NEW.${column}`;
+const distinctPostgres = (column: string): string => `OLD.${column} IS DISTINCT FROM NEW.${column}`;
+
+interface MigrationStatement {
+  /** Nom du trigger créé par l'instruction, absent pour un DROP TRIGGER ou un ALTER TABLE. */
+  readonly trigger?: string;
+  readonly sqlite: string;
+  readonly postgres: string;
+}
+
+function dropTrigger(name: string, table: string): MigrationStatement {
+  return { sqlite: `DROP TRIGGER ${name}`, postgres: `DROP TRIGGER ${name} ON ${table}` };
+}
+
+/**
+ * Trigger de refus : WHEN côté SQLite, `IF ... THEN RAISE EXCEPTION` côté PL/pgSQL (condition portée par le corps, ce qui permet
+ * une sous-requête sur la pièce parente ou l'exercice). `replace` : la fonction existe déjà (trigger remplacé de la v3).
+ */
+function createGuardedTrigger(
+  name: string,
+  event: string,
+  table: string,
+  sqliteWhen: string,
+  pgCondition: string,
+  message: string,
+  replace = false,
+): MigrationStatement {
+  const sqlite = `CREATE TRIGGER ${name}
+BEFORE ${event} ON ${table}
+FOR EACH ROW WHEN ${sqliteWhen}
+BEGIN
+    ${raiseSqlite(message)}
+END`;
+  const returned = event.startsWith('DELETE') ? 'OLD' : 'NEW';
+  const body = `    IF ${pgCondition} THEN
+${raisePg(message)}
+    END IF;
+    RETURN ${returned};`;
+  return { trigger: name, sqlite, postgres: postgresTrigger(name, event, table, null, body, '', replace) };
+}
+
+const POSTED_PARENT_SQLITE = `(SELECT status FROM journal_entries WHERE id = OLD.entry_id) = 'POSTED'`;
+const POSTED_PARENT_POSTGRES = `(SELECT status FROM journal_entries WHERE id = OLD.entry_id) = 'POSTED'`;
+
+const CLEARANCE_LIST = quoteList(INVOICE_CLEARANCE_STATES);
+const CDV_LIST = quoteList(INVOICE_CDV_LIFECYCLE_STATUSES);
+
+function invoiceStatusTriggers(column: string, base: string, constraint: string, list: string, message: string): readonly MigrationStatement[] {
+  const rejected = `NEW.${column} NOT IN (${list})`;
+  return [
+    {
+      trigger: `${base}_insert`,
+      sqlite: `CREATE TRIGGER ${base}_insert
+BEFORE INSERT ON invoices
+FOR EACH ROW WHEN ${rejected}
+BEGIN
+    ${raiseSqlite(message)}
+END`,
+      postgres: `ALTER TABLE invoices ADD CONSTRAINT ${constraint} CHECK (${column} IN (${list})) NOT VALID`,
+    },
+    {
+      trigger: `${base}_update`,
+      sqlite: `CREATE TRIGGER ${base}_update
+BEFORE UPDATE OF ${column} ON invoices
+FOR EACH ROW WHEN ${rejected}
+BEGIN
+    ${raiseSqlite(message)}
+END`,
+      postgres: `ALTER TABLE invoices VALIDATE CONSTRAINT ${constraint}`,
+    },
+  ];
+}
+
+const MIGRATION_4_ITEMS: readonly MigrationStatement[] = [
+  // 1. INSERT de ligne dans une pièce POSTED (NEW : la pièce parente de la ligne insérée).
+  createGuardedTrigger(
+    'prevent_posted_lines_mutation_insert',
+    'INSERT',
+    'journal_entry_lines',
+    `(SELECT status FROM journal_entries WHERE id = NEW.entry_id) = 'POSTED'`,
+    `(SELECT status FROM journal_entries WHERE id = NEW.entry_id) = 'POSTED'`,
+    MESSAGES_V4.lineInsert,
+  ),
+  // 2. Exception monotone du drapeau DSAR : pièce, puis lignes.
+  dropTrigger('prevent_posted_entry_update', 'journal_entries'),
+  createGuardedTrigger(
+    'prevent_posted_entry_update',
+    'UPDATE',
+    'journal_entries',
+    `OLD.status = 'POSTED' AND ${notMonotoneFlagRiseSqlite(JOURNAL_ENTRY_COLUMNS_EXCEPT_FLAG)}`,
+    `OLD.status = 'POSTED' AND ${notMonotoneFlagRisePostgres(JOURNAL_ENTRY_COLUMNS_EXCEPT_FLAG)}`,
+    MESSAGES.entryUpdate,
+    true,
+  ),
+  dropTrigger('prevent_posted_lines_mutation_update', 'journal_entry_lines'),
+  createGuardedTrigger(
+    'prevent_posted_lines_mutation_update',
+    'UPDATE',
+    'journal_entry_lines',
+    `${POSTED_PARENT_SQLITE} AND ${notMonotoneFlagRiseSqlite(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}`,
+    `${POSTED_PARENT_POSTGRES} AND ${notMonotoneFlagRisePostgres(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}`,
+    MESSAGES.lineUpdate,
+    true,
+  ),
+  // 5. Exercice clos.
+  createGuardedTrigger('prevent_closed_fiscal_year_update', 'UPDATE', 'fiscal_years', `OLD.status = 'CLOSED'`, `OLD.status = 'CLOSED'`, MESSAGES_V4.closedFiscalYearUpdate),
+  createGuardedTrigger(
+    'prevent_entry_insert_in_closed_fiscal_year',
+    'INSERT',
+    'journal_entries',
+    `(SELECT status FROM fiscal_years WHERE id = NEW.fiscal_year_id) = 'CLOSED'`,
+    `(SELECT status FROM fiscal_years WHERE id = NEW.fiscal_year_id) = 'CLOSED'`,
+    MESSAGES_V4.closedFiscalYearEntryInsert,
+  ),
+  // 6. Statuts de facture.
+  ...invoiceStatusTriggers('clearance_state', 'enforce_invoice_clearance_state', 'invoices_clearance_state_check', CLEARANCE_LIST, MESSAGES_V4.clearanceState),
+  ...invoiceStatusTriggers('cdv_lifecycle_status', 'enforce_invoice_cdv_status', 'invoices_cdv_lifecycle_status_check', CDV_LIST, MESSAGES_V4.cdvLifecycleStatus),
+  // 4. POS : suppression interdite, format des empreintes.
+  createGuardedTrigger('prevent_pos_ticket_delete', 'DELETE', 'pos_tickets', '1 = 1', 'TRUE', MESSAGES_V4.posTicketDelete),
+  createGuardedTrigger('prevent_pos_z_closure_delete', 'DELETE', 'pos_z_closures', '1 = 1', 'TRUE', MESSAGES_V4.posZClosureDelete),
+  // Exception étroite et monotone (décision du pilote, option b) : posées AVANT les triggers de format d'empreinte, pour que le
+  // refus de format passe en premier sur les deux moteurs (SQLite : dernier créé, premier exécuté ; PostgreSQL : ordre alphabétique).
+  createGuardedTrigger(
+    'prevent_pos_ticket_update',
+    'UPDATE',
+    'pos_tickets',
+    posTicketUpdateRejected(distinctSqlite),
+    posTicketUpdateRejected(distinctPostgres),
+    MESSAGES_V4.posTicketUpdate,
+  ),
+  createGuardedTrigger(
+    'prevent_pos_z_closure_update',
+    'UPDATE',
+    'pos_z_closures',
+    posZClosureUpdateRejected(distinctSqlite),
+    posZClosureUpdateRejected(distinctPostgres),
+    MESSAGES_V4.posZClosureUpdate,
+  ),
+  createGuardedTrigger(
+    'enforce_pos_ticket_hash_format_insert',
+    'INSERT',
+    'pos_tickets',
+    `${hashRejectedSqlite('NEW.prev_ticket_sha256', true)} OR ${hashRejectedSqlite('NEW.ticket_sha256', false)}`,
+    `${hashRejectedPostgres('NEW.prev_ticket_sha256', true)} OR ${hashRejectedPostgres('NEW.ticket_sha256', false)}`,
+    MESSAGES_V4.posHashFormat,
+  ),
+  createGuardedTrigger(
+    'enforce_pos_ticket_hash_format_update',
+    'UPDATE OF prev_ticket_sha256, ticket_sha256',
+    'pos_tickets',
+    `${hashRejectedSqlite('NEW.prev_ticket_sha256', true)} OR ${hashRejectedSqlite('NEW.ticket_sha256', false)}`,
+    `${hashRejectedPostgres('NEW.prev_ticket_sha256', true)} OR ${hashRejectedPostgres('NEW.ticket_sha256', false)}`,
+    MESSAGES_V4.posHashFormat,
+  ),
+  createGuardedTrigger(
+    'enforce_pos_z_closure_hash_format_insert',
+    'INSERT',
+    'pos_z_closures',
+    `${hashRejectedSqlite('NEW.prev_z_sha256', true)} OR ${hashRejectedSqlite('NEW.z_sha256', false)}`,
+    `${hashRejectedPostgres('NEW.prev_z_sha256', true)} OR ${hashRejectedPostgres('NEW.z_sha256', false)}`,
+    MESSAGES_V4.posHashFormat,
+  ),
+  createGuardedTrigger(
+    'enforce_pos_z_closure_hash_format_update',
+    'UPDATE OF prev_z_sha256, z_sha256',
+    'pos_z_closures',
+    `${hashRejectedSqlite('NEW.prev_z_sha256', true)} OR ${hashRejectedSqlite('NEW.z_sha256', false)}`,
+    `${hashRejectedPostgres('NEW.prev_z_sha256', true)} OR ${hashRejectedPostgres('NEW.z_sha256', false)}`,
+    MESSAGES_V4.posHashFormat,
+  ),
+];
+
+const MIGRATION_4_STATEMENTS: readonly string[] = MIGRATION_4_ITEMS.map((item) => item.sqlite);
+
+const MIGRATION_4_TRIGGER_NAMES: readonly string[] = MIGRATION_4_ITEMS.flatMap((item) => (item.trigger === undefined ? [] : [item.trigger]));
+
+const MIGRATION_4_SQLITE_ONLY_TRIGGERS: readonly string[] = ['enforce_invoice_clearance_state', 'enforce_invoice_cdv_status'].flatMap((base) => [`${base}_insert`, `${base}_update`]);
+
+const MIGRATION_4_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_4_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
+
 
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
@@ -808,6 +1208,18 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     viewNames: [TRIAL_BALANCE_VIEW_NAME],
     postgresOverrides: MIGRATION_3_POSTGRES_OVERRIDES,
   },
+  {
+    version: 4,
+    name: 'tenant_part4_pilot_corrections_immutability_statuses',
+    upSqlStatements: MIGRATION_4_STATEMENTS,
+    expectedSha256Hex: 'f1cc97cfc9eff05135df66a7ae30b6eda31535c76a9eaad0d786e58ec1c1d85f',
+    tableNames: [],
+    indexNames: [],
+    triggerNames: MIGRATION_4_TRIGGER_NAMES,
+    sqliteOnlyTriggerNames: MIGRATION_4_SQLITE_ONLY_TRIGGERS,
+    postgresConstraintNames: ['invoices_clearance_state_check', 'invoices_cdv_lifecycle_status_check'],
+    postgresOverrides: MIGRATION_4_POSTGRES_OVERRIDES,
+  },
 ];
 
 /** Tables de TENANT_DB dans leur ordre de création (les parents précèdent les enfants), toutes migrations confondues. */
@@ -816,8 +1228,16 @@ export const TENANT_TABLE_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((
 /** Index nommés créés par les migrations de TENANT_DB, dans leur ordre de création. */
 export const TENANT_INDEX_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.indexNames);
 
-/** Triggers créés par les migrations de TENANT_DB, dans leur ordre de création. */
-export const TENANT_TRIGGER_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.triggerNames ?? []);
+/** Triggers de TENANT_DB dans leur ordre de première création, sans doublon (la v4 remplace deux triggers de la v3 sous le même nom). */
+export const TENANT_TRIGGER_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.triggerNames ?? []).filter(
+  (name, index, all) => all.indexOf(name) === index,
+);
+
+/** Triggers que SQLite porte seul (PostgreSQL les remplace par une contrainte CHECK nommée). */
+const TENANT_SQLITE_ONLY_TRIGGER_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.sqliteOnlyTriggerNames ?? []);
+
+/** Triggers présents sous PostgreSQL 16 (sans doublon : un trigger remplacé par la v4 n'existe qu'une fois). */
+export const TENANT_POSTGRES_TRIGGER_NAMES: readonly string[] = TENANT_TRIGGER_NAMES.filter((name) => !TENANT_SQLITE_ONLY_TRIGGER_NAMES.includes(name));
 
 /** Vues créées par les migrations de TENANT_DB. */
 export const TENANT_VIEW_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.viewNames ?? []);

@@ -95,11 +95,16 @@ describe('migrations : forme, ordre et immuabilité', () => {
     }
   });
 
-  it('chaque instruction est une instruction unique (un seul point-virgule final autorisé)', () => {
+  it('chaque instruction est une instruction unique (un seul point-virgule final autorisé ; un trigger de la v4 porte ses instructions entre BEGIN et END)', () => {
     for (const migration of CONTROL_PLANE_MIGRATIONS) {
       for (const statement of migration.upSqlStatements) {
         const body = statement.trim().replace(/;$/, '');
-        expect(body.includes(';'), statement).toBe(false);
+        if (/^CREATE TRIGGER /.test(body)) {
+          expect(body, statement).toMatch(/\bBEGIN\b[\s\S]*;\s*END$/);
+          expect(body.slice(body.lastIndexOf('END') + 3).includes(';'), statement).toBe(false);
+        } else {
+          expect(body.includes(';'), statement).toBe(false);
+        }
       }
     }
   });
@@ -139,9 +144,9 @@ describe('création du schéma', () => {
     expect(named).toEqual([...CONTROL_PLANE_INDEX_NAMES].sort());
   });
 
-  it("ne crée ni vue ni trigger (Doc_06 § 02 n'en définit aucun)", () => {
+  it("ne crée aucune vue ; Doc_06 § 02 ne définit aucun trigger, le seul est celui de la migration v4 (durée de vie des transactions OAuth, décision du pilote)", () => {
     const db = openControlPlane();
-    expect(listObjects(db, 'trigger')).toEqual([]);
+    expect(listObjects(db, 'trigger')).toEqual(['enforce_oauth_transaction_max_ttl']);
     expect(listObjects(db, 'view')).toEqual([]);
   });
 

@@ -46,6 +46,9 @@ export const users = sqliteTable('users', {
   mfaPreferredMethod: text('mfa_preferred_method', { enum: MFA_METHODS }).notNull().default('NONE'),
   preferredLocale: text('preferred_locale').notNull().default('fr'),
   createdAt: text('created_at').notNull(),
+  /** Doc_17 § 02 (canal WABA : OTP et relances groupées), ERRATA D-19 ; migration 4 du plan de contrôle. Horodatages UTC ISO, NULL tant que non posés. */
+  whatsappOptinAt: text('whatsapp_optin_at'),
+  unsubscribedAt: text('unsubscribed_at'),
 });
 
 export const userOauthAccounts = sqliteTable('user_oauth_accounts', {

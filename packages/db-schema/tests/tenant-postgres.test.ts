@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   TENANT_INDEX_NAMES,
   TENANT_MIGRATIONS,
+  TENANT_POSTGRES_TRIGGER_NAMES,
   TENANT_TABLE_NAMES,
   TENANT_TRIGGER_NAMES,
   TENANT_VIEW_NAMES,
@@ -198,7 +199,10 @@ describe('DDL PostgreSQL 16 des migrations tenant v1, v2 et v3', () => {
       const joined = statements.join('\n');
       expect(joined).not.toMatch(/\bINTEGER\b/);
       expect(joined).not.toMatch(/CAST\(/);
-      expect(joined).toContain('BIGINT');
+      if (migration.tableNames.length > 0) {
+        // La v4 ne crée aucune table (triggers et contraintes seulement) : aucune colonne, donc aucun BIGINT à y trouver.
+        expect(joined).toContain('BIGINT');
+      }
     }
   });
 
@@ -235,15 +239,26 @@ describe('DDL PostgreSQL 16 des migrations tenant v1, v2 et v3', () => {
   });
 });
 
-describe('caisse POS : aucun trigger défini par Doc_06 § 04, donc aucun créé, sur les deux moteurs', () => {
-  it('aucune table POS ne porte de trigger utilisateur, ni sous PostgreSQL ni sous SQLite', async () => {
+const POS_V4_TRIGGERS = [
+  'enforce_pos_ticket_hash_format_insert',
+  'enforce_pos_ticket_hash_format_update',
+  'enforce_pos_z_closure_hash_format_insert',
+  'enforce_pos_z_closure_hash_format_update',
+  'prevent_pos_ticket_delete',
+  'prevent_pos_ticket_update',
+  'prevent_pos_z_closure_delete',
+  'prevent_pos_z_closure_update',
+];
+
+describe('caisse POS : Doc_06 § 04 ne définit aucun trigger ; les seuls triggers des tables POS sont ceux de la migration v4 (décision du pilote), sur les deux moteurs', () => {
+  it('les tables POS ne portent que les 8 triggers de la v4, ni sous PostgreSQL ni sous SQLite aucun autre', async () => {
     const result = await client.query(
       `SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
-       WHERE n.nspname = $1 AND NOT t.tgisinternal AND c.relname LIKE 'pos\\_%'`,
+       WHERE n.nspname = $1 AND NOT t.tgisinternal AND c.relname LIKE 'pos\\_%' ORDER BY t.tgname`,
       [SCHEMA],
     );
-    expect(result.rowCount).toBe(0);
-    expect(all(sqlite, `SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name LIKE 'pos\\_%' ESCAPE '\\'`)).toEqual([]);
+    expect(result.rows.map((row: { tgname: string }) => row.tgname)).toEqual(POS_V4_TRIGGERS);
+    expect(all(sqlite, `SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name LIKE 'pos\\_%' ESCAPE '\\' ORDER BY name`).map((row) => String(row['name']))).toEqual(POS_V4_TRIGGERS);
   });
 
   it('les trois tables POS existent sur PostgreSQL avec les mêmes statuts de session acceptés que sur SQLite', async () => {
@@ -444,13 +459,13 @@ describe('grand livre CGNC : DDL PostgreSQL 16 (triggers PL/pgSQL, vue, index)',
     expect(statements.join('\n')).toContain('LANGUAGE plpgsql');
   });
 
-  it('PostgreSQL porte exactement les 6 triggers et la vue du registre ; SQLite aussi', async () => {
+  it('PostgreSQL porte exactement les triggers PostgreSQL du registre (v3 et v4) et la vue ; SQLite porte tous les triggers, dont les 4 de statut de facture que PostgreSQL remplace par un CHECK', async () => {
     const triggers = await client.query(
       `SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
        WHERE n.nspname = $1 AND NOT t.tgisinternal ORDER BY t.tgname`,
       [SCHEMA],
     );
-    expect(triggers.rows.map((row: { tgname: string }) => row.tgname)).toEqual([...TENANT_TRIGGER_NAMES].sort());
+    expect(triggers.rows.map((row: { tgname: string }) => row.tgname)).toEqual([...TENANT_POSTGRES_TRIGGER_NAMES].sort());
     const views = await client.query(`SELECT table_name FROM information_schema.views WHERE table_schema = $1 ORDER BY table_name`, [SCHEMA]);
     expect(views.rows.map((row: { table_name: string }) => row.table_name)).toEqual([...TENANT_VIEW_NAMES]);
     expect(all(sqlite, `SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name`).map((row) => String(row['name']))).toEqual([...TENANT_TRIGGER_NAMES].sort());
@@ -538,7 +553,8 @@ describe('grand livre CGNC : mêmes refus, mêmes textes d\'erreur sur SQLite et
     await draft('je-1', 1, 'jrn-vte', 'acc-3421', 'acc-7111', 120000);
     await postBoth('je-1');
     expectSame(await onBoth((e) => e.fail(`UPDATE journal_entry_lines SET account_id = 'acc-6111' WHERE id = 'je-1-l1'`, [])), MSG_LINE_UPDATE);
-    expectSame(await onBoth((e) => e.fail(`UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE entry_id = 'je-1'`, [])), MSG_LINE_UPDATE);
+    // Migration v4 : la montée seule du drapeau est admise ; combinée à une autre colonne, elle reste refusée.
+    expectSame(await onBoth((e) => e.fail(`UPDATE journal_entry_lines SET pii_restricted_flag = 1, is_tax_deductible = 0 WHERE entry_id = 'je-1'`, [])), MSG_LINE_UPDATE);
     expectSame(await onBoth((e) => e.fail(`DELETE FROM journal_entry_lines WHERE id = 'je-1-l1'`, [])), MSG_LINE_DELETE);
     const [lite, pg] = await onBoth((e) => e.rows(`SELECT COUNT(*) AS n FROM journal_entry_lines WHERE entry_id = 'je-1'`));
     expect(lite).toEqual([{ n: 2 }]);
@@ -686,7 +702,7 @@ describe('grand livre CGNC : mêmes refus, mêmes textes d\'erreur sur SQLite et
     }
   });
 
-  it('exercice CLOSED : accepté comme statut sur les deux moteurs ; aucun trigger ne le lit (Doc_06 § 05 n\'en fixe aucun)', async () => {
+  it('exercice CLOSED : accepté comme statut sur les deux moteurs ; aucun trigger de la v3 ne le lit (Doc_06 § 05 n\'en fixe aucun ; ceux de la v4 sont testés dans tenant-v4.test.ts)', async () => {
     for (const engine of engines()) {
       await engine.run(`UPDATE fiscal_years SET status = 'CLOSED' WHERE id = 'fy-2026'`, []);
     }
@@ -694,8 +710,9 @@ describe('grand livre CGNC : mêmes refus, mêmes textes d\'erreur sur SQLite et
     expect(lite).toEqual([{ status: 'CLOSED' }]);
     expect(pg).toEqual(lite);
     const source = await client.query(
-      `SELECT string_agg(p.prosrc, ' ') AS body FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = $1`,
-      [SCHEMA],
+      `SELECT string_agg(p.prosrc, ' ') AS body FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = $1 AND p.proname = ANY($2)`,
+      [SCHEMA, ['prevent_posted_entry_update', 'prevent_posted_entry_delete', 'prevent_posted_lines_mutation_update', 'prevent_posted_lines_mutation_delete', 'enforce_balance_and_positive_cash_on_post', 'prevent_direct_posted_insert'].map((name) => `fisca_${name}`)],
     );
     expect(String(source.rows[0]?.body)).not.toMatch(/fiscal_years/);
   });

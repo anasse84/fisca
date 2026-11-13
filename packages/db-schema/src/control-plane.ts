@@ -14,6 +14,10 @@
  * - rôles : 10 rôles humains ; `ERP_CONNECTOR_AGENT` et `AI_MCP_ACTOR` sont techniques, hors de la table (D-02) ;
  * - aucune donnée n'est insérée par une migration (aucune règle ni taux fiscal en dur, ADR-04) ;
  * - horodatages des tables ajoutées par le ticket : texte UTC `YYYY-MM-DDTHH:MM:SSZ` (Doc_06 § 01).
+ *
+ * La migration 4 (corrections du pilote, ticket T-S1B-01) AJOUTE, sans toucher aux migrations 1 à 3 (empreintes figées, testées) :
+ * les colonnes `users.whatsapp_optin_at` et `users.unsubscribed_at` (Doc_17 § 02, ERRATA D-19) et le trigger
+ * `enforce_oauth_transaction_max_ttl` ; `controlPlaneMigrationPostgresStatements` en donne l'équivalent PostgreSQL 16.
  */
 
 /** Les 10 rôles humains autorisés dans `organization_memberships.role_code` (ERRATA D-02). */
@@ -65,6 +69,15 @@ export interface ControlPlaneMigration {
   readonly upSqlStatements: readonly string[];
   /** SHA-256 hexadécimal de `upSqlStatements.join("\n")`. */
   readonly expectedSha256Hex: string;
+  /** Colonnes ajoutées par CETTE migration (`table.colonne`), absent des migrations qui créent des tables (métadonnée hors empreinte). */
+  readonly addedColumns?: readonly string[];
+  /** Triggers créés par CETTE migration, dans leur ordre de création ; absent des migrations 1 à 3 (aucun trigger). */
+  readonly triggerNames?: readonly string[];
+  /**
+   * Instructions PostgreSQL 16 qui REMPLACENT la traduction mécanique de l'instruction de même rang dans `upSqlStatements`
+   * (trigger PL/pgSQL). Clé = rang de l'instruction SQLite ; absent des migrations 1 à 3.
+   */
+  readonly postgresOverrides?: Readonly<Record<number, string>>;
 }
 
 function quoteList(values: readonly string[]): string {
@@ -456,6 +469,64 @@ const MIGRATION_3_STATEMENTS: readonly string[] = [
   ...MIGRATION_3_INDEXES.map(([, sql]) => sql),
 ];
 
+// ---------------------------------------------------------------------------
+// Migration 4 : corrections du pilote (colonnes WhatsApp de users, garde-fou de durée de vie des transactions OAuth)
+// ---------------------------------------------------------------------------
+
+/** Durée de vie maximale d'une transaction OAuth, en secondes : 10 minutes (décision du pilote, garde-fou du code_verifier en clair). */
+export const OAUTH_TRANSACTION_MAX_TTL_SEC = 600 as const;
+
+/** Texte du RAISE du trigger de durée de vie ; identique sous PostgreSQL (RAISE EXCEPTION, SQLSTATE P0001). */
+export const OAUTH_TRANSACTION_TTL_MESSAGE = 'OAUTH_TRANSACTION_TTL: expires_at dépasse 10 minutes après la création.' as const;
+
+/**
+ * Colonnes WhatsApp de `users` : Doc_17 § 02 (canal WABA : OTP et relances groupées vers les utilisateurs PME et fiduciaires),
+ * ERRATA D-19 (objets sans DDL d'origine). `whatsapp_optin_at` : horodatage du consentement ; `unsubscribed_at` : horodatage du
+ * désabonnement. TEXT NULL, horodatage UTC `YYYY-MM-DDTHH:MM:SSZ` comme les autres horodatages du plan de contrôle.
+ * Une colonne équivalente sur `fiscal_partners` sera décidée par P3-C ou P4-B si les relances d'impayé vers les clients l'exigent.
+ */
+const ALTER_USERS_WHATSAPP_OPTIN = `ALTER TABLE users ADD COLUMN whatsapp_optin_at TEXT ${nullableUtcTimestampCheck('whatsapp_optin_at')}`;
+const ALTER_USERS_UNSUBSCRIBED = `ALTER TABLE users ADD COLUMN unsubscribed_at TEXT ${nullableUtcTimestampCheck('unsubscribed_at')}`;
+
+/**
+ * `oauth_transactions.code_verifier` reste en clair (décision du pilote), avec trois garde-fous : durée de vie de 10 minutes AU
+ * PLUS (ce trigger), lecture-suppression atomique (`oauthTransactionConsume`, `DELETE ... RETURNING`), purge des expirés
+ * (`oauthTransactionPurgeExpired`). La table n'a PAS de colonne `created_at` et n'est pas modifiée (trigger BEFORE INSERT) :
+ * la référence de « création » est donc l'instant de l'INSERT sur l'horloge de la base, `expires_at <= maintenant + 600 s`.
+ * RISQUE RÉSIDUEL : (1) pendant au plus 10 minutes, le verifier d'une transaction non consommée est lisible par quiconque lit la
+ * base (D1 chiffrée au repos, accès restreint, mais pas de chiffrement applicatif) ; un verifier seul ne permet pas d'échanger le
+ * code d'autorisation sans le `state` ni la redirection ; (2) un expirée non purgée reste lisible jusqu'à la prochaine purge ;
+ * (3) le courtier calcule `expires_at` avec l'horloge du Worker : un Worker en avance sur la base de plus de la fraction de
+ * seconde perdue à l'arrondi verrait son INSERT refusé (TTL exactement à la limite, `OAUTH_TRANSACTION_TTL_SEC` = 600).
+ * Un horodatage mal formé n'est pas évalué ici : le CHECK de forme de la table le refuse.
+ */
+const CREATE_OAUTH_TRANSACTION_TTL_TRIGGER = `CREATE TRIGGER enforce_oauth_transaction_max_ttl
+BEFORE INSERT ON oauth_transactions
+FOR EACH ROW WHEN ${utcTimestampShape('NEW.expires_at')}
+    AND CAST(strftime('%s', NEW.expires_at) AS INTEGER) > CAST(strftime('%s', 'now') AS INTEGER) + ${OAUTH_TRANSACTION_MAX_TTL_SEC}
+BEGIN
+    SELECT RAISE(ABORT, '${OAUTH_TRANSACTION_TTL_MESSAGE}');
+END`;
+
+/** Même règle sous PostgreSQL 16 : `timestamptz` et `interval`, la forme est vérifiée avant le cast (ordre garanti par l'IF imbriqué). */
+const CREATE_OAUTH_TRANSACTION_TTL_TRIGGER_PG = `CREATE FUNCTION fisca_enforce_oauth_transaction_max_ttl() RETURNS trigger LANGUAGE plpgsql AS $fisca$
+BEGIN
+    IF ${utcTimestampShape('NEW.expires_at')} THEN
+        IF NEW.expires_at::timestamptz > now() + interval '${OAUTH_TRANSACTION_MAX_TTL_SEC} seconds' THEN
+            RAISE EXCEPTION '%', '${OAUTH_TRANSACTION_TTL_MESSAGE}';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$fisca$;
+CREATE TRIGGER enforce_oauth_transaction_max_ttl
+BEFORE INSERT ON oauth_transactions
+FOR EACH ROW EXECUTE FUNCTION fisca_enforce_oauth_transaction_max_ttl()`;
+
+const MIGRATION_4_STATEMENTS: readonly string[] = [ALTER_USERS_WHATSAPP_OPTIN, ALTER_USERS_UNSUBSCRIBED, CREATE_OAUTH_TRANSACTION_TTL_TRIGGER];
+
+const MIGRATION_4_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = { 2: CREATE_OAUTH_TRANSACTION_TTL_TRIGGER_PG };
+
 /**
  * Migrations versionnées du plan de contrôle, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : toute correction est une migration de version supérieure.
@@ -479,7 +550,38 @@ export const CONTROL_PLANE_MIGRATIONS: readonly ControlPlaneMigration[] = [
     upSqlStatements: MIGRATION_3_STATEMENTS,
     expectedSha256Hex: '36eac2e7d810d74eabf7f7670a57dbf129fd660823a9540baf30593b3a327cfe',
   },
+  {
+    version: 4,
+    name: 'control_plane_v4_whatsapp_optin_oauth_ttl',
+    upSqlStatements: MIGRATION_4_STATEMENTS,
+    expectedSha256Hex: 'd379a18aae7c501e94e7cf419d4a40239439b743f749447a7ad8446db9517ec8',
+    addedColumns: ['users.whatsapp_optin_at', 'users.unsubscribed_at'],
+    triggerNames: ['enforce_oauth_transaction_max_ttl'],
+    postgresOverrides: MIGRATION_4_POSTGRES_OVERRIDES,
+  },
 ];
+
+/** Triggers créés par les migrations du plan de contrôle, dans leur ordre de création. */
+export const CONTROL_PLANE_TRIGGER_NAMES: readonly string[] = CONTROL_PLANE_MIGRATIONS.flatMap((migration) => migration.triggerNames ?? []);
+
+/**
+ * Équivalent PostgreSQL 16 des instructions d'une migration du plan de contrôle (ERRATA D-11 : la parité se prouve par le
+ * comportement). Même mapping que `tenantMigrationPostgresStatements` : `INTEGER` devient `BIGINT` (32 bits sous PostgreSQL,
+ * plafond de 21 474 836,47 MAD en centimes pour `share_capital_cents`, `unit_price_ht_cents`...), et le CHECK d'entier strict est
+ * retiré (une colonne BIGINT refuse déjà une valeur non entière, SQLSTATE 22P02 ; `CAST(col AS INTEGER)` y déborderait au-delà de
+ * 2^31). Toutes les colonnes entières passent en BIGINT, `_bps` compris : un `_bps` BIGINT reste un entier exact, sans effet sur
+ * les bornes CHECK ; le mapping ne distingue donc pas `_bps` (même choix que le tenant). Le trigger est remplacé par son
+ * équivalent PL/pgSQL (`postgresOverrides`), qui lève le même texte.
+ */
+export function controlPlaneMigrationPostgresStatements(migration: ControlPlaneMigration): readonly string[] {
+  return migration.upSqlStatements.map(
+    (statement, index) =>
+      migration.postgresOverrides?.[index] ??
+      statement
+        .replace(/ CHECK \((\w+) = CAST\(\1 AS INTEGER\)\)/g, '')
+        .replace(/\bINTEGER\b/g, 'BIGINT'),
+  );
+}
 
 /** Tables de CONTROL_PLANE_DB dans leur ordre de création (les parents précèdent les enfants). */
 export const CONTROL_PLANE_TABLE_NAMES: readonly string[] = [
