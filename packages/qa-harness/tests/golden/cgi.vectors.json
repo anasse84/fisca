@@ -132,7 +132,7 @@
       "state": "NON RECOUPÉ",
       "stateNote": "Cohérence entre documents seulement ; calendrier de convergence des taux à faire valider (ERRATA E). Une pièce antérieure à 2026 n'entre pas comme ligne de facture (D-04) : aucun cas d'archive 2025 ici.",
       "kind": "LF2026_VAT_RATE",
-      "calc": "Facture émise le 2026-02-01 : 1400 bps n'est pas dans {2000, 1000, 0} → rejet ADR_04_LF2026_VAT_VIOLATION. Les trois taux admis passent.",
+      "calc": "Facture émise le 2026-02-01 : 1400 bps n'est pas dans {2000, 1000, 0} → rejet ADR_04_LF2026_VAT_VIOLATION. Les trois taux admis passent. Une date d'émission illisible (vide, « abc », « 26-02-01 », « 2026-13-45 ») est rejetée avec ADR_04_UNREADABLE_ISSUE_DATE, jamais devinée.",
       "cases": [
         {
           "name": "1400 bps en 2026",
@@ -153,6 +153,26 @@
           "name": "0 bps en 2026",
           "input": { "vatRateBps": 0, "issueDateIso": "2026-02-01" },
           "expected": { "accepted": true, "errorCode": "" }
+        },
+        {
+          "name": "1400 bps, date vide",
+          "input": { "vatRateBps": 1400, "issueDateIso": "" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « abc »",
+          "input": { "vatRateBps": 1400, "issueDateIso": "abc" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « 26-02-01 » (année sur 2 chiffres)",
+          "input": { "vatRateBps": 1400, "issueDateIso": "26-02-01" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « 2026-13-45 » (mois et jour impossibles)",
+          "input": { "vatRateBps": 1400, "issueDateIso": "2026-13-45" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
         }
       ]
     },

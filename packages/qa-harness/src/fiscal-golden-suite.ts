@@ -468,12 +468,38 @@ export interface VatRateOutput {
   readonly errorCode: string;
 }
 
+/** Date d'émission illisible (vide, hors format AAAA-MM-JJ ou impossible au calendrier) : rejet typé ADR-04. */
+export class UnreadableIssueDateError extends Error {
+  readonly code = 'ADR_04_UNREADABLE_ISSUE_DATE';
+
+  constructor(issueDateIso: string) {
+    super(`ADR_04_UNREADABLE_ISSUE_DATE: date d'émission « ${issueDateIso} » illisible (attendu : AAAA-MM-JJ valide).`);
+    this.name = 'UnreadableIssueDateError';
+  }
+}
+
+/** Lit la date d'émission avec le calendrier de ce module ; ne dépend pas de la garde de shared-types. */
+export function assertReadableIssueDate(issueDateIso: string): void {
+  try {
+    parseIsoDate(issueDateIso, 'issueDateIso');
+  } catch (error) {
+    if (error instanceof GoldenVectorFormatError) {
+      throw new UnreadableIssueDateError(issueDateIso);
+    }
+    throw error;
+  }
+}
+
 export function evaluateVatRate(input: VatRateInput): VatRateOutput {
   const rate = ensureSafeInteger(input.vatRateBps, 'vatRateBps');
   try {
+    assertReadableIssueDate(input.issueDateIso);
     assertValidVatRateForIssueYear(rate, input.issueDateIso);
     return { accepted: true, errorCode: '' };
   } catch (error) {
+    if (error instanceof UnreadableIssueDateError) {
+      return { accepted: false, errorCode: error.code };
+    }
     const message = error instanceof Error ? error.message : String(error);
     const match = /^([A-Z0-9_]+):/.exec(message);
     if (match === null) {
@@ -645,4 +671,46 @@ export function replayGoldenVector(vector: GoldenVector): GoldenCaseResult[] {
     caseName: goldenCase.name,
     discrepancies: diffGolden(goldenCase.expected, computeGoldenCase(vector.kind, goldenCase.input)),
   }));
+}
+
+// ------------------------------------------------------------------ 7. Validateur Sage 100 (.PNM)
+
+/** Largeur fixe d'une ligne .PNM, hors CRLF (Doc_14 § 11 ; AGENTS.md Loi 9). */
+export const PNM_LINE_WIDTH = 108;
+/** Index (base 0) du sens Débit/Crédit : position 84 (Doc_14 § 11). */
+const PNM_SENSE_INDEX = 83;
+
+/**
+ * Valide un tampon .PNM : au moins une ligne, chaque ligne de 108 caractères ASCII imprimables (0x20 à 0x7E),
+ * fin de ligne CRLF partout (y compris après la dernière ligne), aucune ligne vide, sens D ou C en position 84.
+ * Un tampon binaire est lu octet par octet (latin1) : tout octet ≥ 0x80 est refusé, un accent UTF-8 aussi.
+ * L'équilibre Débit/Crédit par pièce (Doc_14 § 08) n'est pas vérifié ici : les spécifications ne fixent pas
+ * la colonne du numéro de pièce ni celle du montant.
+ */
+export function assertValidSage100PnmBuffer(pnmContent: string | Uint8Array): { readonly linesCount: number } {
+  const text = typeof pnmContent === 'string' ? pnmContent : Buffer.from(pnmContent).toString('latin1');
+  if (text.length === 0) {
+    throw new Error('PNM_EMPTY_FILE');
+  }
+  if (!text.endsWith('\r\n')) {
+    throw new Error('PNM_MISSING_TRAILING_CRLF');
+  }
+  const lines = text.slice(0, -2).split('\r\n');
+  lines.forEach((line, index) => {
+    const lineNumber = index + 1;
+    if (line.length === 0) {
+      throw new Error(`PNM_EMPTY_LINE: Ligne ${lineNumber} vide.`);
+    }
+    if (/[^\x20-\x7E]/.test(line)) {
+      throw new Error(`PNM_NON_ASCII_CHAR: Caractère hors plage ASCII imprimable (ou LF/CR isolé) à la ligne ${lineNumber}.`);
+    }
+    if (line.length !== PNM_LINE_WIDTH) {
+      throw new Error(`PNM_INVALID_LINE_LENGTH: Ligne ${lineNumber} mesure ${line.length} car. (attendu: ${PNM_LINE_WIDTH}).`);
+    }
+    const sense = line.charAt(PNM_SENSE_INDEX);
+    if (sense !== 'D' && sense !== 'C') {
+      throw new Error(`PNM_INVALID_DEBIT_CREDIT_FLAG: Reçu '${sense}' à la ligne ${lineNumber}.`);
+    }
+  });
+  return { linesCount: lines.length };
 }

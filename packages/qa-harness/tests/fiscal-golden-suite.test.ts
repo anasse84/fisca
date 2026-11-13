@@ -4,7 +4,11 @@ import {
   GOLDEN_STATES,
   GoldenMismatchError,
   GoldenVectorFormatError,
+  PNM_LINE_WIDTH,
+  UnreadableIssueDateError,
   addMonthsClamped,
+  assertReadableIssueDate,
+  assertValidSage100PnmBuffer,
   assertGoldenCase,
   computeArt11CashSplit,
   computeAutoEntrepreneurSurplus,
@@ -301,5 +305,101 @@ describe('lecture et validation du JSON', () => {
 
   it('refuse un fichier sans vecteur ou sans cas', () => {
     expect(() => parseGoldenVectorFile('{"schema":"fisca-golden-vectors/2","package":"p","ruleDate":"2026-11-13","vectors":[]}')).toThrow(/vectors/);
+  });
+});
+
+describe('VEC-CGI-05 : date d\'émission illisible, rejet typé ADR_04_UNREADABLE_ISSUE_DATE', () => {
+  const unreadable = ['', 'abc', '26-02-01', '2026-13-45', '2026-02-30', '2026-2-1', ' 2026-02-01', '2026-02-01T00:00:00Z'];
+
+  it.each(unreadable)('assertReadableIssueDate(%j) lève UnreadableIssueDateError', (date) => {
+    expect(() => assertReadableIssueDate(date)).toThrow(UnreadableIssueDateError);
+    expect(() => assertReadableIssueDate(date)).toThrow(/ADR_04_UNREADABLE_ISSUE_DATE/);
+  });
+
+  it.each(unreadable)('evaluateVatRate(1400, %j) est rejeté, jamais accepté', (date) => {
+    expect(evaluateVatRate({ vatRateBps: 1400, issueDateIso: date })).toEqual({
+      accepted: false, errorCode: 'ADR_04_UNREADABLE_ISSUE_DATE',
+    });
+  });
+
+  it.each(unreadable)('evaluateVatRate(2000, %j) est aussi rejeté : un taux licite ne rachète pas une date illisible', (date) => {
+    expect(evaluateVatRate({ vatRateBps: 2000, issueDateIso: date }).accepted).toBe(false);
+  });
+
+  it('le fichier de vecteurs porte les quatre cas demandés', () => {
+    const vector = file.vectors.find((v) => v.id === 'VEC-CGI-05');
+    const dates = (vector?.cases ?? []).filter((c) => c.expected['errorCode'] === 'ADR_04_UNREADABLE_ISSUE_DATE').map((c) => c.input['issueDateIso']);
+    expect(dates).toEqual(['', 'abc', '26-02-01', '2026-13-45']);
+  });
+
+  it('une date lisible reste acceptée avec un taux admis', () => {
+    expect(evaluateVatRate({ vatRateBps: 2000, issueDateIso: '2026-02-01' })).toEqual({ accepted: true, errorCode: '' });
+  });
+});
+
+describe('assertValidSage100PnmBuffer : 108 caractères ASCII + CRLF', () => {
+  function line(sense = 'D', fill = 'X'): string {
+    return `${fill.repeat(83)}${sense}${fill.repeat(PNM_LINE_WIDTH - 84)}`;
+  }
+  const crlf = '\r\n';
+
+  it('largeur imposée : 108', () => {
+    expect(PNM_LINE_WIDTH).toBe(108);
+    expect(line()).toHaveLength(108);
+  });
+
+  it('accepte une ligne et plusieurs lignes conformes (D et C)', () => {
+    expect(assertValidSage100PnmBuffer(line() + crlf)).toEqual({ linesCount: 1 });
+    expect(assertValidSage100PnmBuffer(line('D') + crlf + line('C') + crlf)).toEqual({ linesCount: 2 });
+  });
+
+  it('accepte des espaces et la ponctuation ASCII imprimable', () => {
+    expect(assertValidSage100PnmBuffer(line('C', ' ') + crlf).linesCount).toBe(1);
+    expect(assertValidSage100PnmBuffer(line('C', '~') + crlf).linesCount).toBe(1);
+  });
+
+  it('accepte un tampon binaire (Uint8Array) conforme', () => {
+    expect(assertValidSage100PnmBuffer(Buffer.from(line() + crlf, 'ascii')).linesCount).toBe(1);
+  });
+
+  it('refuse un tampon vide', () => {
+    expect(() => assertValidSage100PnmBuffer('')).toThrow(/PNM_EMPTY_FILE/);
+    expect(() => assertValidSage100PnmBuffer(new Uint8Array())).toThrow(/PNM_EMPTY_FILE/);
+    expect(() => assertValidSage100PnmBuffer(crlf)).toThrow(/PNM_EMPTY_LINE/);
+  });
+
+  it('refuse une ligne trop courte ou trop longue', () => {
+    expect(() => assertValidSage100PnmBuffer(line().slice(0, 107) + crlf)).toThrow(/PNM_INVALID_LINE_LENGTH/);
+    expect(() => assertValidSage100PnmBuffer(line() + 'X' + crlf)).toThrow(/PNM_INVALID_LINE_LENGTH/);
+    expect(() => assertValidSage100PnmBuffer(line() + crlf + line().slice(0, 50) + crlf)).toThrow(/Ligne 2/);
+  });
+
+  it('refuse la fin de ligne LF seule, CR seul, ou l\'absence de CRLF final', () => {
+    expect(() => assertValidSage100PnmBuffer(line() + '\n')).toThrow(/PNM_MISSING_TRAILING_CRLF/);
+    expect(() => assertValidSage100PnmBuffer(line() + '\r')).toThrow(/PNM_MISSING_TRAILING_CRLF/);
+    expect(() => assertValidSage100PnmBuffer(line())).toThrow(/PNM_MISSING_TRAILING_CRLF/);
+    expect(() => assertValidSage100PnmBuffer(line() + '\n' + line() + crlf)).toThrow(/PNM_/);
+    expect(() => assertValidSage100PnmBuffer(line() + crlf + line() + '\n')).toThrow(/PNM_MISSING_TRAILING_CRLF/);
+  });
+
+  it('refuse une ligne vide intermédiaire ou finale', () => {
+    expect(() => assertValidSage100PnmBuffer(line() + crlf + crlf + line() + crlf)).toThrow(/PNM_EMPTY_LINE: Ligne 2/);
+    expect(() => assertValidSage100PnmBuffer(line() + crlf + crlf)).toThrow(/PNM_EMPTY_LINE: Ligne 2/);
+  });
+
+  it('refuse tout octet non ASCII, accentué ou de contrôle', () => {
+    const accented = `${'X'.repeat(83)}D${'X'.repeat(23)}é`;
+    expect(accented).toHaveLength(108);
+    expect(() => assertValidSage100PnmBuffer(accented + crlf)).toThrow(/PNM_NON_ASCII_CHAR/);
+    expect(() => assertValidSage100PnmBuffer(Buffer.from(accented + crlf, 'utf8'))).toThrow(/PNM_/);
+    expect(() => assertValidSage100PnmBuffer(Buffer.from([...Buffer.from(line().slice(0, 107), 'ascii'), 0x80, 0x0d, 0x0a]))).toThrow(/PNM_NON_ASCII_CHAR/);
+    expect(() => assertValidSage100PnmBuffer(line().slice(0, 107) + '\t' + crlf)).toThrow(/PNM_NON_ASCII_CHAR/);
+    expect(() => assertValidSage100PnmBuffer(line().slice(0, 107) + '\u0000' + crlf)).toThrow(/PNM_NON_ASCII_CHAR/);
+    expect(() => assertValidSage100PnmBuffer(line().slice(0, 107) + '€' + crlf)).toThrow(/PNM_NON_ASCII_CHAR/);
+  });
+
+  it('refuse un sens Débit/Crédit autre que D ou C en position 84', () => {
+    expect(() => assertValidSage100PnmBuffer(line('X') + crlf)).toThrow(/PNM_INVALID_DEBIT_CREDIT_FLAG/);
+    expect(() => assertValidSage100PnmBuffer(line('d') + crlf)).toThrow(/PNM_INVALID_DEBIT_CREDIT_FLAG/);
   });
 });
