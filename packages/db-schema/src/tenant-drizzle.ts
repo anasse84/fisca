@@ -1,15 +1,17 @@
 /**
- * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 à 3 (T-S1B-02, T-S1B-03 : caisse
- * POS, T-S1B-04 : grand livre CGNC). La vue `v_cgnc_trial_balance_6col` est déclarée ici en lecture seule.
+ * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 à 4 (T-S1B-02, T-S1B-03 : caisse
+ * POS, T-S1B-04 : grand livre CGNC, T-S1B-05 : sous-livres, paie 9421, coffre AIP). La vue `v_cgnc_trial_balance_6col` est déclarée ici en lecture seule.
  *
  * Le DDL de `tenant.ts` fait foi : ce fichier ne sert qu'au typage des requêtes. Un test compare tables, colonnes,
  * nullités, clés primaires, clés étrangères, contraintes UNIQUE et index à PRAGMA sur la base réelle. Les CHECK ne sont pas
  * répétés ici : ils vivent dans le DDL appliqué par les migrations, jamais généré par drizzle-kit.
- * Les tickets suivants ajoutent ici les tables de la migration v4.
+ * La migration v5 (T-S1B-05) ajoute les sous-livres, la paie 9421 et le coffre AIP.
  */
 
+import { sql } from 'drizzle-orm';
 import { index, integer, primaryKey, sqliteTable, sqliteView, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import {
+  ARCHIVAL_DOCUMENT_TYPES,
   BANK_RECONCILIATION_STATES,
   CGNC_NORMAL_BALANCES,
   CGNC_VAT_REGIME_ROLES,
@@ -22,10 +24,15 @@ import {
   LEDGER_STATUSES,
   PARTNER_ROLES,
   PARTNER_TAX_CATEGORIES,
+  PAYROLL_FAMILY_STATUSES,
+  PAYROLL_IR_PAYMENT_METHOD_CODES,
+  PAYROLL_POPULATION_CATEGORIES,
   POS_B2B_CONVERSION_STATES,
   POS_SESSION_STATUSES,
   POS_TICKET_KINDS,
   PURCHASE_ORDER_STATUSES,
+  RAS_DIRECTIONS,
+  RAS_FAMILIES,
   RIB_CHECK_STATUSES,
   TENANT_GRANTEE_ROLES,
   THREE_WAY_MATCH_STATUSES,
@@ -381,3 +388,176 @@ export const cgncTrialBalance6col = sqliteView('v_cgnc_trial_balance_6col', {
   totalCreditCents: integer('total_credit_cents').notNull(),
   netBalanceCents: integer('net_balance_cents').notNull(),
 }).existing();
+
+export const taxAndPaymentSubledger = sqliteTable(
+  'tax_and_payment_subledger',
+  {
+    id: text('id').primaryKey(),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoices.id),
+    invoiceEntryId: text('invoice_entry_id')
+      .notNull()
+      .references(() => journalEntries.id),
+    paymentEntryId: text('payment_entry_id').references(() => journalEntries.id),
+    invoiceDate: text('invoice_date').notNull(),
+    deliveryDate: text('delivery_date').notNull(),
+    legalDueDate: text('legal_due_date').notNull(),
+    paymentDate: text('payment_date'),
+    timeBarDeadlineDate: text('time_bar_deadline_date'),
+    dgiPaymentMethodId: integer('dgi_payment_method_id').notNull(),
+    baseHtCents: integer('base_ht_cents').notNull(),
+    vatRateBps: integer('vat_rate_bps').notNull(),
+    vatAmountCents: integer('vat_amount_cents').notNull(),
+    totalTtcCents: integer('total_ttc_cents').notNull(),
+    deductionProrataPct: integer('deduction_prorata_pct').notNull().default(100),
+    vatClearingEntryId: text('vat_clearing_entry_id').references(() => journalEntries.id),
+    simplTvaDeclaredPeriod: text('simpl_tva_declared_period'),
+    monthsOfDelay6921: integer('months_of_delay_6921').notNull().default(0),
+    penalty6921Cents: integer('penalty_6921_cents').notNull().default(0),
+    law6921DeclaredQuarter: text('law_6921_declared_quarter'),
+  },
+  (table) => [
+    index('idx_subledger_due_unpaid').on(table.legalDueDate).where(sql`payment_date IS NULL`),
+    index('idx_subledger_timebar').on(table.timeBarDeadlineDate).where(sql`time_bar_deadline_date IS NOT NULL`),
+  ],
+);
+
+export const withholdingTaxSubledger = sqliteTable('withholding_tax_subledger', {
+  id: text('id').primaryKey(),
+  fiscalYearId: text('fiscal_year_id')
+    .notNull()
+    .references(() => fiscalYears.id),
+  partnerId: text('partner_id')
+    .notNull()
+    .references(() => fiscalPartners.id),
+  invoiceId: text('invoice_id').references(() => invoices.id),
+  direction: text('direction', { enum: RAS_DIRECTIONS }).notNull(),
+  rasFamily: text('ras_family', { enum: RAS_FAMILIES }).notNull(),
+  leasedPropertyAddressEnc: text('leased_property_address_enc'),
+  tscArticleNumber: text('tsc_article_number'),
+  invoicedHtCents: integer('invoiced_ht_cents').notNull(),
+  paidBaseCents: integer('paid_base_cents').notNull().default(0),
+  rasRateBps: integer('ras_rate_bps').notNull(),
+  rasAmountCents: integer('ras_amount_cents').notNull().default(0),
+  paymentDate: text('payment_date'),
+  dgiQuittanceRef: text('dgi_quittance_ref'),
+  imputedOnIsInstallment: integer('imputed_on_is_installment'),
+});
+
+export const payrollAnnualSubledger = sqliteTable(
+  'payroll_annual_subledger',
+  {
+    id: text('id').primaryKey(),
+    calendarYear: integer('calendar_year').notNull(),
+    populationCategory: text('population_category', { enum: PAYROLL_POPULATION_CATEGORIES }).notNull(),
+    matricule: text('matricule').notNull(),
+    lastNameEnc: text('last_name_enc').notNull(),
+    firstNameEnc: text('first_name_enc').notNull(),
+    cinEnc: text('cin_enc'),
+    cinBidx: text('cin_bidx'),
+    carteSejourEnc: text('carte_sejour_enc'),
+    numPprEnc: text('num_ppr_enc'),
+    numCnssEnc: text('num_cnss_enc'),
+    cnssBidx: text('cnss_bidx'),
+    familyStatus: text('family_status', { enum: PAYROLL_FAMILY_STATUSES }).notNull(),
+    dependentsCount: integer('dependents_count').notNull().default(0),
+    addressEnc: text('address_enc').notNull(),
+    hireDate: text('hire_date').notNull(),
+    exitDate: text('exit_date'),
+    workedDays: integer('worked_days').notNull().default(360),
+    isSportsman: integer('is_sportsman').notNull().default(0),
+    dgiExpenseRateCode: text('dgi_expense_rate_code').notNull(),
+    baseSalaryCents: integer('base_salary_cents').notNull(),
+    grossSalaryCents: integer('gross_salary_cents').notNull(),
+    benefitsInKindCents: integer('benefits_in_kind_cents').notNull().default(0),
+    allowancesCents: integer('allowances_cents').notNull().default(0),
+    exemptAllowancesCents: integer('exempt_allowances_cents').notNull().default(0),
+    grossTaxableCents: integer('gross_taxable_cents').notNull(),
+    proExpensesCents: integer('pro_expenses_cents').notNull(),
+    supplementaryPensionCents: integer('supplementary_pension_cents').notNull().default(0),
+    socialContributionsCents: integer('social_contributions_cents').notNull(),
+    housingLoanDeductionCents: integer('housing_loan_deduction_cents').notNull().default(0),
+    totalDeductionsCents: integer('total_deductions_cents').notNull(),
+    netTaxableCents: integer('net_taxable_cents').notNull(),
+    irWithheldCents: integer('ir_withheld_cents').notNull(),
+    piiRestrictedFlag: integer('pii_restricted_flag').notNull().default(0),
+  },
+  (table) => [unique().on(table.calendarYear, table.matricule)],
+);
+
+export const payrollExemptElements = sqliteTable('payroll_exempt_elements', {
+  id: text('id').primaryKey(),
+  payrollLineId: text('payroll_line_id')
+    .notNull()
+    .references(() => payrollAnnualSubledger.id),
+  dgiNatureCode: text('dgi_nature_code').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+});
+
+export const payrollIrRemittances = sqliteTable('payroll_ir_remittances', {
+  id: text('id').primaryKey(),
+  calendarYear: integer('calendar_year').notNull(),
+  month: integer('month').notNull(),
+  paymentDate: text('payment_date').notNull(),
+  paymentMethodCode: text('payment_method_code', { enum: PAYROLL_IR_PAYMENT_METHOD_CODES }).notNull(),
+  dgiReference: text('dgi_reference').notNull(),
+  quittanceNumber: text('quittance_number').notNull(),
+  principalCents: integer('principal_cents').notNull(),
+  penaltyCents: integer('penalty_cents').notNull().default(0),
+  surchargesCents: integer('surcharges_cents').notNull().default(0),
+  totalPaidCents: integer('total_paid_cents').notNull(),
+  glPaymentEntryId: text('gl_payment_entry_id').references(() => journalEntries.id),
+});
+
+export const archivalPackages = sqliteTable('archival_packages', {
+  aipId: text('aip_id').primaryKey(),
+  fiscalYearId: text('fiscal_year_id')
+    .notNull()
+    .references(() => fiscalYears.id),
+  entryId: text('entry_id').references(() => journalEntries.id),
+  documentType: text('document_type', { enum: ARCHIVAL_DOCUMENT_TYPES }).notNull(),
+  dgiClearanceUuid: text('dgi_clearance_uuid'),
+  documentRef: text('document_ref').notNull(),
+  documentDate: text('document_date').notNull(),
+  amountTtcCents: integer('amount_ttc_cents').notNull().default(0),
+  r2ObjectKey: text('r2_object_key').notNull().unique(),
+  moroccoMirrorKey: text('morocco_mirror_key').notNull(),
+  payloadSha256: text('payload_sha256').notNull(),
+  encryptedDekBase64: text('encrypted_dek_base64').notNull(),
+  ivBase64: text('iv_base64').notNull(),
+  merkleBatchId: text('merkle_batch_id'),
+  merkleLeafIndex: integer('merkle_leaf_index'),
+  merkleProofJson: text('merkle_proof_json'),
+  archivedAt: text('archived_at').notNull(),
+  retentionUntil: text('retention_until').notNull(),
+  piiRestrictedFlag: integer('pii_restricted_flag').notNull().default(0),
+});
+
+export const stateTransitionAudit = sqliteTable('state_transition_audit', {
+  id: text('id').primaryKey(),
+  entityTable: text('entity_table').notNull(),
+  entityId: text('entity_id').notNull(),
+  fromState: text('from_state').notNull(),
+  toState: text('to_state').notNull(),
+  actorKind: text('actor_kind').notNull(),
+  actorId: text('actor_id').notNull(),
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  proofRef: text('proof_ref'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const fecAuditRuns = sqliteTable('fec_audit_runs', {
+  id: text('id').primaryKey(),
+  fiscalYearId: text('fiscal_year_id')
+    .notNull()
+    .references(() => fiscalYears.id),
+  scoreOn100: integer('score_on_100').notNull(),
+  totalAnomalies: integer('total_anomalies').notNull(),
+  cashOverflowCount: integer('cash_overflow_count').notNull(),
+  missingIceCount: integer('missing_ice_count').notNull(),
+  cadrageTvaGapCents: integer('cadrage_tva_gap_cents').notNull(),
+  negativeCashAttempts: integer('negative_cash_attempts').notNull(),
+  findingsJson: text('findings_json').notNull(),
+  createdAt: text('created_at').notNull(),
+});

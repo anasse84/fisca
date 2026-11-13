@@ -181,7 +181,7 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
   const v4 = TENANT_MIGRATIONS[3];
 
   it('est la quatrième migration ; les empreintes de v1, v2 et v3 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version).slice(0, 4)).toEqual([1, 2, 3, 4]);
     expect(v4?.name).toBe('tenant_part4_pilot_corrections_immutability_statuses');
     for (const [index, expected] of [V1_SHA256, V2_SHA256, V3_SHA256].entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -200,14 +200,22 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
     expect(v4?.tableNames).toEqual([]);
     expect(v4?.indexNames).toEqual([]);
     expect(v4?.viewNames ?? []).toEqual([]);
-    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS])].sort());
-    expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort());
+    // La v5 (T-S1B-05) ajoute deux triggers : la liste complète est celle de v3, v4 puis v5.
+    const V5_TRIGGERS = ['enforce_10year_worm_retention_delete', 'enforce_10year_worm_retention_update'] as const;
+    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS])].sort());
+    expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual(
+      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
+    );
   });
 
-  it('ne crée ni payroll_annual_subledger ni archival_packages (T-S1B-05)', () => {
-    const tableNames: readonly string[] = TENANT_TABLE_NAMES;
-    expect(tableNames).not.toContain('payroll_annual_subledger');
-    expect(tableNames).not.toContain('archival_packages');
+  it('ne crée ni payroll_annual_subledger ni archival_packages : ces tables naissent à la v5 (T-S1B-05)', () => {
+    const tableNamesUpToV4: readonly string[] = TENANT_TABLE_NAMES.slice(0, 17);
+    expect(tableNamesUpToV4).not.toContain('payroll_annual_subledger');
+    expect(tableNamesUpToV4).not.toContain('archival_packages');
+    expect(TENANT_MIGRATIONS[3]?.tableNames).toEqual([]);
+    expect(TENANT_MIGRATIONS[3]?.upSqlStatements.join('\n')).not.toMatch(/CREATE TABLE (payroll_annual_subledger|archival_packages)/);
+    expect(TENANT_MIGRATIONS[4]?.tableNames).toContain('payroll_annual_subledger');
+    expect(TENANT_MIGRATIONS[4]?.tableNames).toContain('archival_packages');
   });
 
   it('les triggers déclarés sont ceux que la v4 crée sur SQLite ; une base v3 pleine se met à niveau sans perte', () => {

@@ -323,8 +323,9 @@ describe('fiscal_partners : champs sensibles chiffrés (_enc) et indexés à l\'
     for (const table of TENANT_TABLE_NAMES) {
       for (const column of columnsOf(db, table)) {
         expect(NAMES_IN_CLEAR, `${table}.${column.name}`).not.toContain(column.name);
-        // rib_check_status est un statut de contrôle (OK, ALERTE_RIB_DAF), pas un RIB.
-        if (column.name !== 'rib_check_status' && /(^|_)(ice|cin|rib|iban|if)(_|$)/.test(column.name)) {
+        // rib_check_status est un statut de contrôle (OK, ALERTE_RIB_DAF), pas un RIB ; missing_ice_count (fec_audit_runs, Doc_06 § 06)
+        // est un compteur d'anomalies, pas un ICE.
+        if (column.name !== 'rib_check_status' && column.name !== 'missing_ice_count' && /(^|_)(ice|cin|rib|iban|if)(_|$)/.test(column.name)) {
           expect(column.name, `${table}.${column.name}`).toMatch(/_(enc|bidx)$|^rib_24_bidx$/);
         }
       }

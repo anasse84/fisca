@@ -395,3 +395,147 @@ export function simpleEntry(
 ): readonly (readonly [string, RowValues])[] {
   return entryWithLines(id, sequence, journalId, [{ account: debit, debit: amount }, { account: credit, credit: amount }], overrides);
 }
+
+// ---------------------------------------------------------------------------
+// Sous-livres, paie 9421 et coffre AIP (migration v5, Doc_06 § 06)
+// ---------------------------------------------------------------------------
+
+/** Clôture de l'exercice 2026 + 10 ans + 1 jour (Art. 211 CGI) : nettement dans le futur de toute horloge de test. */
+export const RETENTION_FUTURE = '2999-12-31T00:00:00Z';
+/** Échéance décennale déjà passée : l'horodatage est dans la ligne, jamais une horloge simulée. */
+export const RETENTION_PAST = '2001-01-02T00:00:00Z';
+
+/** Facture de 1 000,00 HT à 20 % : 200,00 de TVA, 1 200,00 TTC ; parents `invoices` et `journal_entries`. */
+export function subledgerRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'sub-1',
+    invoice_id: 'inv-1',
+    invoice_entry_id: 'je-1',
+    invoice_date: '2026-11-13',
+    delivery_date: '2026-11-12',
+    legal_due_date: '2027-01-12',
+    dgi_payment_method_id: 3,
+    base_ht_cents: 100000,
+    vat_rate_bps: 2000,
+    vat_amount_cents: 20000,
+    total_ttc_cents: 120000,
+    ...overrides,
+  };
+}
+
+export function withholdingRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'ras-1',
+    fiscal_year_id: 'fy-2026',
+    partner_id: 'partner-1',
+    direction: 'OUTBOUND_SUPPLIER_RAS',
+    ras_family: 'HONORAIRES_IS_IR',
+    invoiced_ht_cents: 100000,
+    ras_rate_bps: 1000,
+    ...overrides,
+  };
+}
+
+export function payrollRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'pay-1',
+    calendar_year: 2026,
+    population_category: 'PERMANENT',
+    matricule: 'M-0001',
+    last_name_enc: 'v1:aXY:bm9t',
+    first_name_enc: 'v1:aXY:cHJlbm9t',
+    family_status: 'M',
+    address_enc: 'v1:aXY:YWRyZXNzZQ',
+    hire_date: '2020-01-01',
+    dgi_expense_rate_code: 'FP35',
+    base_salary_cents: 1000000,
+    gross_salary_cents: 1200000,
+    gross_taxable_cents: 1100000,
+    pro_expenses_cents: 300000,
+    social_contributions_cents: 90000,
+    total_deductions_cents: 390000,
+    net_taxable_cents: 710000,
+    ir_withheld_cents: 90000,
+    ...overrides,
+  };
+}
+
+export function exemptElementRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'exe-1',
+    payroll_line_id: 'pay-1',
+    dgi_nature_code: 'N01',
+    amount_cents: 50000,
+    ...overrides,
+  };
+}
+
+export function irRemittanceRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'irr-1',
+    calendar_year: 2026,
+    month: 11,
+    payment_date: '2026-12-15',
+    payment_method_code: 'SIR',
+    dgi_reference: 'REF-0001',
+    quittance_number: 'Q-0001',
+    principal_cents: 90000,
+    total_paid_cents: 90000,
+    ...overrides,
+  };
+}
+
+/** Paquet AIP non scellé (merkle_batch_id NULL), échéance décennale dans le futur. */
+export function archivalRow(overrides: RowValues = {}): RowValues {
+  return {
+    aip_id: 'aip-1',
+    fiscal_year_id: 'fy-2026',
+    document_type: 'SIMPL_TVA_XML',
+    document_ref: 'DOC-0001',
+    document_date: '2026-11-13',
+    r2_object_key: 'r2/aip-1',
+    morocco_mirror_key: 'ma/aip-1',
+    payload_sha256: SHA_A,
+    encrypted_dek_base64: 'ZGVr',
+    iv_base64: 'aXY',
+    archived_at: NOW,
+    retention_until: RETENTION_FUTURE,
+    ...overrides,
+  };
+}
+
+/** Même paquet, scellé dans un lot Merkle. */
+export function sealedArchivalRow(overrides: RowValues = {}): RowValues {
+  return archivalRow({ merkle_batch_id: 'batch-1', merkle_leaf_index: 0, merkle_proof_json: '[]', ...overrides });
+}
+
+export function transitionAuditRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'sta-1',
+    entity_table: 'invoices',
+    entity_id: 'inv-1',
+    from_state: 'BROUILLON',
+    to_state: 'NUMEROTEE_VERROUILLEE',
+    actor_kind: 'USER',
+    actor_id: 'user-1',
+    idempotency_key: 'idem-0001',
+    created_at: NOW,
+    ...overrides,
+  };
+}
+
+export function fecAuditRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'fec-1',
+    fiscal_year_id: 'fy-2026',
+    score_on_100: 92,
+    total_anomalies: 3,
+    cash_overflow_count: 1,
+    missing_ice_count: 1,
+    cadrage_tva_gap_cents: 0,
+    negative_cash_attempts: 0,
+    findings_json: '[]',
+    created_at: NOW,
+    ...overrides,
+  };
+}

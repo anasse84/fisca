@@ -139,8 +139,8 @@ describe('migration v3 : grand livre CGNC (Doc_06 § 05) ajoutée sans toucher a
     expect(v3?.indexNames).toEqual(['idx_je_fy_status_seq', 'idx_jel_entry_account']);
     expect(v3?.triggerNames).toEqual([...TRIGGERS]);
     expect(v3?.viewNames).toEqual(['v_cgnc_trial_balance_6col']);
-    expect(TENANT_TABLE_NAMES.slice(-7)).toEqual([...LEDGER_TABLES]);
-    expect(TENANT_INDEX_NAMES).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir', 'idx_je_fy_status_seq', 'idx_jel_entry_account']);
+    expect(TENANT_TABLE_NAMES.slice(10, 17)).toEqual([...LEDGER_TABLES]);
+    expect(TENANT_INDEX_NAMES.slice(0, 5)).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir', 'idx_je_fy_status_seq', 'idx_jel_entry_account']);
     expect([...TENANT_TRIGGER_NAMES].slice(0, TRIGGERS.length)).toEqual([...TRIGGERS]);
     expect([...TENANT_VIEW_NAMES]).toEqual(['v_cgnc_trial_balance_6col']);
   });
@@ -233,7 +233,8 @@ describe('pii_restricted_flag sur le grand livre (ERRATA D-19, Doc_11 § 06)', (
     const tables = TENANT_TABLE_NAMES.filter((table) =>
       all(db, `SELECT name FROM pragma_table_info(?)`, table).some((c) => c['name'] === 'pii_restricted_flag'),
     );
-    expect(tables).toEqual(['invoices', 'journal_entries', 'journal_entry_lines']);
+    // v5 (T-S1B-05) ajoute la colonne à payroll_annual_subledger et archival_packages (Doc_11 § 06 : état 9421 et paquets AIP).
+    expect(tables).toEqual(['invoices', 'journal_entries', 'journal_entry_lines', 'payroll_annual_subledger', 'archival_packages']);
     for (const table of ['journal_entries', 'journal_entry_lines']) {
       expect(all(db, `SELECT type, "notnull" AS not_null, dflt_value FROM pragma_table_info(?) WHERE name = 'pii_restricted_flag'`, table)).toEqual([
         { type: 'INTEGER', not_null: 1, dflt_value: '0' },

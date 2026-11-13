@@ -1175,10 +1175,331 @@ const MIGRATION_4_SQLITE_ONLY_TRIGGERS: readonly string[] = ['enforce_invoice_cl
 const MIGRATION_4_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_4_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
 
 
+// ---------------------------------------------------------------------------
+// Migration 5 : TENANT_DB Partie 4, sous-livres SIMPL, paie 9421 et coffre AIP (Doc_06 § 06 et § 08, ticket T-S1B-05)
+//
+// Huit tables, deux index nommés de Doc_06 § 08 (`idx_subledger_due_unpaid`, `idx_subledger_timebar`, tous deux sur
+// `tax_and_payment_subledger`) et les DEUX seuls triggers de Doc_06 § 06 : `enforce_10year_worm_retention_delete` et
+// `enforce_10year_worm_retention_update`, sur `archival_packages`. Doc_06 § 06 ne définit aucun objet nommé propre à la paie 9421
+// ni au DRVT en dehors de ces tables : rien d'autre n'est créé. Les v1 à v4 restent intactes (empreintes figées).
+//
+// Colonnes et CHECK : ceux du DDL de Doc_06 § 06, mot pour mot, plus (comme aux migrations précédentes) le CHECK d'entier strict
+// sur chaque colonne INTEGER. TVA : `vat_rate_bps IN (2000, 1000, 0)` strict (ERRATA D-04). `deduction_prorata_pct` reste un entier
+// de 0 à 100 (XSD SIMPL-TVA, ERRATA D-10 : la conversion depuis les points de base se fait avant l'écriture).
+//
+// ÉCARTS ASSUMÉS AVEC Doc_06 § 06 (chacun testé) :
+// 1. `pii_restricted_flag` (ERRATA D-19, Doc_11 § 06 : restriction fiscale = 1 après demande DSAR, jusqu'à 10 ans après la
+//    clôture, puis effacement cryptographique) : INTEGER NOT NULL DEFAULT 0 CHECK (0, 1), dernière colonne de
+//    `payroll_annual_subledger` et de `archival_packages`.
+// 2. `enforce_10year_worm_retention_delete` : texte de Doc_06 (`datetime('now') < datetime(OLD.retention_until)`, horloge de la
+//    base). PostgreSQL : `now() < OLD.retention_until::timestamptz`, fuseau de la fonction fixé à UTC (SQLite compte en UTC).
+// 3. `enforce_10year_worm_retention_update` : Doc_06 n'interdit sur une ligne scellée (merkle_batch_id non NULL) que la
+//    modification de `payload_sha256`. Exigence du pilote : une ligne scellée est immuable, la seule modification admise est la
+//    montée monotone 0 vers 1 de `pii_restricted_flag`, toutes les autres colonnes strictement inchangées (`IS NOT` côté SQLite,
+//    `IS DISTINCT FROM` côté PostgreSQL, NULL compris) ; 1 vers 0 et toute montée combinée à une autre modification sont refusées.
+//    Une ligne NON scellée reste libre (le scellement est lui-même un UPDATE qui pose merkle_batch_id). Texte d'erreur de Doc_06.
+// 4. Index : Doc_06 § 08 les décrit (« filtrés sur les factures non soldées et sur time_bar_deadline_date ») sans en donner le
+//    DDL. `idx_subledger_due_unpaid` : (legal_due_date) WHERE payment_date IS NULL ; `idx_subledger_timebar` :
+//    (time_bar_deadline_date) WHERE time_bar_deadline_date IS NOT NULL (index partiels, valables sous SQLite et PostgreSQL).
+// 5. La rétention n'est PAS reportée sur l'UPDATE (Doc_06 ne la lit que dans le DELETE) ; `payroll_annual_subledger` n'a aucun
+//    trigger (Doc_06 n'en définit pas) : son drapeau est donc seulement borné par le CHECK.
+// ---------------------------------------------------------------------------
+
+export const RAS_DIRECTIONS = ['OUTBOUND_SUPPLIER_RAS', 'INBOUND_CUSTOMER_RAS'] as const;
+export const RAS_FAMILIES = [
+  'RAS_TVA_ART117',
+  'HONORAIRES_IS_IR',
+  'COMMISSIONS_COURTAGES',
+  'LOCATION_IMMOBILIERE_TSC',
+  'NON_RESIDENT_ART15',
+  'AE_OVER_80K_IR30',
+] as const;
+export const PAYROLL_POPULATION_CATEGORIES = [
+  'PERMANENT',
+  'EXONERE_TAHFIZ_5725',
+  'EXONERE_5720',
+  'OCCASIONNEL',
+  'CFC',
+  'STAGIAIRE',
+  'STOCK_OPTIONS',
+  'PEE_ABONDEMENT',
+  'DOCTORANT',
+] as const;
+export const PAYROLL_FAMILY_STATUSES = ['C', 'M', 'D', 'V'] as const;
+export const PAYROLL_IR_PAYMENT_METHOD_CODES = ['ES', 'CH', 'SIR'] as const;
+export const ARCHIVAL_DOCUMENT_TYPES = [
+  'INVOICE_UBL_XADES',
+  'INVOICE_PDFA3_PADES',
+  'POS_TICKET_Z',
+  'SIMPL_TVA_XML',
+  'SIMPL_IS_LIASSE_XML',
+  'SIMPL_IR_9421_XML',
+  'DRVT_XML',
+  'LAW_69_21_XML',
+  'FEC_SAFT_EXPORT',
+] as const;
+
+/** Textes des RAISE de la migration v5 (Doc_06 § 06, mot pour mot) ; identiques sous PostgreSQL. */
+export const TENANT_V5_TRIGGER_MESSAGES = {
+  wormDelete: 'VIOLATION_SAE_CGI_ART_211: Destruction interdite avant expiration des 10 ans.',
+  wormUpdate: 'VIOLATION_SAE_ISO_14641: Altération interdite sur une unité d archive scellée.',
+} as const;
+
+const CREATE_TAX_AND_PAYMENT_SUBLEDGER = `CREATE TABLE tax_and_payment_subledger (
+    id TEXT PRIMARY KEY,
+    invoice_id TEXT NOT NULL REFERENCES invoices(id),
+    invoice_entry_id TEXT NOT NULL REFERENCES journal_entries(id),
+    payment_entry_id TEXT REFERENCES journal_entries(id),
+    invoice_date TEXT NOT NULL,
+    delivery_date TEXT NOT NULL,
+    legal_due_date TEXT NOT NULL,
+    payment_date TEXT,
+    time_bar_deadline_date TEXT,
+    dgi_payment_method_id INTEGER NOT NULL CHECK (dgi_payment_method_id BETWEEN 1 AND 7) ${integerCheck('dgi_payment_method_id')},
+    base_ht_cents INTEGER NOT NULL ${integerCheck('base_ht_cents')},
+    vat_rate_bps INTEGER NOT NULL CHECK (vat_rate_bps IN (${VAT_RATE_BPS_VALUES.join(', ')})) ${integerCheck('vat_rate_bps')},
+    vat_amount_cents INTEGER NOT NULL ${integerCheck('vat_amount_cents')},
+    total_ttc_cents INTEGER NOT NULL CHECK (base_ht_cents + vat_amount_cents = total_ttc_cents) ${integerCheck('total_ttc_cents')},
+    deduction_prorata_pct INTEGER NOT NULL DEFAULT 100 CHECK (deduction_prorata_pct BETWEEN 0 AND 100) ${integerCheck('deduction_prorata_pct')},
+    vat_clearing_entry_id TEXT REFERENCES journal_entries(id),
+    simpl_tva_declared_period TEXT,
+    months_of_delay_6921 INTEGER NOT NULL DEFAULT 0 ${integerCheck('months_of_delay_6921')},
+    penalty_6921_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('penalty_6921_cents')},
+    law_6921_declared_quarter TEXT
+)`;
+
+const CREATE_WITHHOLDING_TAX_SUBLEDGER = `CREATE TABLE withholding_tax_subledger (
+    id TEXT PRIMARY KEY,
+    fiscal_year_id TEXT NOT NULL REFERENCES fiscal_years(id),
+    partner_id TEXT NOT NULL REFERENCES fiscal_partners(id),
+    invoice_id TEXT REFERENCES invoices(id),
+    direction TEXT NOT NULL CHECK (direction IN (${quoteList(RAS_DIRECTIONS)})),
+    ras_family TEXT NOT NULL CHECK (ras_family IN (${quoteList(RAS_FAMILIES)})),
+    leased_property_address_enc TEXT,
+    tsc_article_number TEXT,
+    invoiced_ht_cents INTEGER NOT NULL ${integerCheck('invoiced_ht_cents')},
+    paid_base_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('paid_base_cents')},
+    ras_rate_bps INTEGER NOT NULL ${integerCheck('ras_rate_bps')},
+    ras_amount_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('ras_amount_cents')},
+    payment_date TEXT,
+    dgi_quittance_ref TEXT,
+    imputed_on_is_installment INTEGER CHECK (imputed_on_is_installment BETWEEN 1 AND 6) ${integerCheck('imputed_on_is_installment')}
+)`;
+
+const CREATE_PAYROLL_ANNUAL_SUBLEDGER = `CREATE TABLE payroll_annual_subledger (
+    id TEXT PRIMARY KEY,
+    calendar_year INTEGER NOT NULL ${integerCheck('calendar_year')},
+    population_category TEXT NOT NULL CHECK (population_category IN (${quoteList(PAYROLL_POPULATION_CATEGORIES)})),
+    matricule TEXT NOT NULL,
+    last_name_enc TEXT NOT NULL,
+    first_name_enc TEXT NOT NULL,
+    cin_enc TEXT,
+    cin_bidx TEXT,
+    carte_sejour_enc TEXT,
+    num_ppr_enc TEXT,
+    num_cnss_enc TEXT,
+    cnss_bidx TEXT,
+    family_status TEXT NOT NULL CHECK (family_status IN (${quoteList(PAYROLL_FAMILY_STATUSES)})),
+    dependents_count INTEGER NOT NULL DEFAULT 0 CHECK (dependents_count BETWEEN 0 AND 6) ${integerCheck('dependents_count')},
+    address_enc TEXT NOT NULL,
+    hire_date TEXT NOT NULL,
+    exit_date TEXT,
+    worked_days INTEGER NOT NULL DEFAULT 360 CHECK (worked_days BETWEEN 1 AND 365) ${integerCheck('worked_days')},
+    is_sportsman INTEGER NOT NULL DEFAULT 0 ${integerCheck('is_sportsman')},
+    dgi_expense_rate_code TEXT NOT NULL,
+    base_salary_cents INTEGER NOT NULL ${integerCheck('base_salary_cents')},
+    gross_salary_cents INTEGER NOT NULL ${integerCheck('gross_salary_cents')},
+    benefits_in_kind_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('benefits_in_kind_cents')},
+    allowances_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('allowances_cents')},
+    exempt_allowances_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('exempt_allowances_cents')},
+    gross_taxable_cents INTEGER NOT NULL ${integerCheck('gross_taxable_cents')},
+    pro_expenses_cents INTEGER NOT NULL ${integerCheck('pro_expenses_cents')},
+    supplementary_pension_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('supplementary_pension_cents')},
+    social_contributions_cents INTEGER NOT NULL ${integerCheck('social_contributions_cents')},
+    housing_loan_deduction_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('housing_loan_deduction_cents')},
+    total_deductions_cents INTEGER NOT NULL ${integerCheck('total_deductions_cents')},
+    net_taxable_cents INTEGER NOT NULL ${integerCheck('net_taxable_cents')},
+    ir_withheld_cents INTEGER NOT NULL ${integerCheck('ir_withheld_cents')},
+    pii_restricted_flag INTEGER NOT NULL DEFAULT 0 ${booleanCheck('pii_restricted_flag')},
+    UNIQUE(calendar_year, matricule)
+)`;
+
+const CREATE_PAYROLL_EXEMPT_ELEMENTS = `CREATE TABLE payroll_exempt_elements (
+    id TEXT PRIMARY KEY,
+    payroll_line_id TEXT NOT NULL REFERENCES payroll_annual_subledger(id),
+    dgi_nature_code TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL CHECK (amount_cents > 0) ${integerCheck('amount_cents')}
+)`;
+
+const CREATE_PAYROLL_IR_REMITTANCES = `CREATE TABLE payroll_ir_remittances (
+    id TEXT PRIMARY KEY,
+    calendar_year INTEGER NOT NULL ${integerCheck('calendar_year')},
+    month INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12) ${integerCheck('month')},
+    payment_date TEXT NOT NULL,
+    payment_method_code TEXT NOT NULL CHECK (payment_method_code IN (${quoteList(PAYROLL_IR_PAYMENT_METHOD_CODES)})),
+    dgi_reference TEXT NOT NULL,
+    quittance_number TEXT NOT NULL,
+    principal_cents INTEGER NOT NULL ${integerCheck('principal_cents')},
+    penalty_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('penalty_cents')},
+    surcharges_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('surcharges_cents')},
+    total_paid_cents INTEGER NOT NULL CHECK (principal_cents + penalty_cents + surcharges_cents = total_paid_cents) ${integerCheck('total_paid_cents')},
+    gl_payment_entry_id TEXT REFERENCES journal_entries(id)
+)`;
+
+const CREATE_ARCHIVAL_PACKAGES = `CREATE TABLE archival_packages (
+    aip_id TEXT PRIMARY KEY,
+    fiscal_year_id TEXT NOT NULL REFERENCES fiscal_years(id),
+    entry_id TEXT REFERENCES journal_entries(id),
+    document_type TEXT NOT NULL CHECK (document_type IN (${quoteList(ARCHIVAL_DOCUMENT_TYPES)})),
+    dgi_clearance_uuid TEXT,
+    document_ref TEXT NOT NULL,
+    document_date TEXT NOT NULL,
+    amount_ttc_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('amount_ttc_cents')},
+    r2_object_key TEXT NOT NULL UNIQUE,
+    morocco_mirror_key TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    encrypted_dek_base64 TEXT NOT NULL,
+    iv_base64 TEXT NOT NULL,
+    merkle_batch_id TEXT,
+    merkle_leaf_index INTEGER ${integerCheck('merkle_leaf_index')},
+    merkle_proof_json TEXT,
+    archived_at TEXT NOT NULL,
+    retention_until TEXT NOT NULL,
+    pii_restricted_flag INTEGER NOT NULL DEFAULT 0 ${booleanCheck('pii_restricted_flag')}
+)`;
+
+const CREATE_STATE_TRANSITION_AUDIT = `CREATE TABLE state_transition_audit (
+    id TEXT PRIMARY KEY,
+    entity_table TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    from_state TEXT NOT NULL,
+    to_state TEXT NOT NULL,
+    actor_kind TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    proof_ref TEXT,
+    created_at TEXT NOT NULL
+)`;
+
+const CREATE_FEC_AUDIT_RUNS = `CREATE TABLE fec_audit_runs (
+    id TEXT PRIMARY KEY,
+    fiscal_year_id TEXT NOT NULL REFERENCES fiscal_years(id),
+    score_on_100 INTEGER NOT NULL CHECK (score_on_100 BETWEEN 0 AND 100) ${integerCheck('score_on_100')},
+    total_anomalies INTEGER NOT NULL ${integerCheck('total_anomalies')},
+    cash_overflow_count INTEGER NOT NULL ${integerCheck('cash_overflow_count')},
+    missing_ice_count INTEGER NOT NULL ${integerCheck('missing_ice_count')},
+    cadrage_tva_gap_cents INTEGER NOT NULL ${integerCheck('cadrage_tva_gap_cents')},
+    negative_cash_attempts INTEGER NOT NULL ${integerCheck('negative_cash_attempts')},
+    findings_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+)`;
+
+const MIGRATION_5_TABLES: readonly string[] = [
+  'tax_and_payment_subledger',
+  'withholding_tax_subledger',
+  'payroll_annual_subledger',
+  'payroll_exempt_elements',
+  'payroll_ir_remittances',
+  'archival_packages',
+  'state_transition_audit',
+  'fec_audit_runs',
+];
+
+const MIGRATION_5_TABLE_STATEMENTS: readonly string[] = [
+  CREATE_TAX_AND_PAYMENT_SUBLEDGER,
+  CREATE_WITHHOLDING_TAX_SUBLEDGER,
+  CREATE_PAYROLL_ANNUAL_SUBLEDGER,
+  CREATE_PAYROLL_EXEMPT_ELEMENTS,
+  CREATE_PAYROLL_IR_REMITTANCES,
+  CREATE_ARCHIVAL_PACKAGES,
+  CREATE_STATE_TRANSITION_AUDIT,
+  CREATE_FEC_AUDIT_RUNS,
+];
+
+/** Index nommés de Doc_06 § 08 qui portent sur la partie 4 (index partiels : voir l'écart 4 ci-dessus). */
+const MIGRATION_5_INDEXES: readonly (readonly [string, string])[] = [
+  ['idx_subledger_due_unpaid', 'CREATE INDEX idx_subledger_due_unpaid ON tax_and_payment_subledger (legal_due_date) WHERE payment_date IS NULL'],
+  [
+    'idx_subledger_timebar',
+    'CREATE INDEX idx_subledger_timebar ON tax_and_payment_subledger (time_bar_deadline_date) WHERE time_bar_deadline_date IS NOT NULL',
+  ],
+];
+
+/** Colonnes de `archival_packages` hors `pii_restricted_flag` : toutes doivent rester inchangées sous l'exception monotone. */
+const ARCHIVAL_PACKAGE_COLUMNS_EXCEPT_FLAG = [
+  'aip_id',
+  'fiscal_year_id',
+  'entry_id',
+  'document_type',
+  'dgi_clearance_uuid',
+  'document_ref',
+  'document_date',
+  'amount_ttc_cents',
+  'r2_object_key',
+  'morocco_mirror_key',
+  'payload_sha256',
+  'encrypted_dek_base64',
+  'iv_base64',
+  'merkle_batch_id',
+  'merkle_leaf_index',
+  'merkle_proof_json',
+  'archived_at',
+  'retention_until',
+] as const;
+
+const MESSAGES_V5 = TENANT_V5_TRIGGER_MESSAGES;
+
+/** DELETE : texte de Doc_06 § 06 côté SQLite ; côté PostgreSQL, fonction à fuseau UTC (l'échéance s'écrit sans fuseau). */
+const WORM_DELETE_TRIGGER: MigrationStatement = {
+  trigger: 'enforce_10year_worm_retention_delete',
+  sqlite: `CREATE TRIGGER enforce_10year_worm_retention_delete
+BEFORE DELETE ON archival_packages
+FOR EACH ROW WHEN datetime('now') < datetime(OLD.retention_until)
+BEGIN
+    ${raiseSqlite(MESSAGES_V5.wormDelete)}
+END`,
+  postgres: `CREATE FUNCTION fisca_enforce_10year_worm_retention_delete() RETURNS trigger LANGUAGE plpgsql SET timezone = 'UTC' AS $fisca$
+BEGIN
+    IF now() < OLD.retention_until::timestamptz THEN
+${raisePg(MESSAGES_V5.wormDelete)}
+    END IF;
+    RETURN OLD;
+END;
+$fisca$;
+CREATE TRIGGER enforce_10year_worm_retention_delete
+BEFORE DELETE ON archival_packages
+FOR EACH ROW EXECUTE FUNCTION fisca_enforce_10year_worm_retention_delete()`,
+};
+
+/** UPDATE : ligne scellée (merkle_batch_id non NULL) immuable, sauf la montée monotone 0 vers 1 de pii_restricted_flag. */
+const WORM_UPDATE_TRIGGER: MigrationStatement = createGuardedTrigger(
+  'enforce_10year_worm_retention_update',
+  'UPDATE',
+  'archival_packages',
+  `OLD.merkle_batch_id IS NOT NULL AND ${notMonotoneFlagRiseSqlite(ARCHIVAL_PACKAGE_COLUMNS_EXCEPT_FLAG)}`,
+  `OLD.merkle_batch_id IS NOT NULL AND ${notMonotoneFlagRisePostgres(ARCHIVAL_PACKAGE_COLUMNS_EXCEPT_FLAG)}`,
+  MESSAGES_V5.wormUpdate,
+);
+
+const MIGRATION_5_TRIGGERS: readonly MigrationStatement[] = [WORM_DELETE_TRIGGER, WORM_UPDATE_TRIGGER];
+
+const MIGRATION_5_STATEMENTS: readonly string[] = [
+  ...MIGRATION_5_TABLE_STATEMENTS,
+  ...MIGRATION_5_INDEXES.map(([, sql]) => sql),
+  ...MIGRATION_5_TRIGGERS.map((trigger) => trigger.sqlite),
+];
+
+/** Rang SQLite des triggers (après les tables et les index) avec leur traduction PostgreSQL. */
+const MIGRATION_5_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(
+  MIGRATION_5_TRIGGERS.map((trigger, index): [number, string] => [MIGRATION_5_TABLE_STATEMENTS.length + MIGRATION_5_INDEXES.length + index, trigger.postgres]),
+);
+
+const MIGRATION_5_TRIGGER_NAMES: readonly string[] = MIGRATION_5_TRIGGERS.flatMap((trigger) => (trigger.trigger === undefined ? [] : [trigger.trigger]));
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
- * T-S1B-05 (sous-livres) ajoutera la v4.
+ * la v5 (T-S1B-05, sous-livres, paie 9421, coffre AIP) est AJOUTÉE sans toucher aux versions 1 à 4.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -1219,6 +1540,16 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     sqliteOnlyTriggerNames: MIGRATION_4_SQLITE_ONLY_TRIGGERS,
     postgresConstraintNames: ['invoices_clearance_state_check', 'invoices_cdv_lifecycle_status_check'],
     postgresOverrides: MIGRATION_4_POSTGRES_OVERRIDES,
+  },
+  {
+    version: 5,
+    name: 'tenant_part5_subledgers_payroll_9421_archival_worm',
+    upSqlStatements: MIGRATION_5_STATEMENTS,
+    expectedSha256Hex: 'b6c338fcb3808b9cc210fd73981a3f628e8d7148910de8a2d0c12a77ec1de295',
+    tableNames: MIGRATION_5_TABLES,
+    indexNames: MIGRATION_5_INDEXES.map(([name]) => name),
+    triggerNames: MIGRATION_5_TRIGGER_NAMES,
+    postgresOverrides: MIGRATION_5_POSTGRES_OVERRIDES,
   },
 ];
 
