@@ -73,7 +73,7 @@ describe('migration v7 : forme et immuabilité de v1 à v6', () => {
   const v7 = TENANT_MIGRATIONS[6];
 
   it('est la septième migration ; les empreintes de v1 à v6 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(v7?.name).toBe('tenant_part7_idempotency_keys');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -93,7 +93,7 @@ describe('migration v7 : forme et immuabilité de v1 à v6', () => {
     expect(v7?.triggerNames ?? []).toEqual([]);
     expect(v7?.viewNames ?? []).toEqual([]);
     expect(TENANT_TABLE_NAMES.at(-1)).toBe('idempotency_keys');
-    expect(TENANT_INDEX_NAMES.at(-1)).toBe('idx_idempotency_keys_expires_at');
+    expect(TENANT_INDEX_NAMES.at(-2)).toBe('idx_idempotency_keys_expires_at');
   });
 
   it('colonnes, nullités et clé primaire identiques sur SQLite et PostgreSQL', async () => {

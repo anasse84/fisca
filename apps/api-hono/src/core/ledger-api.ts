@@ -137,7 +137,6 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
           db: call.tenant.tenantDb,
           engine,
           authorize: () => authorize(actor, call.tenant.companyId, 'LEDGER_SAVE_DRAFT'),
-          newId: () => deps.ids.newId(),
         },
         actor,
         body,

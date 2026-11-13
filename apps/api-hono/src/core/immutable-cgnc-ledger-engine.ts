@@ -190,6 +190,8 @@ export interface DraftLineInput {
   readonly auxiliaryAccount?: string | null;
   readonly isTaxDeductible?: boolean;
   readonly table3ReintegrationCode?: string | null;
+  /** Code de lettrage posé sur la ligne à l'écriture (reprise idempotente du lettrage bancaire) ; NULL par défaut. */
+  readonly reconciliationCode?: string | null;
 }
 
 export interface CreateDraftInput {
@@ -238,6 +240,11 @@ export interface CreateReversalDraftInput {
   readonly journalId?: string;
 }
 
+/** Brouillon de contre-passation ; `replayed` : la contre-passation de cette pièce existait déjà, rendue sans second brouillon. */
+export interface ReversalDraftCreated extends DraftCreated {
+  readonly replayed: boolean;
+}
+
 export interface CreateVatClearingDraftInput {
   readonly invoiceEntryId: string;
   readonly journalId: string;
@@ -250,6 +257,8 @@ export interface CreateVatClearingDraftInput {
   readonly lcnBankCollectionDate?: string | null;
   /** Obligatoire pour la TVA récupérable d'un achat : compte de charges ou d'immobilisations. */
   readonly recoverableTarget?: 'VAT_RECOVERABLE_CHARGES' | 'VAT_RECOVERABLE_IMMOB';
+  /** Code de lettrage bancaire posé sur chaque ligne du brouillon : clé de reprise de `reconcileBankTransaction`. */
+  readonly reconciliationCode?: string;
 }
 
 export interface VatClearingDraftCreated extends DraftCreated {
@@ -302,6 +311,16 @@ const GENESIS_PREFIX = 'GENESIS_HASH_';
 /** Caisse (loi 3) et comptes de suspens du lettrage (Doc_02 § 04) : numéros CGNC, pas des règles fiscales. */
 const CASH_PREFIX = '5161';
 const SUSPENSE_PREFIXES: readonly string[] = ['3497', '4497'];
+
+interface ReversalRow {
+  readonly id: string;
+  readonly entry_reference: string;
+  readonly sequence_number: number;
+  readonly status: string;
+  readonly entry_date: string;
+  readonly journal_id: string;
+  readonly fiscal_year_id: string;
+}
 
 interface EntryRow {
   readonly id: string;
@@ -374,6 +393,7 @@ interface PreparedLine {
   readonly auxiliaryAccount: string | null;
   readonly isTaxDeductible: boolean;
   readonly table3ReintegrationCode: string | null;
+  readonly reconciliationCode: string | null;
 }
 
 interface SealPlan {
@@ -502,7 +522,15 @@ export class ImmutableCgncLedgerEngine {
   // (4) Contre-passation (D-03)
   // -------------------------------------------------------------------------------------------------------------------
 
-  async createReversalDraft(actor: LedgerActor, input: CreateReversalDraftInput): Promise<DraftCreated> {
+  /**
+   * Contre-passation (D-03), unique par pièce : `uq_journal_entries_reversal_of` (v8) l'impose en base. REPRISE IDEMPOTENTE : si
+   * la contre-passation existe déjà, ou si l'écriture perd une course sur cette unicité, la demande est rejouée quand elle est
+   * identique (même date, même journal, même exercice) et que la contre-passation est encore un brouillon : la pièce existante
+   * est rendue avec `replayed: true` et aucun second brouillon n'est créé. Le motif n'entre pas dans la comparaison : il est
+   * chiffré avec un aléa propre à chaque écriture, donc non comparable en clair. Toute autre demande sur une pièce déjà
+   * contre-passée reste `LEDGER_ALREADY_REVERSED`.
+   */
+  async createReversalDraft(actor: LedgerActor, input: CreateReversalDraftInput): Promise<ReversalDraftCreated> {
     assertIsoDate(input.entryDate, 'entryDate');
     if (typeof input.reasonText !== 'string' || input.reasonText.trim().length === 0) {
       throw invalid('reasonText (motif de la contre-passation) ne peut pas être vide.');
@@ -516,9 +544,9 @@ export class ImmutableCgncLedgerEngine {
         reversedEntryState: original.status as JournalEntryState,
       }),
     );
-    const existing = await this.query<{ id: string }>('SELECT id FROM journal_entries WHERE reversal_of_entry_id = ? LIMIT 1', [original.id]);
-    if (existing[0] !== undefined) {
-      throw new LedgerError('LEDGER_ALREADY_REVERSED', `la pièce ${original.entry_reference} est déjà contre-passée par ${existing[0].id}.`);
+    const existing = await this.findReversalOf(original.id);
+    if (existing !== undefined) {
+      return this.replayReversal(original, existing, input);
     }
     const originalLines = await this.loadLines(original.id);
     const inverted = invertLines(
@@ -532,23 +560,55 @@ export class ImmutableCgncLedgerEngine {
         table3ReintegrationCode: line.table3_reintegration_code,
       })),
     );
-    return this.insertDraft(
-      actor,
-      {
-        journalId: input.journalId ?? original.journal_id,
-        fiscalYearId: input.fiscalYearId ?? original.fiscal_year_id,
-        entryDate: input.entryDate,
-        reviewCycle: original.review_cycle as LedgerReviewCycle,
-        sourceDocumentType: 'REVERSAL',
-        status: draft.status,
-        lines: inverted,
-        invoiceId: original.invoice_id,
-        partnerId: original.partner_id,
-        dgiClearanceUuid: null,
-        reversalOfEntryId: draft.reversal_of_entry_id,
-      },
-      draft.entryId,
+    try {
+      const created = await this.insertDraft(
+        actor,
+        {
+          journalId: input.journalId ?? original.journal_id,
+          fiscalYearId: input.fiscalYearId ?? original.fiscal_year_id,
+          entryDate: input.entryDate,
+          reviewCycle: original.review_cycle as LedgerReviewCycle,
+          sourceDocumentType: 'REVERSAL',
+          status: draft.status,
+          lines: inverted,
+          invoiceId: original.invoice_id,
+          partnerId: original.partner_id,
+          dgiClearanceUuid: null,
+          reversalOfEntryId: draft.reversal_of_entry_id,
+        },
+        draft.entryId,
+      );
+      return { ...created, replayed: false };
+    } catch (error) {
+      if (error instanceof LedgerError && error.code === 'LEDGER_CONCURRENCY_CONFLICT') {
+        // Course perdue : unicité de reversal_of_entry_id (ou de la séquence du journal) violée par une demande concurrente.
+        const raced = await this.findReversalOf(original.id);
+        if (raced !== undefined) {
+          return this.replayReversal(original, raced, input);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async findReversalOf(originalEntryId: string): Promise<ReversalRow | undefined> {
+    const rows = await this.query<ReversalRow>(
+      'SELECT id, entry_reference, sequence_number, status, entry_date, journal_id, fiscal_year_id FROM journal_entries WHERE reversal_of_entry_id = ? LIMIT 1',
+      [originalEntryId],
     );
+    return rows[0];
+  }
+
+  private replayReversal(original: EntryRow, existing: ReversalRow, input: CreateReversalDraftInput): ReversalDraftCreated {
+    const sameRequest =
+      existing.entry_date === input.entryDate &&
+      existing.journal_id === (input.journalId ?? original.journal_id) &&
+      existing.fiscal_year_id === (input.fiscalYearId ?? original.fiscal_year_id);
+    const status = existing.status === 'IA_PROPOSITION' || existing.status === 'DRAFT' ? existing.status : null;
+    if (!sameRequest || status === null) {
+      throw new LedgerError('LEDGER_ALREADY_REVERSED', `la pièce ${original.entry_reference} est déjà contre-passée par ${existing.id}.`);
+    }
+    return { entryId: existing.id, entryReference: existing.entry_reference, sequenceNumber: Number(existing.sequence_number), status, replayed: true };
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -617,12 +677,14 @@ export class ImmutableCgncLedgerEngine {
         debitCents: movement.pendingSide === 'DEBIT' ? movement.amountCents : 0,
         creditCents: movement.pendingSide === 'CREDIT' ? movement.amountCents : 0,
         description: label,
+        ...(input.reconciliationCode === undefined ? {} : { reconciliationCode: input.reconciliationCode }),
       };
       const targetLine: DraftLineInput = {
         accountNumber: movement.targetAccountNumber,
         debitCents: movement.pendingSide === 'CREDIT' ? movement.amountCents : 0,
         creditCents: movement.pendingSide === 'DEBIT' ? movement.amountCents : 0,
         description: label,
+        ...(input.reconciliationCode === undefined ? {} : { reconciliationCode: input.reconciliationCode }),
       };
       return [pendingLine, targetLine];
     });
@@ -845,6 +907,7 @@ export class ImmutableCgncLedgerEngine {
       readonly auxiliaryAccount?: string | null;
       readonly isTaxDeductible?: boolean;
       readonly table3ReintegrationCode?: string | null;
+      readonly reconciliationCode?: string | null;
     }[],
   ): Promise<PreparedLine[]> {
     const numbers = [...new Set(lines.map((l) => l.accountNumber))];
@@ -870,6 +933,7 @@ export class ImmutableCgncLedgerEngine {
         auxiliaryAccount: line.auxiliaryAccount ?? null,
         isTaxDeductible: line.isTaxDeductible ?? true,
         table3ReintegrationCode: line.table3ReintegrationCode ?? null,
+        reconciliationCode: line.reconciliationCode ?? null,
       };
     });
   }
@@ -913,8 +977,8 @@ export class ImmutableCgncLedgerEngine {
       const descriptionEnc = await this.deps.cipher.encryptField(line.description, `${this.deps.companyId}|journal_entry_lines|${lineId}|description_enc`);
       statements.push({
         sql: `INSERT INTO journal_entry_lines (id, entry_id, line_number, account_id, auxiliary_account, description_enc, debit_cents, credit_cents,
-                is_tax_deductible, table3_reintegration_code)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                is_tax_deductible, table3_reintegration_code, reconciliation_code)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: [
           lineId,
           entryId,
@@ -926,6 +990,7 @@ export class ImmutableCgncLedgerEngine {
           line.creditCents,
           line.isTaxDeductible ? 1 : 0,
           line.table3ReintegrationCode,
+          line.reconciliationCode,
         ],
       });
     }

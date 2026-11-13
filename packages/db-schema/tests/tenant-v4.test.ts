@@ -218,9 +218,11 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
       'prevent_pii_flag_downgrade_journal_entry_lines',
       'prevent_pii_flag_downgrade_archival_packages',
     ] as const;
-    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS])].sort());
+    // La v8 (corrections G1) remplace deux triggers de v3 et v4 sous le même nom et en crée trois nouveaux.
+    const V8_NEW_TRIGGERS = ['prevent_post_in_closed_fiscal_year', 'prevent_entry_fiscal_year_change', 'prevent_posted_account_renumbering'] as const;
+    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS])].sort());
     expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual(
-      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
+      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
     );
   });
 

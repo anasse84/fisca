@@ -11,8 +11,16 @@
  * Solde restant d'une candidate = total TTC de la pièce (`total_debit_cents`) moins `settledBeforeCents` fourni par l'appelant,
  * comme pour `createVatClearingDraft`. Sens du mouvement : `amount_cents` positif (encaissement) ou négatif (décaissement),
  * on règle sa valeur absolue.
+ *
+ * REPRISE IDEMPOTENTE. Le brouillon VAT_CLEARING puis la ligne bancaire s'écrivent en deux lots (non atomique) : une panne entre
+ * les deux laisse un brouillon et une ligne encore UNMATCHED. Le code de lettrage est donc DÉTERMINISTE (SHA-256 de la ligne
+ * bancaire, de la facture, du solde antérieur et du montant) et posé sur chaque ligne du brouillon à sa création : au rejeu de la
+ * même demande, le brouillon portant ce code est retrouvé et réutilisé, la ligne bancaire passe alors à son état final, et aucun
+ * second brouillon n'est créé. Limite : deux rejeux STRICTEMENT simultanés de la même demande peuvent encore créer chacun un
+ * brouillon avant que l'un ne marque la ligne (le garde `reconciliation_state = 'UNMATCHED'` n'arrête que le second marquage) ;
+ * une demande identique rejouée après la fin de la première reçoit 409 BANK_TRANSACTION_ALREADY_RECONCILED.
  */
-import type { SqlParam, TenantSqlDriver } from '@fisca/shared-types';
+import { sha256Hex, type SqlParam, type TenantSqlDriver } from '@fisca/shared-types';
 import { LedgerError, mapDatabaseError } from './ledger-errors.ts';
 import type { CreateVatClearingDraftInput, ImmutableCgncLedgerEngine, LedgerActor } from './immutable-cgnc-ledger-engine.ts';
 import { ProblemError } from './problem-details.ts';
@@ -37,8 +45,6 @@ export interface BankReconciliationDeps {
   readonly engine: ImmutableCgncLedgerEngine;
   /** Droit de préparer un brouillon de lettrage (LEDGER_SAVE_DRAFT) ; lève LEDGER_ACCESS_DENIED sinon. */
   readonly authorize: () => void;
-  /** UUIDv7 neuf : suffixe du code de lettrage. */
-  readonly newId: () => string;
 }
 
 interface BankRow {
@@ -56,6 +62,17 @@ interface Candidate {
   readonly invoiceEntryId: string;
   readonly settledBeforeCents: number;
   readonly openCents: number;
+}
+
+interface ClearingRow {
+  readonly id: string;
+  readonly total_debit_cents: number | string;
+}
+
+/** Code de lettrage déterministe : même ligne bancaire, mêmes factures et montants, même code (clé de reprise). */
+async function reconciliationCodeFor(parts: readonly (string | number)[]): Promise<string> {
+  const digest = await sha256Hex(new TextEncoder().encode(parts.join('|')));
+  return `LTR-${digest.slice(0, 32)}`;
 }
 
 const UPDATE_BANK = `UPDATE bank_transactions SET reconciliation_state = ?, reconciliation_code = ?
@@ -79,6 +96,20 @@ async function markBank(db: TenantSqlDriver, state: string, code: string, bankTr
   if (changes !== 1) {
     throw new ProblemError(BANK_TRANSACTION_ALREADY_RECONCILED_PROBLEM);
   }
+}
+
+/** Brouillon VAT_CLEARING déjà créé pour ce code de lettrage (reprise après panne entre les deux lots), sinon `null`. */
+async function findClearingByCode(db: TenantSqlDriver, code: string): Promise<{ readonly entryId: string; readonly clearedCents: number } | null> {
+  const rows = await read<ClearingRow>(
+    db,
+    `SELECT je.id AS id, je.total_debit_cents AS total_debit_cents FROM journal_entries je
+      WHERE je.source_document_type = 'VAT_CLEARING'
+        AND EXISTS (SELECT 1 FROM journal_entry_lines jel WHERE jel.entry_id = je.id AND jel.reconciliation_code = ?)
+      LIMIT 1`,
+    [code],
+  );
+  const row = rows[0];
+  return row === undefined ? null : { entryId: row.id, clearedCents: Number(row.total_debit_cents) };
 }
 
 export async function reconcileBankTransaction(
@@ -115,9 +146,9 @@ export async function reconcileBankTransaction(
     }
   }
 
-  const code = `LTR-${deps.newId()}`;
   const exact = candidates.filter((candidate) => candidate.openCents === movementCents);
   if (movementCents > 0 && exact.length >= 2) {
+    const code = await reconciliationCodeFor([bank.id, 'SUSPENS', ...exact.map((candidate) => candidate.invoiceEntryId).sort()]);
     await markBank(deps.db, 'SUSPENS_AMBIGU_3497_4497', code, bank.id);
     return { outcome: 'SUSPENS_AMBIGU_3497_4497', bankTransactionId: bank.id, reconciliationCode: code, candidateCount: exact.length };
   }
@@ -127,6 +158,7 @@ export async function reconcileBankTransaction(
     return { outcome: 'NO_MATCH', bankTransactionId: bank.id };
   }
 
+  const code = await reconciliationCodeFor([bank.id, target.invoiceEntryId, target.settledBeforeCents, movementCents]);
   const clearingInput: CreateVatClearingDraftInput = {
     invoiceEntryId: target.invoiceEntryId,
     journalId: request.journalId,
@@ -137,8 +169,9 @@ export async function reconcileBankTransaction(
     paymentMethodCode: request.paymentMethodCode,
     ...(request.lcnBankCollectionDate === undefined ? {} : { lcnBankCollectionDate: request.lcnBankCollectionDate }),
     ...(request.recoverableTarget === undefined ? {} : { recoverableTarget: request.recoverableTarget }),
+    reconciliationCode: code,
   };
-  const clearing = await deps.engine.createVatClearingDraft(actor, clearingInput);
+  const clearing = (await findClearingByCode(deps.db, code)) ?? (await deps.engine.createVatClearingDraft(actor, clearingInput));
   const full = movementCents === target.openCents;
   await markBank(deps.db, full ? 'MATCHED_FULL' : 'MATCHED_PARTIAL', code, bank.id);
   return {

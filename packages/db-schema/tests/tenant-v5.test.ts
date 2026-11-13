@@ -192,7 +192,7 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
 
   it('est la cinquième migration ; les empreintes de v1 à v4 sont inchangées (recalculées)', () => {
     // La v6 (correction du pilote sur pii_restricted_flag) s'ajoute après la v5 sans la toucher.
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(v5?.name).toBe('tenant_part5_subledgers_payroll_9421_archival_worm');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -213,10 +213,10 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
     expect(v5?.sqliteOnlyTriggerNames ?? []).toEqual([]);
     expect(v5?.viewNames ?? []).toEqual([]);
     expect(TENANT_TABLE_NAMES.slice(-9, -1)).toEqual([...V5_TABLES]);
-    expect(TENANT_INDEX_NAMES.slice(-3, -1)).toEqual([...V5_INDEXES]);
-    // Les cinq triggers de la v6 suivent ceux de la v5 dans le registre.
-    expect(TENANT_TRIGGER_NAMES.slice(-7, -5)).toEqual([...V5_TRIGGERS]);
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-7, -5)).toEqual([...V5_TRIGGERS]);
+    expect(TENANT_INDEX_NAMES.slice(-4, -2)).toEqual([...V5_INDEXES]);
+    // Les cinq triggers de la v6 puis les trois nouveaux de la v8 suivent ceux de la v5 dans le registre.
+    expect(TENANT_TRIGGER_NAMES.slice(-10, -8)).toEqual([...V5_TRIGGERS]);
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-10, -8)).toEqual([...V5_TRIGGERS]);
   });
 
   it('la v4 ne crée toujours aucune table ; payroll_annual_subledger et archival_packages naissent en v5', () => {

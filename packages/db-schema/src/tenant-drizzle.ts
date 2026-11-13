@@ -9,7 +9,7 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, sqliteTable, sqliteView, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, sqliteView, text, unique, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import {
   ARCHIVAL_DOCUMENT_TYPES,
   BANK_RECONCILIATION_STATES,
@@ -322,6 +322,7 @@ export const journalEntries = sqliteTable(
   (table) => [
     unique().on(table.journalId, table.fiscalYearId, table.sequenceNumber),
     index('idx_je_fy_status_seq').on(table.fiscalYearId, table.status, table.journalId, table.sequenceNumber),
+    uniqueIndex('uq_journal_entries_reversal_of').on(table.reversalOfEntryId).where(sql`reversal_of_entry_id IS NOT NULL`),
   ],
 );
 

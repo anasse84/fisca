@@ -212,7 +212,7 @@ describe('DDL PostgreSQL 16 des migrations tenant v1, v2 et v3', () => {
   });
 
   it('les mêmes index nommés existent', async () => {
-    const result = await client.query('SELECT indexname FROM pg_indexes WHERE schemaname = $1 AND indexname LIKE $2 ORDER BY indexname', [SCHEMA, 'idx\\_%']);
+    const result = await client.query('SELECT indexname FROM pg_indexes WHERE schemaname = $1 AND (indexname LIKE $2 OR indexname LIKE $3) ORDER BY indexname', [SCHEMA, 'idx\\_%', 'uq\\_%']);
     expect(result.rows.map((row: { indexname: string }) => row.indexname)).toEqual([...TENANT_INDEX_NAMES].sort());
   });
 

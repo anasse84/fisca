@@ -390,6 +390,60 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
     await expect(w.exec(`UPDATE journal_entries SET status = 'CONTRE_PASSEE' WHERE id = ?`, [draftOnly.entryId])).rejects.toThrow(InfrastructureError);
   });
 
+  describe('contre-passation unique et reprise idempotente (G1)', () => {
+    async function postedInvoice(w: World): Promise<string> {
+      return postEntry(
+        w,
+        draftInput({
+          journalId: 'jr-vte',
+          sourceDocumentType: 'INVOICE',
+          reviewCycle: 'VENTES',
+          lines: [L('34210000', 120000, 0), L('71110000', 0, 100000), L('44558000', 0, 20000)],
+        }),
+      );
+    }
+    const reversalOf = (originalEntryId: string, entryDate = '2026-03-15') => ({ originalEntryId, entryDate, reasonText: 'Erreur de client' });
+    const reversalCount = async (w: World, original: string): Promise<number> =>
+      Number((await w.rows<{ n: number }>('SELECT COUNT(*) AS n FROM journal_entries WHERE reversal_of_entry_id = ?', [original]))[0]?.n);
+
+    it('rejeu séquentiel de la même demande : la contre-passation existante est rendue (replayed), aucun second brouillon ; une autre date reste LEDGER_ALREADY_REVERSED', async () => {
+      const w = await setup();
+      const original = await postedInvoice(w);
+      const first = await w.engine.createReversalDraft(w.aide, reversalOf(original));
+      expect(first.replayed).toBe(false);
+      const again = await w.engine.createReversalDraft(w.aide, reversalOf(original));
+      expect(again).toMatchObject({ entryId: first.entryId, entryReference: first.entryReference, sequenceNumber: first.sequenceNumber, status: 'DRAFT', replayed: true });
+      expect(await reversalCount(w, original)).toBe(1);
+      expect((await failure(() => w.engine.createReversalDraft(w.aide, reversalOf(original, '2026-03-16')))).code).toBe('LEDGER_ALREADY_REVERSED');
+      expect(await reversalCount(w, original)).toBe(1);
+    });
+
+    it('deux createReversalDraft simultanés de la même pièce : une seule contre-passation en base, l\'autre appel reçoit la même pièce marquée replayed', async () => {
+      const w = await setup();
+      const original = await postedInvoice(w);
+      const [a, b] = await Promise.all([w.engine.createReversalDraft(w.aide, reversalOf(original)), w.engine.createReversalDraft(w.aide, reversalOf(original))]);
+      expect(a.entryId).toBe(b.entryId);
+      expect([a.replayed, b.replayed].sort()).toEqual([false, true]);
+      expect(await reversalCount(w, original)).toBe(1);
+      const lines = await w.rows<{ n: number }>('SELECT COUNT(*) AS n FROM journal_entry_lines WHERE entry_id = ?', [a.entryId]);
+      expect(Number(lines[0]?.n)).toBe(3);
+    });
+
+    it('un second REVERSAL de la même pièce, inséré directement, est refusé par l\'index unique uq_journal_entries_reversal_of', async () => {
+      const w = await setup();
+      const original = await postedInvoice(w);
+      await w.engine.createReversalDraft(w.aide, reversalOf(original));
+      await expect(
+        w.exec(
+          `INSERT INTO journal_entries (id, fiscal_year_id, journal_id, sequence_number, entry_reference, entry_date, source_document_type, reversal_of_entry_id, total_debit_cents, total_credit_cents)
+           VALUES ('rev-direct', ?, 'jr-od', 1, 'OD/EX-2026/DIRECT', '2026-03-20', 'REVERSAL', ?, 1000, 1000)`,
+          [FY_2026.id, original],
+        ),
+      ).rejects.toThrow(/reversal_of_entry_id|uq_journal_entries_reversal_of/);
+      expect(await reversalCount(w, original)).toBe(1);
+    });
+  });
+
   it('idempotence : rejouer une transition avec la même clé ne double ni l\'audit ni la chaîne ; une clé ne sert qu\'à une transition', async () => {
     const w = await setup();
     const a = await w.engine.createDraft(w.aide, draftInput());
@@ -704,3 +758,51 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
   });
 });
 
+
+describe('ImmutableCgncLedgerEngine sur PostgreSQL : scellements concurrents (pool de connexions réelles, READ COMMITTED)', () => {
+  const credit = (amount: number): DraftLineInput[] => [L('61110000', amount, 0), L('51610000', 0, amount)];
+
+  async function readyToSeal(w: World, journalId: string, lines: DraftLineInput[]): Promise<string> {
+    const created = await w.engine.createDraft(w.aide, draftInput({ journalId, initialState: 'DRAFT', lines }));
+    await w.engine.visaCycle(w.chef, { entryId: created.entryId, idempotencyKey: w.key() });
+    return created.entryId;
+  }
+
+  it('deux décaissements de 6 000 sur une caisse de 10 000 scellés en même temps : un seul passe, solde final non négatif', async () => {
+    const w = await buildWorld(await postgres.fresh());
+    await postEntry(w, draftInput({ initialState: 'DRAFT', lines: [L('51610000', 10000, 0), L('11110000', 0, 10000)] }));
+    const first = await readyToSeal(w, 'jr-cai', credit(6000));
+    const second = await readyToSeal(w, 'jr-bnq', credit(6000));
+    const outcomes = await Promise.allSettled([
+      w.engine.sealEntry(fresh(w, w.oec), { entryId: first, idempotencyKey: w.key() }),
+      w.engine.sealEntry(fresh(w, w.oec), { entryId: second, idempotencyKey: w.key() }),
+    ]);
+    const rejected = outcomes.flatMap((outcome) => (outcome.status === 'rejected' ? [outcome.reason as unknown] : []));
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]).toBeInstanceOf(LedgerError);
+    expect((rejected[0] as LedgerError).code).toBe('LEDGER_NEGATIVE_CASH');
+    expect(await netOf(w, '51610000')).toBe(4000);
+  });
+
+  it('deux scellements simultanés dans le MÊME journal : la chaîne previous_entry_hash reste valide, aucun maillon dupliqué', async () => {
+    const w = await buildWorld(await postgres.fresh());
+    const a = await readyToSeal(w, 'jr-od', [L('34210000', 1000, 0), L('71110000', 0, 1000)]);
+    const b = await readyToSeal(w, 'jr-od', [L('34210000', 2000, 0), L('71110000', 0, 2000)]);
+    const outcomes = await Promise.allSettled([
+      w.engine.sealEntry(fresh(w, w.oec), { entryId: a, idempotencyKey: w.key() }),
+      w.engine.sealEntry(fresh(w, w.oec), { entryId: b, idempotencyKey: w.key() }),
+    ]);
+    const done = outcomes.filter((outcome) => outcome.status === 'fulfilled').length;
+    for (const outcome of outcomes) {
+      if (outcome.status === 'rejected') {
+        expect(outcome.reason).toBeInstanceOf(LedgerError);
+        expect((outcome.reason as LedgerError).code).toBe('LEDGER_CONCURRENCY_CONFLICT');
+      }
+    }
+    expect(done).toBeGreaterThanOrEqual(1);
+    expect(await w.engine.verifyJournalChain('jr-od')).toEqual({ valid: true, length: done });
+    const links = await w.rows<{ previous_entry_hash: string }>(`SELECT previous_entry_hash FROM journal_entries WHERE journal_id = 'jr-od' AND status = 'POSTED'`);
+    expect(new Set(links.map((row) => row.previous_entry_hash)).size).toBe(done);
+  });
+});

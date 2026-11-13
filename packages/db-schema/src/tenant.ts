@@ -1580,12 +1580,162 @@ const MIGRATION_7_TABLES: readonly string[] = ['idempotency_keys'];
 
 const MIGRATION_7_STATEMENTS: readonly string[] = [CREATE_IDEMPOTENCY_KEYS, ...MIGRATION_7_INDEXES.map(([, sql]) => sql)];
 
+// ---------------------------------------------------------------------------
+// Migration v8 (T-S1B-04, corrections G1 de l'auditeur, clause éliminatoire R1-C3). Les migrations v1 à v7 restent intactes
+// (empreintes figées par test) : tout passe ici, par DROP puis CREATE d'un trigger de même nom (même texte d'erreur, fonction
+// PL/pgSQL remplacée par CREATE OR REPLACE FUNCTION) ou par de nouveaux objets nommés. Une instruction PostgreSQL par instruction
+// SQLite, même rang, dans `postgresOverrides`.
+// 1. Injection : `prevent_posted_lines_mutation_update` (remplacé) refuse l'UPDATE d'une ligne quand le statut de l'ANCIEN OU
+//    du NOUVEAU `entry_id` est POSTED (même texte que v3). La montée monotone `pii_restricted_flag` 0 vers 1 reste admise sur
+//    l'ancienne pièce POSTED SEULEMENT si `entry_id` ne change pas (la liste de colonnes comparées contient `entry_id`).
+// 2. Exercice CLOSED : `prevent_post_in_closed_fiscal_year` refuse le passage à POSTED d'une pièce dont l'exercice est CLOSED ;
+//    `prevent_entry_fiscal_year_change` refuse toute modification de `fiscal_year_id` d'une pièce (un brouillon ne change jamais
+//    d'exercice, donc a fortiori ne migre pas vers un exercice CLOSED ; pour une pièce déjà POSTED, `prevent_posted_entry_update`
+//    de v4 refuse déjà tout changement et garde son propre texte). L'à-nouveaux s'insère puis se scelle dans le NOUVEL
+//    exercice OPEN ; la transition CLOSING vers CLOSED (UPDATE de `fiscal_years`) n'est pas touchée.
+// 3. Caisse 5161 sous PostgreSQL : deux scellements concurrents lisaient le même solde en READ COMMITTED (chacun ne voyait pas le
+//    scellement non validé de l'autre) et le solde final pouvait devenir négatif. Choix : VERROU CONSULTATIF DE TRANSACTION
+//    `pg_advisory_xact_lock`, pris dans la fonction PL/pgSQL `fisca_enforce_balance_and_positive_cash_on_post` AVANT la lecture
+//    du solde, et seulement pour une pièce qui CRÉDITE un compte 5161 (un débit n'abaisse jamais le solde ; les autres pièces
+//    n'attendent pas). Pourquoi pas un verrou de ligne sur un enregistrement de solde dédié : cela exigerait une table nouvelle
+//    à tenir cohérente avec les lignes (écart possible), alors que le solde est déjà dérivé des lignes POSTED ; le verrou
+//    consultatif sérialise exactement la section « lire le solde puis sceller » sans état supplémentaire, et il est libéré au
+//    COMMIT ou ROLLBACK (jamais de verrou orphelin). Clé : `hashtextextended('fisca:cash5161:' || current_schema(), 0)`, un
+//    BIGINT déterministe tiré d'une chaîne stable. Une base société = un schéma PostgreSQL (`current_schema()`), donc deux
+//    sociétés ne se bloquent pas et une société ne se sérialise que contre elle-même ; `hashtextextended` est la variante 64
+//    bits de `hashtext` (collision de clé négligeable ; une collision ne ferait de toute façon que sérialiser deux sociétés).
+//    L'appelant ne change pas de niveau d'isolation : la lecture suivant l'obtention du verrou voit les scellements validés
+//    entre-temps (chaque instruction PL/pgSQL prend un nouveau cliché en READ COMMITTED). Chaîne `previous_entry_hash` : le
+//    trigger ne la lit pas ; le moteur la lit dans `journals` puis la fait avancer par `UPDATE ... WHERE last_entry_hash = ? AND
+//    last_sequence_number = ?` dans le même lot atomique : le verrou de ligne de `journals` sérialise par journal et le perdant
+//    revoit 0 ligne modifiée, donc le lot est annulé (LEDGER_CONCURRENCY_CONFLICT). SQLite et D1 n'ont qu'un écrivain à la
+//    fois : la base entière est verrouillée pendant la transaction, la course n'existe pas et SQLite garde le corps de v3.
+// 4. Contre-passation unique : `uq_journal_entries_reversal_of`, index UNIQUE PARTIEL sur `reversal_of_entry_id` (non NULL).
+//    Sur une base existante qui porterait déjà deux contre-passations d'une même pièce, la création de l'index échoue : ce
+//    doublon est une anomalie comptable à traiter avant la mise à niveau.
+// 5. `prevent_posted_account_renumbering` : `account_number`, `cgnc_class` et `normal_balance` d'un compte ne changent plus
+//    dès qu'une ligne d'une pièce POSTED y renvoie (libre sinon). Le libellé et les autres colonnes restent modifiables.
+// ---------------------------------------------------------------------------
+export const TENANT_V8_TRIGGER_MESSAGES = {
+  fiscalYearImmutable: 'CGNC_FISCAL_YEAR_IMMUTABLE: Une pièce ne change jamais d exercice.',
+  accountRenumbering: 'VIOLATION_PAF_CGI_ART_145: Compte porté par une pièce POSTED : numéro, classe et sens normal immuables.',
+} as const;
+
+const MESSAGES_V8 = TENANT_V8_TRIGGER_MESSAGES;
+
+/** Texte SQLite de `enforce_balance_and_positive_cash_on_post` tel que la v3 le crée (recréé à l'identique, rang aligné sur PostgreSQL). */
+const V3_CASH_TRIGGER_SQLITE: string =
+  MIGRATION_3_TRIGGERS.find((trigger) => trigger.name === 'enforce_balance_and_positive_cash_on_post')?.sqlite ?? '';
+
+const POSTED_ENTRY_OF = (reference: string): string => `(SELECT status FROM journal_entries WHERE id = ${reference}) = 'POSTED'`;
+
+const CASH_5161_ADVISORY_LOCK = `hashtextextended('fisca:cash5161:' || current_schema(), 0)`;
+
+const MIGRATION_8_ITEMS: readonly MigrationStatement[] = [
+  // 1. Ligne : ancien OU nouveau entry_id POSTED.
+  dropTrigger('prevent_posted_lines_mutation_update', 'journal_entry_lines'),
+  createGuardedTrigger(
+    'prevent_posted_lines_mutation_update',
+    'UPDATE',
+    'journal_entry_lines',
+    `(${POSTED_ENTRY_OF('OLD.entry_id')} AND ${notMonotoneFlagRiseSqlite(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}) OR (NEW.entry_id IS NOT OLD.entry_id AND ${POSTED_ENTRY_OF('NEW.entry_id')})`,
+    `(${POSTED_ENTRY_OF('OLD.entry_id')} AND ${notMonotoneFlagRisePostgres(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}) OR (NEW.entry_id IS DISTINCT FROM OLD.entry_id AND ${POSTED_ENTRY_OF('NEW.entry_id')})`,
+    MESSAGES.lineUpdate,
+    true,
+  ),
+  // 3. Scellement : même corps SQLite qu'en v3, verrou consultatif avant la lecture du solde côté PostgreSQL.
+  dropTrigger('enforce_balance_and_positive_cash_on_post', 'journal_entries'),
+  {
+    trigger: 'enforce_balance_and_positive_cash_on_post',
+    sqlite: V3_CASH_TRIGGER_SQLITE,
+    postgres: postgresTrigger(
+      'enforce_balance_and_positive_cash_on_post',
+      'UPDATE',
+      'journal_entries',
+      `OLD.status <> 'POSTED' AND NEW.status = 'POSTED'`,
+      `    SELECT COALESCE(SUM(debit_cents), 0), COALESCE(SUM(credit_cents), 0) INTO lines_debit, lines_credit
+    FROM journal_entry_lines WHERE entry_id = NEW.id;
+    IF lines_debit <> NEW.total_debit_cents OR lines_credit <> NEW.total_credit_cents THEN
+${raisePg(MESSAGES.unbalanced)}
+    END IF;
+    IF NEW.entry_hash IS NULL OR NEW.previous_entry_hash IS NULL THEN
+${raisePg(MESSAGES.missingHash)}
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM journal_entry_lines jel
+        JOIN cgnc_accounts ca ON ca.id = jel.account_id
+        WHERE jel.entry_id = NEW.id AND ca.account_number LIKE '5161%' AND jel.credit_cents > 0
+    ) THEN
+        PERFORM pg_advisory_xact_lock(${CASH_5161_ADVISORY_LOCK});
+        SELECT COALESCE(SUM(jel2.debit_cents - jel2.credit_cents), 0) INTO cash_balance
+        FROM journal_entry_lines jel2
+        JOIN journal_entries je2 ON je2.id = jel2.entry_id
+        JOIN cgnc_accounts ca2 ON ca2.id = jel2.account_id
+        WHERE (je2.status = 'POSTED' OR je2.id = NEW.id) AND ca2.account_number LIKE '5161%';
+        IF cash_balance < 0 THEN
+${raisePg(MESSAGES.negativeCash)}
+        END IF;
+    END IF;
+    RETURN NEW;`,
+      `DECLARE
+    lines_debit BIGINT;
+    lines_credit BIGINT;
+    cash_balance BIGINT;
+`,
+      true,
+    ),
+  },
+  // 2. Exercice CLOSED : scellement et changement d'exercice.
+  createGuardedTrigger(
+    'prevent_post_in_closed_fiscal_year',
+    'UPDATE',
+    'journal_entries',
+    `OLD.status != 'POSTED' AND NEW.status = 'POSTED' AND (SELECT status FROM fiscal_years WHERE id = NEW.fiscal_year_id) = 'CLOSED'`,
+    `OLD.status <> 'POSTED' AND NEW.status = 'POSTED' AND (SELECT status FROM fiscal_years WHERE id = NEW.fiscal_year_id) = 'CLOSED'`,
+    MESSAGES_V4.closedFiscalYearEntryInsert,
+  ),
+  createGuardedTrigger(
+    'prevent_entry_fiscal_year_change',
+    'UPDATE OF fiscal_year_id',
+    'journal_entries',
+    `OLD.status != 'POSTED' AND OLD.fiscal_year_id IS NOT NEW.fiscal_year_id`,
+    `OLD.status <> 'POSTED' AND OLD.fiscal_year_id IS DISTINCT FROM NEW.fiscal_year_id`,
+    MESSAGES_V8.fiscalYearImmutable,
+  ),
+  // 4. Contre-passation unique.
+  {
+    sqlite: 'CREATE UNIQUE INDEX uq_journal_entries_reversal_of ON journal_entries (reversal_of_entry_id) WHERE reversal_of_entry_id IS NOT NULL',
+    postgres: 'CREATE UNIQUE INDEX uq_journal_entries_reversal_of ON journal_entries (reversal_of_entry_id) WHERE reversal_of_entry_id IS NOT NULL',
+  },
+  // 5. Compte porté par une pièce POSTED.
+  createGuardedTrigger(
+    'prevent_posted_account_renumbering',
+    'UPDATE OF account_number, cgnc_class, normal_balance',
+    'cgnc_accounts',
+    `(OLD.account_number IS NOT NEW.account_number OR OLD.cgnc_class IS NOT NEW.cgnc_class OR OLD.normal_balance IS NOT NEW.normal_balance)
+    AND EXISTS (SELECT 1 FROM journal_entry_lines jel JOIN journal_entries je ON je.id = jel.entry_id WHERE jel.account_id = OLD.id AND je.status = 'POSTED')`,
+    `(OLD.account_number IS DISTINCT FROM NEW.account_number OR OLD.cgnc_class IS DISTINCT FROM NEW.cgnc_class OR OLD.normal_balance IS DISTINCT FROM NEW.normal_balance)
+    AND EXISTS (SELECT 1 FROM journal_entry_lines jel JOIN journal_entries je ON je.id = jel.entry_id WHERE jel.account_id = OLD.id AND je.status = 'POSTED')`,
+    MESSAGES_V8.accountRenumbering,
+  ),
+];
+
+const MIGRATION_8_STATEMENTS: readonly string[] = MIGRATION_8_ITEMS.map((item) => item.sqlite);
+
+const MIGRATION_8_TRIGGER_NAMES: readonly string[] = MIGRATION_8_ITEMS.flatMap((item) => (item.trigger === undefined ? [] : [item.trigger]));
+
+const MIGRATION_8_INDEX_NAMES: readonly string[] = ['uq_journal_entries_reversal_of'];
+
+const MIGRATION_8_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_8_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
  * la v5 (T-S1B-05, sous-livres, paie 9421, coffre AIP) est AJOUTÉE sans toucher aux versions 1 à 4 ;
  * la v6 (drapeau pii_restricted_flag monotone sur les 5 tables porteuses) est AJOUTÉE sans toucher aux versions 1 à 5 ;
- * la v7 (Idempotency-Key 72 h, table `idempotency_keys`) est AJOUTÉE sans toucher aux versions 1 à 6.
+ * la v7 (Idempotency-Key 72 h, table `idempotency_keys`) est AJOUTÉE sans toucher aux versions 1 à 6 ;
+ * la v8 (corrections G1 du grand livre : injection de ligne, exercice CLOSED, verrou de caisse, contre-passation unique, compte
+ * porté par une pièce POSTED) est AJOUTÉE sans toucher aux versions 1 à 7.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -1654,6 +1804,16 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     expectedSha256Hex: 'ac8e45e9e121ebd8a6a0d804688389ec037248f3f9fc5446e8b6c43c4f2e98dd',
     tableNames: MIGRATION_7_TABLES,
     indexNames: MIGRATION_7_INDEXES.map(([name]) => name),
+  },
+  {
+    version: 8,
+    name: 'tenant_part8_g1_corrections_ledger_integrity',
+    upSqlStatements: MIGRATION_8_STATEMENTS,
+    expectedSha256Hex: 'a62dd9d288a801559cad88b7de070d03cc646e1130b2c36d5df4952ae21ee793',
+    tableNames: [],
+    indexNames: MIGRATION_8_INDEX_NAMES,
+    triggerNames: MIGRATION_8_TRIGGER_NAMES,
+    postgresOverrides: MIGRATION_8_POSTGRES_OVERRIDES,
   },
 ];
 
