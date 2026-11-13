@@ -1545,11 +1545,47 @@ const MIGRATION_6_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
 
 const MIGRATION_6_TRIGGER_NAMES: readonly string[] = MIGRATION_6_TRIGGERS.flatMap((trigger) => (trigger.trigger === undefined ? [] : [trigger.trigger]));
 
+// ---------------------------------------------------------------------------
+// Migration v7 (T-S1B-11, complément) : stockage SQL de l'Idempotency-Key 72 h dans TENANT_DB.
+// DÉCISION DU PILOTE : la clé et l'écriture comptable doivent être validées dans le MÊME lot atomique (`executeBatchAtomically`),
+// donc la clé vit dans la base du dossier. Les migrations v1 à v6 restent intactes (empreintes figées par test).
+// Table `idempotency_keys` : `idempotency_key` est la clé de stockage du port `IdempotencyStore` (SHA-256 hexadécimal de société,
+// utilisateur, méthode, chemin et clé client : jamais la clé client en clair), `request_sha256` l'empreinte de la requête.
+// Une ligne dont `response_status` est NULL est une réservation EN COURS ; une ligne dont il est renseigné est TERMINÉE
+// (`response_status` et `response_body_json` vont ensemble, contrainte `(… IS NULL) = (… IS NULL)`).
+// Colonne ajoutée à la liste du pilote, strictement nécessaire au port : `content_type` (type de contenu mémorisé de la réponse,
+// NULL si la route n'en a pas rendu : `StoredIdempotentResponse.contentType` est nullable). Aucune colonne `state` : l'état se
+// déduit de `response_status IS NULL`. `response_body_json` porte le JSON `{"bodyBase64": …}` (le corps rendu peut être binaire).
+// `created_at` et `expires_at` : instants ISO 8601 UTC à largeur fixe (`toISOString`), comparables comme du texte.
+// Index `idx_idempotency_keys_expires_at` : purge des expirés (`DELETE … WHERE expires_at <= ?`).
+// PostgreSQL : INTEGER devient BIGINT et le CHECK d'entier strict est retiré par la traduction mécanique, sans override.
+// ---------------------------------------------------------------------------
+const CREATE_IDEMPOTENCY_KEYS = `CREATE TABLE idempotency_keys (
+    idempotency_key TEXT PRIMARY KEY,
+    request_sha256 TEXT NOT NULL,
+    response_status INTEGER CHECK (response_status >= 100 AND response_status <= 599) ${integerCheck('response_status')},
+    response_body_json TEXT,
+    content_type TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    CHECK (expires_at > created_at),
+    CHECK ((response_status IS NULL) = (response_body_json IS NULL))
+)`;
+
+const MIGRATION_7_INDEXES: readonly (readonly [string, string])[] = [
+  ['idx_idempotency_keys_expires_at', 'CREATE INDEX idx_idempotency_keys_expires_at ON idempotency_keys (expires_at)'],
+];
+
+const MIGRATION_7_TABLES: readonly string[] = ['idempotency_keys'];
+
+const MIGRATION_7_STATEMENTS: readonly string[] = [CREATE_IDEMPOTENCY_KEYS, ...MIGRATION_7_INDEXES.map(([, sql]) => sql)];
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
  * la v5 (T-S1B-05, sous-livres, paie 9421, coffre AIP) est AJOUTÉE sans toucher aux versions 1 à 4 ;
- * la v6 (drapeau pii_restricted_flag monotone sur les 5 tables porteuses) est AJOUTÉE sans toucher aux versions 1 à 5.
+ * la v6 (drapeau pii_restricted_flag monotone sur les 5 tables porteuses) est AJOUTÉE sans toucher aux versions 1 à 5 ;
+ * la v7 (Idempotency-Key 72 h, table `idempotency_keys`) est AJOUTÉE sans toucher aux versions 1 à 6.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -1610,6 +1646,14 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     indexNames: [],
     triggerNames: MIGRATION_6_TRIGGER_NAMES,
     postgresOverrides: MIGRATION_6_POSTGRES_OVERRIDES,
+  },
+  {
+    version: 7,
+    name: 'tenant_part7_idempotency_keys',
+    upSqlStatements: MIGRATION_7_STATEMENTS,
+    expectedSha256Hex: 'ac8e45e9e121ebd8a6a0d804688389ec037248f3f9fc5446e8b6c43c4f2e98dd',
+    tableNames: MIGRATION_7_TABLES,
+    indexNames: MIGRATION_7_INDEXES.map(([name]) => name),
   },
 ];
 

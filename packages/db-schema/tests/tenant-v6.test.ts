@@ -162,7 +162,7 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
   const v6 = TENANT_MIGRATIONS[5];
 
   it('est la sixième migration ; les empreintes de v1 à v5 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(v6?.name).toBe('tenant_part6_pii_flag_monotone_all_tables');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -184,8 +184,8 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
     expect(v6?.sqliteOnlyTriggerNames ?? []).toEqual([]);
     expect(TENANT_TRIGGER_NAMES.slice(-5)).toEqual([...V6_TRIGGERS]);
     expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-5)).toEqual([...V6_TRIGGERS]);
-    expect(TENANT_TABLE_NAMES).toHaveLength(25);
-    expect(TENANT_INDEX_NAMES).toHaveLength(7);
+    expect(TENANT_TABLE_NAMES).toHaveLength(26);
+    expect(TENANT_INDEX_NAMES).toHaveLength(8);
   });
 
   it('une base v5 pleine se met à niveau sans perte en appliquant seulement la v6', () => {

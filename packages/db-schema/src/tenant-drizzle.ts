@@ -1,5 +1,5 @@
 /**
- * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 à 4 (T-S1B-02, T-S1B-03 : caisse
+ * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 à 7 (T-S1B-02, T-S1B-03 : caisse
  * POS, T-S1B-04 : grand livre CGNC, T-S1B-05 : sous-livres, paie 9421, coffre AIP). La vue `v_cgnc_trial_balance_6col` est déclarée ici en lecture seule.
  *
  * Le DDL de `tenant.ts` fait foi : ce fichier ne sert qu'au typage des requêtes. Un test compare tables, colonnes,
@@ -561,3 +561,17 @@ export const fecAuditRuns = sqliteTable('fec_audit_runs', {
   findingsJson: text('findings_json').notNull(),
   createdAt: text('created_at').notNull(),
 });
+
+export const idempotencyKeys = sqliteTable(
+  'idempotency_keys',
+  {
+    idempotencyKey: text('idempotency_key').primaryKey(),
+    requestSha256: text('request_sha256').notNull(),
+    responseStatus: integer('response_status'),
+    responseBodyJson: text('response_body_json'),
+    contentType: text('content_type'),
+    createdAt: text('created_at').notNull(),
+    expiresAt: text('expires_at').notNull(),
+  },
+  (table) => [index('idx_idempotency_keys_expires_at').on(table.expiresAt)],
+);
