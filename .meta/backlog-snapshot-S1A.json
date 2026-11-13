@@ -147,10 +147,9 @@
     "retry_count": 0,
     "tests_green": "false",
     "verify_cmd": "pnpm --filter @fisca/crypto-e2ee test",
-    "review_notes": "G1 tour 1 corrigé (a36d8c9). Test rouge d'abord : le cas Shamir « une part seule ne révèle rien… » échouait « Test timed out in 5000ms » 4 fois sur 4 avec 4 copies sur un seul cœur (taskset -c 0). Correctif : tirage de 25 600 partages remplacé par une énumération exhaustive sans aléa (3 abscisses × 256 secrets × 256 pentes, 393 216 cas, bijection pente → part) + test lié à splitSecretShamir2of3 réel (pente fixée) ; tests « pente unique » et « Math.random jamais appelé » conservés ; fichier 423 ms ; délai NON relevé. verify:fast complet sans cache (TURBO_FORCE=true) exit 0, crypto-e2ee 20 exécutions sans échec.",
+    "review_notes": "G1 + arbitrages (a36d8c9, 2e057ed, c68903e). Tables exp/log GF(256) (2e057ed) : test exhaustif 65 536 produits + 255 inverses, SHAMIR_GF256_ZERO_INVERSE. c68903e : le test « la part produite par splitSecretShamir2of3 est exactement secret XOR pente·x » (1 024 partages asynchrones) a dépassé 5 s sous charge parallèle lors d'un verify:fast de S1B ; coût borné (256 pentes sur un secret, 7 pentes de bord sur les trois autres) sans relever le délai ; preuve exhaustive sans aléa conservée dans le test précédent ; vérifié : 4 copies de la suite crypto-e2ee sur un seul cœur (taskset -c 0) toutes vertes, puis TURBO_FORCE=true pnpm verify:fast ×3 exit 0. COMPROMIS : accès mémoire dépendant des opérandes (tables), canal auxiliaire non mesuré.",
     "updated_at": "2026-11-13",
-    "commit_url": "https://github.com/anasse84/fisca/commit/a36d8c9",
-    "rubric_score": "89"
+    "commit_url": "https://github.com/anasse84/fisca/commit/2e057ed"
   },
   {
     "task_id": "T-S1A-09",
@@ -167,10 +166,9 @@
     "retry_count": 0,
     "tests_green": "false",
     "verify_cmd": "pnpm verify:fast",
-    "review_notes": "G1 tour 1 corrigé (a36d8c9). Tests rouges d'abord : « le générateur injecté est la seule source d'aléa » échouait (expected '[ICE15_01_1117b27e]' to be '[ICE15_01_01911df0]') ; 17 tests d'ICE à séparateurs échouaient (14 graphies sortaient à l'identique, ex. 'Société ICE 0012 3456 7000 089 fin'), seul le zéro-largeur collé passait. Correctifs : (1) scrubber : suites de blocs de chiffres reliés par un séparateur (espace dont insécable/fine par NFKC, point, tirets, barre oblique, signe moins) découpées aux frontières de blocs, RIB 24 d'abord puis ICE 15, aucun fragment ; (2) aléa injectable (randomSource, défaut crypto.getRandomValues), test déterministe à graine fixe xorshift, regex de retrait des jetons [A-Za-z0-9_]+, test 2 000 graines 0 faux rouge (et au moins un aléa à 6 chiffres de suite). Faux positifs non masqués : tél. +212 (12 chiffres), montants, dates, réf. facture, 14 et 16 chiffres séparés ; IBAN, e-mail, CIN, RIB préservés. LIMITES : la ré-hydratation restitue le texte normalisé (NFKC, invisibles retirés) ; « 100 200 300 400 500 » (5×3 chiffres) est masqué à tort ; réserve de l'auditeur sur le filtre d'injection (« i g n o r e », « Ign0re ») non traitée ici (à compléter avant P3-B). CTR-API-43/44 : absentes du code (seulement un test 404), lignes du registre à retirer.",
+    "review_notes": "G1 tour 1 + arbitrage propriétaire (a36d8c9 puis 2e057ed). Rouge d'abord (2e057ed) : « Facture 20261113 1500000 MAD » → « expected 'Facture [ICE15_01_cf6aad2a] MAD' to be 'Facture 20261113 1500000 MAD' » ; groupements 5-5-5, 2-13, 7-8, 8-7 masqués à tort ; « ICE001234567000089 » masqué (bords alphanumériques) ; « 1-2345-6789-0123-45 » partiel. Livré : groupes admis 15 contigus, 4-4-4-3, 3-3-3-3-3, 9-4-2, 9-6, 3-4-4-4 (séparateurs espace/point/tiret) + enchaînement points/tirets/barres totalisant 15 chiffres ; gardes de bords (?<![\\dA-Za-z]) / (?![\\dA-Za-z]) ; contrôle exact des 15 chiffres dans le callback ; RIB 24 masqué avant l'ICE ; les six graphies du propriétaire masquées en entier (déjà vertes avant correction) ; non-régression « Facture 20261113 1500000 MAD » et « Date 2026-11-13 et total 120 000,00 MAD » ; faux rouges : jetons minuscules ET majuscules, boucle de 2 000 itérations à graine fixe, 0 échec. FAUX POSITIFS ACCEPTÉS (règle du propriétaire) : « 100 200 300 400 500 » (3-3-3-3-3), tout nombre ordinaire de 15 chiffres aux groupes admis, toute suite points/tirets/barres de 15 chiffres (dates ou références). Limite : le nonce est généré en minuscules, les majuscules ne sont exercées que par passage en majuscules du résultat. Filtre d'injection « i g n o r e »/« Ign0re » non traité (avant P3-B).",
     "updated_at": "2026-11-13",
-    "commit_url": "https://github.com/anasse84/fisca/commit/a36d8c9",
-    "rubric_score": "89"
+    "commit_url": "https://github.com/anasse84/fisca/commit/2e057ed"
   },
   {
     "task_id": "T-S1A-10",
