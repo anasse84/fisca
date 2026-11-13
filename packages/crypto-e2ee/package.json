@@ -1,0 +1,12 @@
+{
+  "name": "@fisca/crypto-e2ee",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test": "vitest run"
+  }
+}

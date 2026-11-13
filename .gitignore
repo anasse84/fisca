@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.turbo/
+.wrangler/
+.astro/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+
+# Manifeste de routes généré par scripts/gen-route-manifest.ts (ERRATA B-02)
+apps/api-hono/src/routes.generated.ts
+
+# Artefact généré (ERRATA D-18) : seul .meta/openapi.snapshot.json est commité
+openapi.json
