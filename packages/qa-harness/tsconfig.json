@@ -3,11 +3,16 @@
   "compilerOptions": {
     "types": [
       "node"
+    ],
+    "lib": [
+      "ES2023",
+      "DOM"
     ]
   },
   "include": [
     "src",
     "tests",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vitest.global-setup.ts"
   ]
 }
