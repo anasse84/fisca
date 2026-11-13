@@ -8,7 +8,6 @@
  */
 import { z } from 'zod';
 import { CentimesIntSchema, Ice15Schema, ProblemDetailsSchema, isReadableIsoDate } from '@fisca/shared-types';
-import { MAX_PROBLEM_ISSUES } from './problem-details.ts';
 
 export const IsoDateSchema = z
   .string()
@@ -18,12 +17,8 @@ export const IsoDateSchema = z
 /** Identifiants du grand livre : UUIDv7 produits par le moteur (`LedgerIdSource`). */
 const LedgerIdSchema = z.uuid({ version: 'v7' });
 
-/** Enveloppe RFC 9457 complète : le socle gelé de shared-types, plus les extensions `instance` et `issues[]` (Doc_07 § 01). */
-export const ProblemIssueSchema = z.strictObject({ path: z.string(), message: z.string() });
-export const ProblemBodySchema = ProblemDetailsSchema.extend({
-  instance: z.string().optional(),
-  issues: z.array(ProblemIssueSchema).max(MAX_PROBLEM_ISSUES).optional(),
-});
+/** Enveloppe RFC 9457 : celle de shared-types (instance et issues[] y figurent depuis la PR n° 10), sans type local divergent. */
+export const ProblemBodySchema = ProblemDetailsSchema;
 
 // ---------------------------------------------------------------- GET /api/v1/directory/ice/:ice (CTR-API-10)
 

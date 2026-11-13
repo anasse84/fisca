@@ -3,7 +3,8 @@
  * Les messages viennent des schémas (textes fixes) ; aucune valeur reçue n'est recopiée au-delà du nom du champ.
  */
 import type { z } from 'zod';
-import { ProblemError, type ProblemIssue } from './problem-details.ts';
+import type { ProblemIssue } from '@fisca/shared-types';
+import { ProblemError } from './problem-details.ts';
 
 const ROOT_PATH = '(racine)';
 

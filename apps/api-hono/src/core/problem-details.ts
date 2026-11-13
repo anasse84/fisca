@@ -21,6 +21,7 @@ import {
   type FsmErrorCode,
   type InfrastructureErrorCode,
   type ProblemDetails,
+  type ProblemIssue,
 } from '@fisca/shared-types';
 import { LedgerError, type LedgerErrorCode } from './ledger-errors.ts';
 
@@ -32,11 +33,6 @@ const MAX_ISSUE_TEXT_LENGTH = 200;
 const MAX_INSTANCE_LENGTH = 200;
 const TRACEPARENT_PATTERN = /^00-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/;
 const ZERO_TRACE_ID = '00000000000000000000000000000000';
-
-export interface ProblemIssue {
-  readonly path: string;
-  readonly message: string;
-}
 
 /** Contenu d'un problème avant sérialisation. `detail` doit être un texte fixe, jamais le message d'une exception. */
 export interface ProblemInput {
@@ -93,10 +89,11 @@ function truncate(text: string, max: number): string {
   return text.length <= max ? text : text.slice(0, max);
 }
 
-function boundedIssues(issues: readonly ProblemIssue[]): readonly ProblemIssue[] {
+function boundedIssues(issues: readonly ProblemIssue[]): ProblemIssue[] {
   return issues.slice(0, MAX_PROBLEM_ISSUES).map((issue) => ({
     path: truncate(issue.path, MAX_ISSUE_TEXT_LENGTH),
     message: truncate(issue.message, MAX_ISSUE_TEXT_LENGTH),
+    ...(issue.code !== undefined ? { code: truncate(issue.code, MAX_ISSUE_TEXT_LENGTH) } : {}),
   }));
 }
 
@@ -108,10 +105,8 @@ function boundedInstance(instance: string | null): string | null {
   return truncate(withoutQuery, MAX_INSTANCE_LENGTH);
 }
 
-export type ProblemBody = ProblemDetails & { readonly instance?: string; readonly issues?: readonly ProblemIssue[] };
-
-/** Construit le corps : socle validé par `ProblemDetailsSchema`, puis extensions bornées. */
-export function buildProblemBody(input: ProblemInput, traceId: string, instance: string | null): ProblemBody {
+/** Construit le corps : validé par `ProblemDetailsSchema` (instance et issues[] y figurent depuis la PR n° 10), extensions bornées. */
+export function buildProblemBody(input: ProblemInput, traceId: string, instance: string | null): ProblemDetails {
   const base = ProblemDetailsSchema.parse({
     type: PROBLEM_TYPE_ABOUT_BLANK,
     title: input.title,
