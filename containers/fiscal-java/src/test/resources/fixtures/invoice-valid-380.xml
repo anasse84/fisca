@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fixture de test écrite pour le ticket T-P2A-01 (aucune facture réelle, aucune donnée personnelle).
+  Facture UBL 2.1 type 380, profil EN 16931 (customization urn:cen.eu:en16931:2017), TVA 20 %.
+  Calcul : 10 x 100,00 = 1000,00 HT ; TVA 20 % = 200,00 ; TTC = 1200,00 MAD.
+-->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017</cbc:CustomizationID>
+  <cbc:ID>FA-TEST-0001</cbc:ID>
+  <cbc:IssueDate>2026-11-13</cbc:IssueDate>
+  <cbc:DueDate>2026-12-13</cbc:DueDate>
+  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>MAD</cbc:DocumentCurrencyCode>
+  <cbc:BuyerReference>REF-ACHETEUR-TEST</cbc:BuyerReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyName><cbc:Name>Vendeur Test SARL</cbc:Name></cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>1 rue de Test</cbc:StreetName>
+        <cbc:CityName>Rabat</cbc:CityName>
+        <cbc:PostalZone>10000</cbc:PostalZone>
+        <cac:Country><cbc:IdentificationCode>MA</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>MA000000000000</cbc:CompanyID>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Vendeur Test SARL</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyName><cbc:Name>Acheteur Test SA</cbc:Name></cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>2 avenue de Test</cbc:StreetName>
+        <cbc:CityName>Casablanca</cbc:CityName>
+        <cbc:PostalZone>20000</cbc:PostalZone>
+        <cac:Country><cbc:IdentificationCode>MA</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>Acheteur Test SA</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>10</cbc:PaymentMeansCode>
+  </cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="MAD">200.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="MAD">1000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="MAD">200.00</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>20</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="MAD">1000.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="MAD">1000.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="MAD">1200.00</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="MAD">1200.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">10</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="MAD">1000.00</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Article de test</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>20</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="MAD">100.00</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>
