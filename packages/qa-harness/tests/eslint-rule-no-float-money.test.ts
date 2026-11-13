@@ -55,8 +55,109 @@ ruleTester.run('no-float-money', noFloatMoneyRule, {
     { code: 'const ht = centimes(5); function f(ht: number) { return ht / 2; }' },
     // Arrondi d'une division sans signal monétaire.
     { code: 'const mid = Math.round(width / height);' },
+    // Littéral entier ou notation entière : aucune virgule, aucune fraction.
+    { code: 'const x = ht_cents * 2; const y = rate_bps + 1; const z = total_cents % 10;' },
+    { code: 'const x = amountCents * 0x10; const y = amountCents * 1e3;' },
+    // Littéral décimal sans opérande monétaire.
+    { code: 'const w = width * 0.2; const h = (a + b) * 1.5; const t = elapsed - 0.5;' },
+    // Comparaison (hors périmètre de la règle) et littéral décimal côté non arithmétique.
+    { code: 'const ok = ratio_bps > 0.5; const label = totalCents + "0.5";' },
+    // Un identifiant dont le dernier mot n'est pas une unité.
+    { code: 'const x = percents * 0.2; const y = bpsRate * 1.2;' },
+    // Liaison masquée : le `ht` de la fonction n'est pas celui, typé, du module.
+    { code: 'const ht = centimes(5); function f(ht: number) { return ht * 0.2; }' },
   ],
   invalid: [
+    {
+      code: 'const vat = ht_cents * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht_cents' } }],
+    },
+    {
+      code: 'const ttc = totalCents * 1.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'totalCents' } }],
+    },
+    {
+      code: 'const x = 0.2 * ht_cents;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht_cents' } }],
+    },
+    {
+      code: 'const x = amountBps / 0.5;',
+      errors: [{ messageId: 'floatDivision', data: { name: 'amountBps' } }],
+    },
+    {
+      code: 'const x = amountCents + 0.5;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'amountCents' } }],
+    },
+    {
+      code: 'const x = amountCents - 0.5; const y = amountCents % 0.5;',
+      errors: [
+        { messageId: 'floatLiteral', data: { name: 'amountCents' } },
+        { messageId: 'floatLiteral', data: { name: 'amountCents' } },
+      ],
+    },
+    {
+      code: 'const x = qtyMilli * 2.5e-1;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'qtyMilli' } }],
+    },
+    {
+      code: 'const x = rateMicro * 1.0;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'rateMicro' } }],
+    },
+    {
+      code: 'const x = totalCents * -0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'totalCents' } }],
+    },
+    {
+      code: 'const x = totalCents * (0.2);',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'totalCents' } }],
+    },
+    {
+      code: 'const x = (a_cents + b_cents) * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'a_cents' } }],
+    },
+    {
+      code: 'const x = Math.round(totalCents * 0.2);',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'totalCents' } }],
+    },
+    {
+      code: 'let amountCents = 100; amountCents *= 1.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'amountCents' } }],
+    },
+    {
+      code: 'let amountCents = 100; amountCents += 0.5; amountCents -= .5;',
+      errors: [
+        { messageId: 'floatLiteral', data: { name: 'amountCents' } },
+        { messageId: 'floatLiteral', data: { name: 'amountCents' } },
+      ],
+    },
+    // Déclaration lisible : variable annotée ou construite.
+    {
+      code: 'function f(ht: Centimes) { return ht * 0.2; }',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht' } }],
+    },
+    {
+      code: 'const ht = centimes(1000); const vat = ht * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht' } }],
+    },
+    // Number(x) et assertions TypeScript.
+    {
+      code: 'const x = Number(ht_cents) * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht_cents' } }],
+    },
+    {
+      code: 'const x = (ht_cents as number) * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'ht_cents' } }],
+    },
+    // Appel d'une fonction dont le nom porte l'unité.
+    {
+      code: 'const x = applyBps(a, b) * 1.5;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'applyBps' } }],
+    },
+    // Propriété d'un objet.
+    {
+      code: 'const x = invoice.totalCents * 0.2;',
+      errors: [{ messageId: 'floatLiteral', data: { name: 'totalCents' } }],
+    },
     {
       code: 'const share = total_cents / 3;',
       errors: [{ messageId: 'floatDivision', data: { name: 'total_cents' } }],
