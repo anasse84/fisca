@@ -8,5 +8,11 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "3.54.1-build1"
+  },
+  "devDependencies": {
+    "@fisca/db-schema": "workspace:*"
   }
 }
