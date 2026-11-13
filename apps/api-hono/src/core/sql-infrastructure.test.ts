@@ -146,11 +146,11 @@ describe('SqlInfrastructure (composition SQL, D-16)', () => {
     expect((await failure(() => infra.getTenantDb('soc-b'))).code).toBe('INFRA_TENANT_NOT_FOUND');
   });
 
-  it('getTenantDbUpToDate sur D1 : applique v1→v5 en DDL SQLite avec l\'empreinte de référence', async () => {
+  it('getTenantDbUpToDate sur D1 : applique toutes les migrations du catalogue en DDL SQLite avec l\'empreinte de référence', async () => {
     const { infra, d1 } = build('CLOUDFLARE_EDGE');
     await infra.getTenantDbUpToDate('soc-a');
-    // 1 lot de création de la table de suivi + 5 migrations
-    expect(d1.batches).toHaveLength(6);
+    // 1 lot de création de la table de suivi + une transaction par migration du catalogue
+    expect(d1.batches).toHaveLength(TENANT_MIGRATIONS.length + 1);
     const lastOfEach = d1.batches.slice(1).map((batch) => batch[batch.length - 1]);
     expect(lastOfEach.map((s) => s?.values[2])).toEqual(TENANT_MIGRATIONS.map((m) => m.expectedSha256Hex));
     expect(d1.batches[1]?.map((s) => s.sql).slice(0, -1)).toEqual(TENANT_MIGRATIONS[0]?.upSqlStatements);
@@ -162,7 +162,7 @@ describe('SqlInfrastructure (composition SQL, D-16)', () => {
     expect(pg.texts.some((t) => /\bBIGINT\b/.test(t))).toBe(true);
     const inserts = pg.texts.map((t, i) => ({ t, v: pg.values[i] })).filter((e) => e.t.startsWith('INSERT INTO _fisca_schema_migrations'));
     expect(inserts.map((e) => e.v?.[2])).toEqual(TENANT_MIGRATIONS.map((m) => m.expectedSha256Hex));
-    expect(pg.texts.filter((t) => t === 'BEGIN')).toHaveLength(6);
-    expect(pg.texts.filter((t) => t === 'COMMIT')).toHaveLength(6);
+    expect(pg.texts.filter((t) => t === 'BEGIN')).toHaveLength(TENANT_MIGRATIONS.length + 1);
+    expect(pg.texts.filter((t) => t === 'COMMIT')).toHaveLength(TENANT_MIGRATIONS.length + 1);
   });
 });
