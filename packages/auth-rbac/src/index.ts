@@ -13,4 +13,7 @@ export * from './first-factor.ts';
 export * from './login.ts';
 export * from './login-routes.ts';
 export * from './passkeys.ts';
+export * from './route-guard.ts';
+export * from './session-routes.ts';
+export * from './passkey-routes.ts';
 export * from './policy-engine.ts';

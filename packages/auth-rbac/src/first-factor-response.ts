@@ -8,7 +8,7 @@ import type { ProblemDetails } from '@fisca/shared-types';
 import type { FirstFactorOutcome } from './first-factor.ts';
 
 export interface ProblemSpec {
-  readonly status: 400 | 401 | 403 | 409 | 429;
+  readonly status: 400 | 401 | 403 | 409 | 429 | 500;
   readonly title: string;
   readonly detail: string;
 }
