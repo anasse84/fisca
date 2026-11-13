@@ -271,3 +271,232 @@ Aucun test automatisé dans Hyperagent ni dans GitHub Actions ne dépend d'une c
 - Test Séparation Loi 103-12 Payzone (BYO-MID) : Vérifie qu'un lien de paiement généré sur une facture client PME utilise exclusivement les identifiants marchands déchiffrés de cette PME et jamais le compte marchand SaaS de SYNAPTIC SYSTEMS SARL AU.
 - Test Blocage Certificat Barid eSign (OID != ICE) : Injecte un certificat X.509 valide appartenant à une autre société marocaine et vérifie que signDigestViaBaridEsignCscV2 avorte avant tout appel réseau avec ADR_06_LOI4320_CERT_MISMATCH.
 - Test d'Ingestion @ingest.fisca.ma & Suppression Bounce SES : Simule un email entrant sans signature SPF/DKIM valide (rejeté immédiatement), un email IAM valide avec PDF Factur-X (extrait au Niveau 0 sans token IA) et un événement SNS Hard Bounce (bloquant tout renvoi ultérieur vers cette adresse).
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+### V.1 — Inventaire des 4 piliers, 16 connecteurs et 45 points d'accès externes
+
+<!-- verif:17-01:code -->
+```python
+import json
+
+# Verify all numeric parameters and widget dataset for Document 17
+pillars = [
+    {
+        "pillar_name": "1. WhatsApp Anti-Ban & Infobip FISCA",
+        "connectors": [
+            {"id": "EXT-01", "service": "Meta WABA & Bouclier Anti-Ban", "protocol": "Graph API v21 + Webhook Qualité", "timeout_ms": 10000, "sla_rule": "Pause auto campagnes si note descend à YELLOW ; 0 spam marketing", "endpoints_count": 4},
+            {"id": "EXT-02", "service": "Infobip OMNI Cascade 15s", "protocol": "REST /omni/1/advanced (Région UE)", "timeout_ms": 10000, "sla_rule": "WhatsApp prioritaire puis bascule SMS expéditeur FISCA à 15s", "endpoints_count": 3},
+            {"id": "EXT-03", "service": "Sender ID Alphanumérique FISCA", "protocol": "Routes Directes IAM, Orange, inwi", "timeout_ms": 8000, "sla_rule": "Pré-enregistrement ANRT / Opérateurs Maroc pour délivrabilité OTP", "endpoints_count": 2},
+            {"id": "EXT-04", "service": "Bot Collecte Pièces Fenêtre 24h", "protocol": "Media Stream R2 + Filtre Vocal", "timeout_ms": 12000, "sla_rule": "Réponses gratuites 24h ; refus courtois vocal Tamazight en V1", "endpoints_count": 3},
+        ]
+    },
+    {
+        "pillar_name": "2. Amazon SES UE & @ingest.fisca.ma",
+        "connectors": [
+            {"id": "EXT-05", "service": "Amazon SES Sortant (eu-west-3)", "protocol": "HTTPS API v2 + DKIM 2048 bits", "timeout_ms": 8000, "sla_rule": "Juridiction UE Art. 43 CNDP pour auth, Factur-X et relances", "endpoints_count": 3},
+            {"id": "EXT-06", "service": "Protection Réputation SNS Bounce", "protocol": "Webhook Signé SNS -> Suppression", "timeout_ms": 5000, "sla_rule": "Blocage auto des hard bounces pour maintenir le taux sous 2 %", "endpoints_count": 2},
+            {"id": "EXT-07", "service": "Cloudflare Email Worker @ingest", "protocol": "SMTP TLS + Vérif SPF/DKIM/DMARC", "timeout_ms": 15000, "sla_rule": "Streaming PDF/XML max 25 Mo vers R2 UE + dédoublonnage SHA-256", "endpoints_count": 2},
+            {"id": "EXT-08", "service": "Parseurs Grands Facturiers Maroc", "protocol": "Règles Déterministes Niveau 0", "timeout_ms": 3000, "sla_rule": "Reconnaissance native IAM, Orange, inwi, SRM, Jawaz et Afriquia", "endpoints_count": 2},
+        ]
+    },
+    {
+        "pillar_name": "3. Payzone, SIMT & Barid eSign HSM",
+        "connectors": [
+            {"id": "EXT-09", "service": "Payzone Abonnements SaaS (MIT)", "protocol": "Hosted 3DS2 + Jeton PCI-DSS SAQ-A", "timeout_ms": 15000, "sla_rule": "Zéro PAN stocké ; relances dunning J0, J+3, J+7 et J+12", "endpoints_count": 4},
+            {"id": "EXT-10", "service": "Payzone BYO-MID Factures PME", "protocol": "Clés Marchand Propres du Client", "timeout_ms": 15000, "sla_rule": "Fonds versés 100 % au vendeur (Loi 103-12 BAM) + Loi 69-21 figée", "endpoints_count": 3},
+            {"id": "EXT-11", "service": "Barid eSign HSM (Loi 43-20)", "protocol": "mTLS CSC API v2.0 (/signHash)", "timeout_ms": 8000, "sla_rule": "Seul le hash 32 octets transite ; contrôle bloquant OID == ICE", "endpoints_count": 3},
+            {"id": "EXT-12", "service": "Serveur TSA RFC 3161 Merkle", "protocol": "ASN.1 DER TimeStampReq SHA-256/512", "timeout_ms": 8000, "sla_rule": "1 jeton quotidien à 23h59 + renouvellement LTA tous les 24 mois", "endpoints_count": 2},
+        ]
+    },
+    {
+        "pillar_name": "4. OMPIC, xHub DGI, OAuth & Teams",
+        "connectors": [
+            {"id": "EXT-13", "service": "DirectInfo OMPIC & Cache ICE", "protocol": "REST KYB + Cache D1 30 Jours", "timeout_ms": 10000, "sla_rule": "Score IA propriétaire 15 MAD HT ; revente PDF OMPIC interdite", "endpoints_count": 3},
+            {"id": "EXT-14", "service": "Vérif Attestations DGI & CNSS", "protocol": "Contrôle QR/Code + Forensique xref", "timeout_ms": 20000, "sla_rule": "Tranche RAS-TVA 75 % vs 100 % selon validité légale de 6 mois", "endpoints_count": 2},
+            {"id": "EXT-15", "service": "Passerelle Nationale xHub DGI", "protocol": "mTLS UBL 2.1 + Cloudflare Workflows", "timeout_ms": 12000, "sla_rule": "8 réessais exponentiels sur 6h sans trou de numérotation DO", "endpoints_count": 3},
+            {"id": "EXT-16", "service": "Google OIDC, Teams & Slack Corp", "protocol": "PKCE S256 JWKS + Webhooks Signés", "timeout_ms": 8000, "sla_rule": "Courtier auth.fisca.ma + alertes 3-Way Match et RIB suspect", "endpoints_count": 4},
+        ]
+    }
+]
+
+total_connectors = sum(len(p["connectors"]) for p in pillars)
+total_endpoints = sum(c["endpoints_count"] for p in pillars for c in p["connectors"])
+max_timeout_ms = max(c["timeout_ms"] for p in pillars for c in p["connectors"])
+
+totals = {
+    "pillars_count": len(pillars),
+    "connectors_count": total_connectors,
+    "external_endpoints_mapped": total_endpoints,
+    "max_timeout_ms": max_timeout_ms
+}
+print(json.dumps({"pillars": pillars, "totals": totals}, indent=2, ensure_ascii=False))
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:17-01:resultat -->
+```text
+{
+  "pillars": [
+    {
+      "pillar_name": "1. WhatsApp Anti-Ban & Infobip FISCA",
+      "connectors": [
+        {
+          "id": "EXT-01",
+          "service": "Meta WABA & Bouclier Anti-Ban",
+          "protocol": "Graph API v21 + Webhook Qualité",
+          "timeout_ms": 10000,
+          "sla_rule": "Pause auto campagnes si note descend à YELLOW ; 0 spam marketing",
+          "endpoints_count": 4
+        },
+        {
+          "id": "EXT-02",
+          "service": "Infobip OMNI Cascade 15s",
+          "protocol": "REST /omni/1/advanced (Région UE)",
+          "timeout_ms": 10000,
+          "sla_rule": "WhatsApp prioritaire puis bascule SMS expéditeur FISCA à 15s",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-03",
+          "service": "Sender ID Alphanumérique FISCA",
+          "protocol": "Routes Directes IAM, Orange, inwi",
+          "timeout_ms": 8000,
+          "sla_rule": "Pré-enregistrement ANRT / Opérateurs Maroc pour délivrabilité OTP",
+          "endpoints_count": 2
+        },
+        {
+          "id": "EXT-04",
+          "service": "Bot Collecte Pièces Fenêtre 24h",
+          "protocol": "Media Stream R2 + Filtre Vocal",
+          "timeout_ms": 12000,
+          "sla_rule": "Réponses gratuites 24h ; refus courtois vocal Tamazight en V1",
+          "endpoints_count": 3
+        }
+      ]
+    },
+    {
+      "pillar_name": "2. Amazon SES UE & @ingest.fisca.ma",
+      "connectors": [
+        {
+          "id": "EXT-05",
+          "service": "Amazon SES Sortant (eu-west-3)",
+          "protocol": "HTTPS API v2 + DKIM 2048 bits",
+          "timeout_ms": 8000,
+          "sla_rule": "Juridiction UE Art. 43 CNDP pour auth, Factur-X et relances",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-06",
+          "service": "Protection Réputation SNS Bounce",
+          "protocol": "Webhook Signé SNS -> Suppression",
+          "timeout_ms": 5000,
+          "sla_rule": "Blocage auto des hard bounces pour maintenir le taux sous 2 %",
+          "endpoints_count": 2
+        },
+        {
+          "id": "EXT-07",
+          "service": "Cloudflare Email Worker @ingest",
+          "protocol": "SMTP TLS + Vérif SPF/DKIM/DMARC",
+          "timeout_ms": 15000,
+          "sla_rule": "Streaming PDF/XML max 25 Mo vers R2 UE + dédoublonnage SHA-256",
+          "endpoints_count": 2
+        },
+        {
+          "id": "EXT-08",
+          "service": "Parseurs Grands Facturiers Maroc",
+          "protocol": "Règles Déterministes Niveau 0",
+          "timeout_ms": 3000,
+          "sla_rule": "Reconnaissance native IAM, Orange, inwi, SRM, Jawaz et Afriquia",
+          "endpoints_count": 2
+        }
+      ]
+    },
+    {
+      "pillar_name": "3. Payzone, SIMT & Barid eSign HSM",
+      "connectors": [
+        {
+          "id": "EXT-09",
+          "service": "Payzone Abonnements SaaS (MIT)",
+          "protocol": "Hosted 3DS2 + Jeton PCI-DSS SAQ-A",
+          "timeout_ms": 15000,
+          "sla_rule": "Zéro PAN stocké ; relances dunning J0, J+3, J+7 et J+12",
+          "endpoints_count": 4
+        },
+        {
+          "id": "EXT-10",
+          "service": "Payzone BYO-MID Factures PME",
+          "protocol": "Clés Marchand Propres du Client",
+          "timeout_ms": 15000,
+          "sla_rule": "Fonds versés 100 % au vendeur (Loi 103-12 BAM) + Loi 69-21 figée",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-11",
+          "service": "Barid eSign HSM (Loi 43-20)",
+          "protocol": "mTLS CSC API v2.0 (/signHash)",
+          "timeout_ms": 8000,
+          "sla_rule": "Seul le hash 32 octets transite ; contrôle bloquant OID == ICE",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-12",
+          "service": "Serveur TSA RFC 3161 Merkle",
+          "protocol": "ASN.1 DER TimeStampReq SHA-256/512",
+          "timeout_ms": 8000,
+          "sla_rule": "1 jeton quotidien à 23h59 + renouvellement LTA tous les 24 mois",
+          "endpoints_count": 2
+        }
+      ]
+    },
+    {
+      "pillar_name": "4. OMPIC, xHub DGI, OAuth & Teams",
+      "connectors": [
+        {
+          "id": "EXT-13",
+          "service": "DirectInfo OMPIC & Cache ICE",
+          "protocol": "REST KYB + Cache D1 30 Jours",
+          "timeout_ms": 10000,
+          "sla_rule": "Score IA propriétaire 15 MAD HT ; revente PDF OMPIC interdite",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-14",
+          "service": "Vérif Attestations DGI & CNSS",
+          "protocol": "Contrôle QR/Code + Forensique xref",
+          "timeout_ms": 20000,
+          "sla_rule": "Tranche RAS-TVA 75 % vs 100 % selon validité légale de 6 mois",
+          "endpoints_count": 2
+        },
+        {
+          "id": "EXT-15",
+          "service": "Passerelle Nationale xHub DGI",
+          "protocol": "mTLS UBL 2.1 + Cloudflare Workflows",
+          "timeout_ms": 12000,
+          "sla_rule": "8 réessais exponentiels sur 6h sans trou de numérotation DO",
+          "endpoints_count": 3
+        },
+        {
+          "id": "EXT-16",
+          "service": "Google OIDC, Teams & Slack Corp",
+          "protocol": "PKCE S256 JWKS + Webhooks Signés",
+          "timeout_ms": 8000,
+          "sla_rule": "Courtier auth.fisca.ma + alertes 3-Way Match et RIB suspect",
+          "endpoints_count": 4
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "pillars_count": 4,
+    "connectors_count": 16,
+    "external_endpoints_mapped": 45,
+    "max_timeout_ms": 20000
+  }
+}
+```

@@ -284,3 +284,61 @@ Lors de la Session P4-B, de la Barrière QA G4 et de la Session finale S5, l'age
 - Audit d'Autonomie de l'Archive de Réversibilité ISO 14641 : Génère l'archive complète .zip d'un dossier test (incluant FEC-MA 24 colonnes, UBL XAdES, Factur-X, déclarations SIMPL et preuves de Merkle), l'extrait dans un répertoire temporaire vierge sans réseau et exécute node verify-archive-offline.mjs qui doit retourner un code de sortie 0 sur 100 % des fichiers.
 - Vecteurs Mathématiques Avoirs SLA : Vérifie que sur un cabinet facturé 1013000 centimes HT/mois (10 130,00 MAD HT, cible 9990 bps) subissant 260 minutes d'indisponibilité sur 43 200 minutes (9939 bps), evaluateMonthlySlaCredit accorde exactement 25 % (2500 bps), soit 253250 centimes HT (2 532,50 MAD HT).
 - Verrou de Sanctuarisation des Fenêtres Fiscales DGI : Simule dans le script de pré-déploiement CI/CD une date comprise entre le 15 et le 21 du mois (ex. 2026-11-19) sur une migration SQL marquée perturbatrice et vérifie son rejet automatique.
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+> Les crédits attendus (253 250, 48 333 et 583 334 centimes) font foi. En production : `divRoundHalfUpBigInt` (ERRATA D-09).
+
+### V.1 — Seuils de disponibilité, indisponibilité maximale sur 30 jours et crédits de service
+
+<!-- verif:12-01:code -->
+```python
+# Verify exact SLA uptime thresholds, max monthly downtime (30-day month = 43,200 min = 2,592,000 sec), and SLA credit calculations in integer centimes / bps
+
+seconds_30d = 30 * 24 * 3600 # 2,592,000 seconds
+
+for sla_bps in [9995, 9990, 9950, 9900]:
+    uptime_pct = sla_bps / 100
+    max_down_sec = seconds_30d * (10000 - sla_bps) / 10000
+    mins = int(max_down_sec // 60)
+    secs = int(round(max_down_sec % 60))
+    print(f"SLA {uptime_pct:.2f}% ({sla_bps} bps): max downtime/30d = {max_down_sec:.0f}s ({mins}m {secs:02d}s)")
+
+# SLA Credit tiers (in bps of monthly fee HT):
+# For ENT_SOUVERAIN (140,000 MAD/yr -> monthly base equivalent = round(14000000 / 12) = 1,166,667 centimes) or CROISSANCE_PME (89,000 centimes/mo) or Cabinet 60 dossiers (1,013,000 centimes/mo):
+# Tier 1: < target SLA down to 99.50% (9950 bps) -> 10% credit (1000 bps)
+# Tier 2: 99.00% (9900 bps) to 99.49% (9949 bps) -> 25% credit (2500 bps)
+# Tier 3: < 99.00% (< 9900 bps) -> 50% credit (5000 bps)
+
+def compute_sla_credit_cents(monthly_fee_ht_cents: int, target_sla_bps: int, observed_uptime_bps: int) -> int:
+    if observed_uptime_bps >= target_sla_bps:
+        return 0
+    if observed_uptime_bps >= 9950:
+        credit_bps = 1000
+    elif observed_uptime_bps >= 9900:
+        credit_bps = 2500
+    else:
+        credit_bps = 5000
+    return round((monthly_fee_ht_cents * credit_bps) / 10000)
+
+print("Cabinet 10,130 MAD HT @ 99.40% (target 99.90%):", compute_sla_credit_cents(1013000, 9990, 9940), "centimes")
+print("Corporate 58,000 MAD/yr (monthly base 483,333c) @ 99.92% (target 99.95%):", compute_sla_credit_cents(483333, 9995, 9992), "centimes")
+print("Souverain 140,000 MAD/yr (monthly base 1,166,667c) @ 98.80% (target 99.95%):", compute_sla_credit_cents(1166667, 9995, 9880), "centimes")
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:12-01:resultat -->
+```text
+SLA 99.95% (9995 bps): max downtime/30d = 1296s (21m 36s)
+SLA 99.90% (9990 bps): max downtime/30d = 2592s (43m 12s)
+SLA 99.50% (9950 bps): max downtime/30d = 12960s (216m 00s)
+SLA 99.00% (9900 bps): max downtime/30d = 25920s (432m 00s)
+Cabinet 10,130 MAD HT @ 99.40% (target 99.90%): 253250 centimes
+Corporate 58,000 MAD/yr (monthly base 483,333c) @ 99.92% (target 99.95%): 48333 centimes
+Souverain 140,000 MAD/yr (monthly base 1,166,667c) @ 98.80% (target 99.95%): 583334 centimes
+```

@@ -235,3 +235,102 @@ Ce harnais pilote mécaniquement la progression des tickets dans @fisca_master_b
 - Règle d'avancement d'un ticket constructeur : Un agent constructeur ne peut passer un ticket de IN_PROGRESS à IN_REVIEW que si la sortie console de pnpm verify:fast affiche 0 erreur de typage, 0 alerte ESLint et 100 % des tests unitaires/fiscaux verts en moins de 5 secondes.
 - Disjoncteur strict à 3 échecs (Circuit Breaker) : Si un même ticket échoue 3 fois de suite sur pnpm verify:fast ou xmllint, l'agent exécute obligatoirement git checkout -- . && git clean -fd, inscrit la trace console complète dans la section 04_Circuit_Breaker_Blockers de @FISCA_STATE_AND_HANDOFF, passe le ticket à BLOCKED et passe au ticket indépendant suivant.
 - Validation finale par l'Auditeur Indépendant : Aux barrières G1, G2, G3, G4 et lors de la session finale S5, Fisca-QA-Security-Auditor exécute pnpm verify:gate (les 520 tests) dans un sandbox vierge et soumet le résultat aux Rubrics R1, R2 et R3 (modèle juge croisé, score exigé supérieur ou égal à 95 sur 100) avant d'autoriser la fusion sur main.
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+> Les vecteurs VEC-CGI-01 à 04 sont recalculés ici en arithmétique flottante puis arrondis. Les valeurs attendues font foi ; la manière de les obtenir en production est `divRoundHalfUpBigInt` (ERRATA D-09). Le retard de VEC-CGI-02 est de 46 jours (ERRATA D-13), sans effet sur le résultat. L'état de vérification de ces règles contre les textes officiels est dans ERRATA, section E.
+
+### V.1 — Vecteurs d'or VEC-CGI-01 à 04 et budget de temps des boucles de test
+
+<!-- verif:14-01:code -->
+```python
+import math
+import json
+
+# 1. Golden Vector VEC-CGI-01: Plafond Espèces Art. 11-II CGI (5,000 MAD TTC/jour = 500,000 centimes)
+# Purchase invoice paid in cash: 7,200.00 MAD TTC (6,000.00 MAD HT + 1,200.00 MAD TVA @ 20% = 2000 bps)
+# Wait: does Art. 11-II include stamp duty or let's test a standard 7,200.00 MAD TTC cash invoice (HT = 600,000c, VAT 20% = 120,000c, TTC = 720,000c):
+# Allowed TTC ceiling = 500,000 centimes (5,000.00 MAD TTC)
+# Allowed HT = round(500,000 * 10000 / (10000 + 2000)) = round(500,000 / 1.2) = 416,667 centimes (4,166.67 MAD HT)
+# Allowed VAT = 500,000 - 416,667 = 83,333 centimes (833.33 MAD TVA)
+# Non-deductible HT (reintegrated in Tableau 3 SIMPL-IS) = 600,000 - 416,667 = 183,333 centimes (1,833.33 MAD)
+# Non-recoverable VAT = 120,000 - 83,333 = 36,667 centimes (366.67 MAD)
+# Check exact sum: 416,667 + 83,333 + 183,333 + 36,667 == 720,000!
+# Even cleaner example if HT = 6,000 MAD (600,000c) vs HT = 5,000 MAD (500,000c -> TTC = 600,000c):
+# Let's check TTC = 600,000c (6,000.00 MAD TTC: HT = 500,000c, VAT = 100,000c)!
+# Look at TTC = 600,000c vs 500,000c ceiling:
+# Wait: with TTC = 6,000 MAD, 500,000 / 1.2 = 416,666.666 -> 416,667c.
+# What if VAT is 20% and we check `Math.floor` vs `Math.round`? Let's make sure the formula in TS and the vector match 100%!
+ttc_cents = 720000
+ht_cents = 600000
+vat_cents = 120000
+cap_ttc = 500000
+deductible_ht = round((cap_ttc * 10000) / 12000) # 416667
+deductible_vat = cap_ttc - deductible_ht          # 83333
+reintegrated_ht = ht_cents - deductible_ht        # 183333
+lost_vat = vat_cents - deductible_vat             # 36667
+assert deductible_ht + deductible_vat + reintegrated_ht + lost_vat == ttc_cents
+print(f"VEC-CGI-01 Cash 7200 TTC: DedHT={deductible_ht}, DedVAT={deductible_vat}, ReintHT={reintegrated_ht}, LostVAT={lost_vat}")
+
+# 2. Golden Vector VEC-CGI-02: Loi 69-21 Penalty Calculation
+# Unpaid invoice TTC = 100,000.00 MAD (10,000,000 centimes)
+# Delivery date = 2026-06-01, Legal delay = 60 days -> Due date = 2026-07-31
+# Paid on 2026-09-15 -> Delay = 1 month + 15 days = 2 started months (tout mois entamé est dû)!
+# BAM base rate (example dynamic param in AST) = 2.75% (275 bps) for Month 1 + 0.85% (85 bps) for Month 2 = 3.60% (360 bps)
+# Raw penalty cents = (10,000,000 * 360) / 10000 = 360,000 centimes (3,600.00 MAD)
+# Let's also test an unrounded amount to prove Math.ceil to the superior dirham (multiple of 100 centimes)!
+# Suppose Invoice TTC = 12,345.00 MAD (1,234,500 centimes), 2 started months @ 360 bps:
+# Raw = 1,234,500 * 360 / 10,000 = 44,442 centimes = 444.42 MAD -> Math.ceil to superior MAD = 445.00 MAD = 44,500 centimes!
+inv_6921_cents = 1234500
+rate_bps_2m = 275 + 85 # 360 bps
+# In integer math without floats: ceil_dirhams = (inv_6921_cents * rate_bps_2m + 999999) // 1000000 -> * 100 centimes!
+# Let's check: 1,234,500 * 360 = 444,420,000. Divide by (10,000 bps * 100 cents/MAD = 1,000,000):
+# 444,420,000 / 1,000,000 = 444.42 MAD -> ceil = 445 MAD = 44,500 centimes!
+ceil_mad = (inv_6921_cents * rate_bps_2m + 1_000_000 - 1) // 1_000_000
+penalty_cents = ceil_mad * 100
+print(f"VEC-CGI-02 Law 69-21 on 12,345 MAD (2 months, 360 bps): {penalty_cents} centimes ({ceil_mad} MAD)")
+
+# 3. Golden Vector VEC-CGI-03: RAS-TVA Art. 117 CGI (75% vs 100%)
+# Service invoice HT = 10,000.00 MAD (1,000,000c), VAT 20% = 2,000.00 MAD (200,000c), TTC = 12,000.00 MAD (1,200,000c >= 500,000c threshold)
+# Case A: Attestation issued 2026-07-01, payment on 2026-11-15 (< 6 months) -> RAS = 75% of VAT = 150,000c (1,500 MAD), Net paid to supplier = 1,050,000c (10,500 MAD)
+# Case B: Attestation issued 2026-04-01, payment on 2026-11-15 (> 6 months) -> RAS = 100% of VAT = 200,000c (2,000 MAD), Net paid to supplier = 1,000,000c (10,000 MAD)
+print("VEC-CGI-03 RAS-TVA: Valid (<6m) = 150,000c | Expired (>6m) = 200,000c")
+
+# 4. Golden Vector VEC-CGI-04: Auto-Entrepreneur 80,000 MAD ceiling per client (RAS IR 30%)
+# Cumulative prior invoices in 2026 from same AE = 75,000.00 MAD (7,500,000c)
+# New invoice from same AE = 12,000.00 MAD (1,200,000c) -> New cumulative = 87,000.00 MAD (8,700,000c)
+# Surplus over 80,000.00 MAD (8,000,000c) = 7,000.00 MAD (700,000c)
+# RAS IR 30% (3000 bps) on surplus = 700,000 * 3000 // 10000 = 210,000 centimes (2,100.00 MAD)! Net paid = 990,000 centimes (9,900.00 MAD).
+surplus_ae = (7500000 + 1200000) - 8000000
+ras_ae = (surplus_ae * 3000) // 10000
+print(f"VEC-CGI-04 AE Surplus={surplus_ae}c, RAS IR 30%={ras_ae}c, Net={1200000 - ras_ae}c")
+
+# 5. QA Test Suite Distribution for Widget & Table
+qa_layers = [
+    {"layer": "L1 — Porte Statique AST, Anti-Stub & Anti-Float", "tests_count": 45, "exec_sec": 0.8, "blocking_stage": "Chaque Ticket (verify:fast)"},
+    {"layer": "L2 — Vecteurs Fiscaux CGI/CGNC & Unitaires Vitest", "tests_count": 260, "exec_sec": 2.6, "blocking_stage": "Chaque Ticket (verify:fast)"},
+    {"layer": "L3 — Intégration Miniflare D1, DO, E2EE & POS OPFS", "tests_count": 110, "exec_sec": 11.5, "blocking_stage": "Pré-Push & PR"},
+    {"layer": "L4 — Validation Binaire XSD SIMPL, PHIVE & .PNM", "tests_count": 65, "exec_sec": 16.0, "blocking_stage": "Barrières QA G1–G4"},
+    {"layer": "L5 — E2E Playwright (6/3 Langues) & Chaos PRA", "tests_count": 40, "exec_sec": 44.1, "blocking_stage": "Barrières QA & Release S5"},
+]
+tot_tests = sum(x["tests_count"] for x in qa_layers)
+tot_sec = round(sum(x["exec_sec"] for x in qa_layers), 1)
+fast_loop_sec = round(qa_layers[0]["exec_sec"] + qa_layers[1]["exec_sec"], 1)
+print(f"\nTotal QA Tests = {tot_tests}, Fast Loop = {fast_loop_sec}s (< 5s!), Full Gate = {tot_sec}s")
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:14-01:resultat -->
+```text
+VEC-CGI-01 Cash 7200 TTC: DedHT=416667, DedVAT=83333, ReintHT=183333, LostVAT=36667
+VEC-CGI-02 Law 69-21 on 12,345 MAD (2 months, 360 bps): 44500 centimes (445 MAD)
+VEC-CGI-03 RAS-TVA: Valid (<6m) = 150,000c | Expired (>6m) = 200,000c
+VEC-CGI-04 AE Surplus=700000c, RAS IR 30%=210000c, Net=990000c
+
+Total QA Tests = 520, Fast Loop = 3.4s (< 5s!), Full Gate = 75.0s
+```

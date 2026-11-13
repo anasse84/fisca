@@ -297,3 +297,216 @@ Lors de la Session parallèle P2-C (feat/w2-astro-growth) et de la Barrière QA 
 - Réciprocité hreflang 6 Langues & Orientation RTL : Vérifie que les 6 versions linguistiques (/fr/, /ar/, /ary/, /zgh/, /zgh-tfng/, /en/) se référencent mutuellement sans lien 404 et que ar et ary activent dir="rtl".
 - Vecteurs Mathématiques des 6 Outils Gratuits : Teste auditAndRepairMoroccanIce sur des ICE marocains réels (003042032000080, 001534290000057), sur un ICE tronqué par Excel (1534290000057 réparé en 001534290000057) et sur un ICE avec inversion de deux chiffres (rejeté immédiatement).
 - Contrôle CNDP Zéro-Pixel Tiers : Échoue immédiatement si le DOM ou les requêtes réseau d'une page publique contiennent un script externe publicitaire ou analytique non hébergé sur fisca.ma.
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+> La règle « les 15 chiffres de l'ICE sont divisibles par 97 » est établie ici par constat sur des numéros réels, pas par un texte officiel publié. Les deux exemples « 123456789… » de la brochure ne la respectent pas : ce sont des numéros fictifs d'illustration. Le validateur du produit traite donc la clé comme un contrôle de cohérence, et la confirmation officielle reste l'interrogation du référentiel (Doc_17, connecteur OMPIC).
+
+### V.1 — Inventaire des 6 silos : 342 routes canoniques, 1 302 URL indexées
+
+<!-- verif:18-01:code -->
+```python
+import json
+
+# Compute exact programmatic & editorial page inventory across the 6 Semantic Silos and 6 Languages of fisca.ma
+# Wait: let's make sure the structure is realistic, high-quality (E-E-A-T, zero thin content), and mathematically exact!
+
+silos = [
+    {
+        "silo_id": "SILO-01",
+        "silo_name": "1. Clearance xHub, Factur-X & Loi 43-20",
+        "canonical_routes": 18,
+        "locales_count": 6,
+        "indexed_urls": 18 * 6, # 108 URLs
+        "primary_intent": "Transactionnel & Conformité DGI",
+        "geo_hook": "Tableaux UBL 2.1 CIUS-MA + Miroirs .md"
+    },
+    {
+        "silo_id": "SILO-02",
+        "silo_name": "2. Encyclopédie CGI 2026 & Flux SIMPL",
+        "canonical_routes": 32,
+        "locales_count": 6,
+        "indexed_urls": 32 * 6, # 192 URLs
+        "primary_intent": "AEO Answer-First & Citations IA",
+        "geo_hook": "Formules exactes Loi 69-21, RAS-TVA, IS & 9421"
+    },
+    {
+        "silo_id": "SILO-03",
+        "silo_name": "3. Explorateur Comptes PCGE / CGNC",
+        "canonical_routes": 250, # Top 250 core 4-digit CGNC accounts enriched with codeEdi & sample entries (zero thin pages!)
+        "locales_count": 3,      # FR, AR, EN technical accounting dictionary (plus full 6-lang hub) -> 750 URLs
+        "indexed_urls": 250 * 3,
+        "primary_intent": "Longue Traîne Comptable & Étudiants/OEC",
+        "geo_hook": "Schéma écriture Débit/Crédit + codeEdi SIMPL-IS"
+    },
+    {
+        "silo_id": "SILO-04",
+        "silo_name": "4. Solutions Métiers, OEC & Fisca POS",
+        "canonical_routes": 16,
+        "locales_count": 6,
+        "indexed_urls": 16 * 6, # 96 URLs
+        "primary_intent": "Conversion B2B, CHR/POS & Fiduciaires",
+        "geo_hook": "Comparatifs ROI & Caisse Offline 72h"
+    },
+    {
+        "silo_id": "SILO-05",
+        "silo_name": "5. Régions Maroc & Subvention Mowakaba",
+        "canonical_routes": 12, # 12 Regions of Morocco with CRI/Tribunal/DGI & Mowakaba 80%-90%
+        "locales_count": 6,
+        "indexed_urls": 12 * 6, # 72 URLs
+        "primary_intent": "SEO Local Maroc & Financement TPME",
+        "geo_hook": "Calculateur reste à charge Maroc PME"
+    },
+    {
+        "silo_id": "SILO-06",
+        "silo_name": "6. Outils Gratuits Viraux & Migrations ERP",
+        "canonical_routes": 14, # 6 interactive tools + 8 ERP migration/comparison guides (Sage 100, Odoo, Excel)
+        "locales_count": 6,
+        "indexed_urls": 14 * 6, # 84 URLs
+        "primary_intent": "Acquisition PLG & Backlinks Naturels",
+        "geo_hook": "Audit ICE Excel, Validateur Factur-X & API .md"
+    }
+]
+
+tot_canonical = sum(s["canonical_routes"] for s in silos)
+tot_indexed_urls = sum(s["indexed_urls"] for s in silos)
+tot_md_mirrors = tot_canonical # Every canonical route has a clean .md RAG mirror + llms.txt
+
+print(f"Total Canonical Routes = {tot_canonical} | Total Indexed Multilingual URLs = {tot_indexed_urls}")
+print(json.dumps({"silos": silos, "totals": {"silos_count": len(silos), "canonical_routes": tot_canonical, "indexed_urls": tot_indexed_urls, "free_viral_tools": 6}}, indent=2, ensure_ascii=False))
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:18-01:resultat -->
+```text
+Total Canonical Routes = 342 | Total Indexed Multilingual URLs = 1302
+{
+  "silos": [
+    {
+      "silo_id": "SILO-01",
+      "silo_name": "1. Clearance xHub, Factur-X & Loi 43-20",
+      "canonical_routes": 18,
+      "locales_count": 6,
+      "indexed_urls": 108,
+      "primary_intent": "Transactionnel & Conformité DGI",
+      "geo_hook": "Tableaux UBL 2.1 CIUS-MA + Miroirs .md"
+    },
+    {
+      "silo_id": "SILO-02",
+      "silo_name": "2. Encyclopédie CGI 2026 & Flux SIMPL",
+      "canonical_routes": 32,
+      "locales_count": 6,
+      "indexed_urls": 192,
+      "primary_intent": "AEO Answer-First & Citations IA",
+      "geo_hook": "Formules exactes Loi 69-21, RAS-TVA, IS & 9421"
+    },
+    {
+      "silo_id": "SILO-03",
+      "silo_name": "3. Explorateur Comptes PCGE / CGNC",
+      "canonical_routes": 250,
+      "locales_count": 3,
+      "indexed_urls": 750,
+      "primary_intent": "Longue Traîne Comptable & Étudiants/OEC",
+      "geo_hook": "Schéma écriture Débit/Crédit + codeEdi SIMPL-IS"
+    },
+    {
+      "silo_id": "SILO-04",
+      "silo_name": "4. Solutions Métiers, OEC & Fisca POS",
+      "canonical_routes": 16,
+      "locales_count": 6,
+      "indexed_urls": 96,
+      "primary_intent": "Conversion B2B, CHR/POS & Fiduciaires",
+      "geo_hook": "Comparatifs ROI & Caisse Offline 72h"
+    },
+    {
+      "silo_id": "SILO-05",
+      "silo_name": "5. Régions Maroc & Subvention Mowakaba",
+      "canonical_routes": 12,
+      "locales_count": 6,
+      "indexed_urls": 72,
+      "primary_intent": "SEO Local Maroc & Financement TPME",
+      "geo_hook": "Calculateur reste à charge Maroc PME"
+    },
+    {
+      "silo_id": "SILO-06",
+      "silo_name": "6. Outils Gratuits Viraux & Migrations ERP",
+      "canonical_routes": 14,
+      "locales_count": 6,
+      "indexed_urls": 84,
+      "primary_intent": "Acquisition PLG & Backlinks Naturels",
+      "geo_hook": "Audit ICE Excel, Validateur Factur-X & API .md"
+    }
+  ],
+  "totals": {
+    "silos_count": 6,
+    "canonical_routes": 342,
+    "indexed_urls": 1302,
+    "free_viral_tools": 6
+  }
+}
+```
+
+### V.2 — Clé de contrôle de l'ICE : numéros réels et exemples de la brochure
+
+<!-- verif:18-02:code -->
+```python
+# Test the real Moroccan ICE numbers found in official brochure & Moroccan companies!
+samples = [
+    "003976749000084", # MySunday Sarlau
+    "001534290000057", # OCP / Safyr example
+    "123456789000057", # Official ICE brochure example 1
+    "123456789000131", # Official ICE brochure example 2
+]
+
+for s in samples:
+    n15 = int(s)
+    n13 = int(s[:13])
+    key = int(s[13:])
+    rem15 = n15 % 97
+    calc_key_iso7064 = 97 - ((n13 * 100) % 97)
+    # Wait: what if (n13 * 100) % 97 == 0? Then 97 - 0 = 97 -> % 97 = 0 (or 97 can't fit in 2 digits if 97? Wait: 97 fits in 2 digits! Wait: if key is 97, (n13*100 + 97) % 97 == 0! If key is 00, (n13*100 + 0) % 97 == 0!)
+    print(f"ICE={s} | n15 % 97 = {rem15} | key={key:02d} | 97 - ((n13*100)%97) = {calc_key_iso7064 % 97:02d}")
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:18-02:resultat -->
+```text
+ICE=003976749000084 | n15 % 97 = 0 | key=84 | 97 - ((n13*100)%97) = 84
+ICE=001534290000057 | n15 % 97 = 0 | key=57 | 97 - ((n13*100)%97) = 57
+ICE=123456789000057 | n15 % 97 = 43 | key=57 | 97 - ((n13*100)%97) = 14
+ICE=123456789000131 | n15 % 97 = 20 | key=31 | 97 - ((n13*100)%97) = 11
+```
+
+### V.3 — Clé de contrôle de l'ICE : six numéros réels supplémentaires
+
+<!-- verif:18-03:code -->
+```python
+real_ices = [
+    "003042032000080", # Comma Solutions Marrakech
+    "001548253000095", # Casablanca
+    "002390937000044", # Capital Signature SARL
+    "000196565000003", # Pneumatique Attacharouk II
+    "001585349000028", # Fatourati receipt
+    "002598605000093", # Dalia Tamesna
+]
+for ice in real_ices:
+    print(ice, "-> % 97 =", int(ice) % 97)
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:18-03:resultat -->
+```text
+003042032000080 -> % 97 = 0
+001548253000095 -> % 97 = 0
+002390937000044 -> % 97 = 0
+000196565000003 -> % 97 = 0
+001585349000028 -> % 97 = 0
+002598605000093 -> % 97 = 0
+```
