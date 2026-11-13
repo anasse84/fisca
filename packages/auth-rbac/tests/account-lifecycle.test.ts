@@ -1,22 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
   AccountLifecycleError,
+  FULL_NAME_MAX_LENGTH,
   PASSWORD_RESET_TTL_SEC,
   hashEmailForRateKey,
   registerAccount,
   requestPasswordReset,
   verifyEmailToken,
 } from '../src/index.ts';
-import type { AccountLifecycleDeps, OneTimeTokenRecord } from '../src/index.ts';
+import type { AccountLifecycleDeps, NewUnverifiedAccount, OneTimeTokenRecord } from '../src/index.ts';
 
 function build(randomByte = 7) {
+  const created: NewUnverifiedAccount[] = [];
   const tokens = new Map<string, OneTimeTokenRecord>();
   const resets = new Map<string, OneTimeTokenRecord>();
   const sent: string[] = [];
   const verified: string[] = [];
   const deps: AccountLifecycleDeps = {
     accounts: {
-      createUnverifiedAccount: async () => ({ kind: 'CREATED' }),
+      createUnverifiedAccount: async (input) => {
+        created.push(input);
+        return { kind: 'CREATED' };
+      },
       findByEmailNormalized: async (email) => (email === 'known@example.ma' ? { userId: 'u-1', emailVerified: true } : null),
       markEmailVerified: async (userId) => {
         verified.push(userId);
@@ -53,18 +58,37 @@ function build(randomByte = 7) {
     randomBytes: (length) => new Uint8Array(length).fill(randomByte),
     newUserId: () => 'u-new',
   };
-  return { deps, tokens, resets, sent, verified };
+  return { deps, tokens, resets, sent, verified, created };
 }
 
 describe('account-lifecycle (moteur)', () => {
   it('jeton déterministe avec source aléatoire injectée, haché, consommé une seule fois', async () => {
     const { deps, sent, verified } = build();
-    await registerAccount(deps, { email: 'new@example.ma', password: 'mot-de-passe-factice-12' });
+    await registerAccount(deps, { email: 'new@example.ma', password: 'mot-de-passe-factice-12', fullName: 'Nadia El Idrissi' });
     expect(sent).toHaveLength(1);
     const token = (sent[0] ?? '').replace('verif:', '');
     await verifyEmailToken(deps, token);
     expect(verified).toEqual(['u-new']);
     await expect(verifyEmailToken(deps, token)).rejects.toMatchObject({ code: 'VERIFICATION_TOKEN_INVALID' });
+  });
+
+  it('transmet fullName rogné au port ; refuse absent, vide, trop long ou à caractères de contrôle avant tout accès au stockage', async () => {
+    const { deps, created, sent } = build();
+    await registerAccount(deps, { email: 'new@example.ma', password: 'mot-de-passe-factice-12', fullName: '  Nadia El Idrissi  ' });
+    expect(created.map((row) => row.fullName)).toEqual(['Nadia El Idrissi']);
+    created.length = 0;
+    sent.length = 0;
+    const invalid = ['', '  \t ', 'x'.repeat(FULL_NAME_MAX_LENGTH + 1), 'a\u0000b', 'a\nb', 'a\u007fb', 'a\u2029b'];
+    for (const fullName of invalid) {
+      await expect(registerAccount(deps, { email: 'new@example.ma', password: 'mot-de-passe-factice-12', fullName })).rejects.toMatchObject({
+        code: 'REGISTRATION_INPUT_INVALID',
+      });
+    }
+    await expect(
+      registerAccount(deps, { email: 'new@example.ma', password: 'mot-de-passe-factice-12', fullName: 'x'.repeat(FULL_NAME_MAX_LENGTH) }),
+    ).resolves.toBeUndefined();
+    expect(created).toHaveLength(1);
+    expect(sent).toHaveLength(1);
   });
 
   it('refuse les jetons vides ou démesurés avant tout accès au stockage', async () => {

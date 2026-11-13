@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { FULL_NAME_MAX_LENGTH } from '@fisca/auth-rbac';
 import type {
   AccountLifecycleRouterDeps,
   AccountRegistrationStore,
@@ -12,11 +13,13 @@ const REGISTER = '/api/v1/auth/register';
 const VERIFY = '/api/v1/auth/verify-email';
 const FORGOT = '/api/v1/auth/password/forgot';
 const NOW = 1_800_000_000;
+const FULL_NAME = 'Nadia El Idrissi';
 
 interface UserRow {
   userId: string;
   emailNormalized: string;
   passwordHash: string;
+  fullName: string;
   emailVerified: boolean;
 }
 
@@ -44,7 +47,7 @@ function build(options: { turnstileOk?: boolean; blockedKeys?: readonly string[]
           return { kind: 'EMAIL_TAKEN', userId: row.userId, emailVerified: row.emailVerified };
         }
       }
-      users.set(input.userId, { userId: input.userId, emailNormalized: input.emailNormalized, passwordHash: input.passwordHash, emailVerified: false });
+      users.set(input.userId, { userId: input.userId, emailNormalized: input.emailNormalized, passwordHash: input.passwordHash, fullName: input.fullName, emailVerified: false });
       return { kind: 'CREATED' };
     },
     findByEmailNormalized: async (email) => {
@@ -153,7 +156,7 @@ async function snapshot(response: Response): Promise<{ status: number; body: str
 describe('POST /api/v1/auth/register (CTR-API-01)', () => {
   it('crée un compte non vérifié, mot de passe haché PBKDF2, et envoie un jeton de vérification haché au stockage', async () => {
     const { app, users, verificationRows, mails } = build();
-    const response = await post(app, REGISTER, { email: ' Nadia@Example.MA ', password: PASSWORD });
+    const response = await post(app, REGISTER, { email: ' Nadia@Example.MA ', password: PASSWORD, full_name: FULL_NAME });
     expect(response.status).toBe(202);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(await response.json()).toEqual({ status: 'VERIFICATION_PENDING' });
@@ -176,14 +179,14 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
 
   it('anti-énumération : réponses identiques, e-mail nouveau, vérifié, ou déjà inscrit non vérifié', async () => {
     const ctx = build();
-    const fresh = await snapshot(await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD }));
-    const pending = await snapshot(await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD }));
+    const fresh = await snapshot(await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME }));
+    const pending = await snapshot(await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME }));
     const row = [...ctx.users.values()][0];
     if (row === undefined) {
       throw new Error('compte attendu');
     }
     row.emailVerified = true;
-    const verified = await snapshot(await post(ctx.app, REGISTER, { email: 'A@example.ma', password: 'un-autre-mot-de-passe-12' }));
+    const verified = await snapshot(await post(ctx.app, REGISTER, { email: 'A@example.ma', password: 'un-autre-mot-de-passe-12', full_name: FULL_NAME }));
     expect(pending).toEqual(fresh);
     expect(verified).toEqual(fresh);
     expect(ctx.users.size).toBe(1);
@@ -192,7 +195,7 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
 
   it('e-mail déjà vérifié : aucun mail, aucun jeton, compte inchangé', async () => {
     const ctx = build();
-    await post(ctx.app, REGISTER, { email: 'v@example.ma', password: PASSWORD });
+    await post(ctx.app, REGISTER, { email: 'v@example.ma', password: PASSWORD, full_name: FULL_NAME });
     const row = [...ctx.users.values()][0];
     if (row === undefined) {
       throw new Error('compte attendu');
@@ -201,7 +204,7 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
     const hash = row.passwordHash;
     ctx.mails.length = 0;
     ctx.verificationRows.clear();
-    await post(ctx.app, REGISTER, { email: 'v@example.ma', password: 'un-autre-mot-de-passe-12' });
+    await post(ctx.app, REGISTER, { email: 'v@example.ma', password: 'un-autre-mot-de-passe-12', full_name: FULL_NAME });
     expect(ctx.mails).toHaveLength(0);
     expect(ctx.verificationRows.size).toBe(0);
     expect(row.passwordHash).toBe(hash);
@@ -209,9 +212,9 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
 
   it('compte non vérifié réinscrit : nouveau jeton, mot de passe d’origine conservé', async () => {
     const ctx = build();
-    await post(ctx.app, REGISTER, { email: 'p@example.ma', password: PASSWORD });
+    await post(ctx.app, REGISTER, { email: 'p@example.ma', password: PASSWORD, full_name: FULL_NAME });
     const hash = [...ctx.users.values()][0]?.passwordHash;
-    await post(ctx.app, REGISTER, { email: 'p@example.ma', password: 'un-autre-mot-de-passe-12' });
+    await post(ctx.app, REGISTER, { email: 'p@example.ma', password: 'un-autre-mot-de-passe-12', full_name: FULL_NAME });
     expect(ctx.mails).toHaveLength(2);
     expect(ctx.mails[0]?.token).not.toBe(ctx.mails[1]?.token);
     expect([...ctx.users.values()][0]?.passwordHash).toBe(hash);
@@ -220,12 +223,12 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
   it('refuse un mot de passe hors politique (12 à 128), un e-mail invalide et un corps invalide en 400 problem+json', async () => {
     const { app, users } = build();
     for (const body of [
-      { email: 'a@example.ma', password: 'court' },
-      { email: 'a@example.ma', password: 'x'.repeat(129) },
-      { email: 'pas-un-email', password: PASSWORD },
-      { email: 'a@example.ma' },
-      { password: PASSWORD },
-      { email: 42, password: PASSWORD },
+      { email: 'a@example.ma', password: 'court', full_name: FULL_NAME },
+      { email: 'a@example.ma', password: 'x'.repeat(129), full_name: FULL_NAME },
+      { email: 'pas-un-email', password: PASSWORD, full_name: FULL_NAME },
+      { email: 'a@example.ma', full_name: FULL_NAME },
+      { password: PASSWORD, full_name: FULL_NAME },
+      { email: 42, password: PASSWORD, full_name: FULL_NAME },
       [],
     ]) {
       const response = await post(app, REGISTER, body);
@@ -236,23 +239,105 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
     expect(users.size).toBe(0);
   });
 
+  it('collecte full_name : nom rogné et transmis au port, accents et écritures non latines acceptés', async () => {
+    const { app, users } = build();
+    expect((await post(app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: '  Nadia El Idrissi \t' })).status).toBe(202);
+    expect((await post(app, REGISTER, { email: 'b@example.ma', password: PASSWORD, full_name: 'نادية الإدريسي' })).status).toBe(202);
+    expect([...users.values()].map((row) => row.fullName)).toEqual(['Nadia El Idrissi', 'نادية الإدريسي']);
+  });
+
+  it('full_name absent, non textuel, vide, blanc, trop long ou à caractères de contrôle : 400 problem+json, aucun compte, aucun mail', async () => {
+    const ctx = build();
+    const base = { email: 'a@example.ma', password: PASSWORD };
+    const bodies: readonly unknown[] = [
+      base,
+      { ...base, full_name: null },
+      { ...base, full_name: 42 },
+      { ...base, full_name: '' },
+      { ...base, full_name: '   \t ' },
+      { ...base, full_name: 'x'.repeat(FULL_NAME_MAX_LENGTH + 1) },
+      { ...base, full_name: `  ${'x'.repeat(FULL_NAME_MAX_LENGTH + 1)}  ` },
+      { ...base, full_name: 'Nadia\u0000El' },
+      { ...base, full_name: 'Nadia\nEl' },
+      { ...base, full_name: 'Nadia\u007fEl' },
+      { ...base, full_name: 'Nadia\u2028El' },
+    ];
+    for (const body of bodies) {
+      const response = await post(ctx.app, REGISTER, body);
+      expect(response.status).toBe(400);
+      expect(response.headers.get('Content-Type')).toContain('application/problem+json');
+    }
+    expect(ctx.users.size).toBe(0);
+    expect(ctx.mails).toHaveLength(0);
+    expect(ctx.verificationRows.size).toBe(0);
+  });
+
+  it('accepte full_name de longueur exactement FULL_NAME_MAX_LENGTH (après rognage)', async () => {
+    const { app, users } = build();
+    const response = await post(app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: ` ${'x'.repeat(FULL_NAME_MAX_LENGTH)} ` });
+    expect(response.status).toBe(202);
+    expect([...users.values()][0]?.fullName).toHaveLength(FULL_NAME_MAX_LENGTH);
+  });
+
+  it('anti-énumération : full_name invalide donne le même 400 que l’e-mail existe (vérifié ou non) ou non, validé avant tout accès au stockage', async () => {
+    const ctx = build();
+    await post(ctx.app, REGISTER, { email: 'e@example.ma', password: PASSWORD, full_name: FULL_NAME });
+    const row = [...ctx.users.values()][0];
+    if (row === undefined) {
+      throw new Error('compte attendu');
+    }
+    const withoutTrace = async (response: Response): Promise<{ status: number; body: string }> => {
+      const { status, body } = await snapshot(response);
+      return { status, body: body.replace(/"traceId":"[^"]*",?/u, '') };
+    };
+    const unknown = await withoutTrace(await post(ctx.app, REGISTER, { email: 'inconnu@example.ma', password: PASSWORD, full_name: '' }));
+    const pending = await withoutTrace(await post(ctx.app, REGISTER, { email: 'e@example.ma', password: PASSWORD, full_name: '' }));
+    row.emailVerified = true;
+    const verified = await withoutTrace(await post(ctx.app, REGISTER, { email: 'e@example.ma', password: PASSWORD, full_name: '' }));
+    expect(unknown.status).toBe(400);
+    expect(pending).toEqual(unknown);
+    expect(verified).toEqual(unknown);
+    let storeCalls = 0;
+    const spied = createAccountLifecycleRoutes({
+      ...ctx.deps,
+      accounts: {
+        ...ctx.deps.accounts,
+        createUnverifiedAccount: async (input) => {
+          storeCalls += 1;
+          return ctx.deps.accounts.createUnverifiedAccount(input);
+        },
+      },
+    });
+    expect((await post(spied, REGISTER, { email: 'z@example.ma', password: PASSWORD, full_name: '' })).status).toBe(400);
+    expect(storeCalls).toBe(0);
+  });
+
+  it('202 identique que l’e-mail existe ou non même avec un full_name différent ; le nom du compte existant est conservé', async () => {
+    const ctx = build();
+    const fresh = await snapshot(await post(ctx.app, REGISTER, { email: 'n@example.ma', password: PASSWORD, full_name: FULL_NAME }));
+    const again = await snapshot(await post(ctx.app, REGISTER, { email: 'n@example.ma', password: PASSWORD, full_name: 'Autre Nom' }));
+    expect(fresh.status).toBe(202);
+    expect(again).toEqual(fresh);
+    expect([...ctx.users.values()].map((row) => row.fullName)).toEqual([FULL_NAME]);
+  });
+
   it('accepte exactement 12 et 128 caractères', async () => {
     const { app, users } = build();
-    expect((await post(app, REGISTER, { email: 'a@example.ma', password: 'a'.repeat(12) })).status).toBe(202);
-    expect((await post(app, REGISTER, { email: 'b@example.ma', password: 'b'.repeat(128) })).status).toBe(202);
+    expect((await post(app, REGISTER, { email: 'a@example.ma', password: 'a'.repeat(12), full_name: FULL_NAME })).status).toBe(202);
+    expect((await post(app, REGISTER, { email: 'b@example.ma', password: 'b'.repeat(128), full_name: FULL_NAME })).status).toBe(202);
     expect(users.size).toBe(2);
   });
 
   it('Turnstile refusé : 403 sans effet ; débit dépassé : 429 sans effet ; ordre débit puis Turnstile', async () => {
     const denied = build({ turnstileOk: false });
-    const forbidden = await post(denied.app, REGISTER, { email: 'a@example.ma', password: PASSWORD }, '');
+    const forbidden = await post(denied.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME }, '');
     expect(forbidden.status).toBe(403);
     expect((await forbidden.json()) as { errorCode: string }).toMatchObject({ errorCode: 'TURNSTILE_REQUIRED' });
     expect(denied.turnstileCalls).toEqual([{ token: null, remoteIp: '203.0.113.7' }]);
     expect(denied.users.size).toBe(0);
 
     const limited = build({ blockedKeys: ['auth:register:'] });
-    const tooMany = await post(limited.app, REGISTER, { email: 'a@example.ma', password: PASSWORD });
+    const tooMany = await post(limited.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME });
     expect(tooMany.status).toBe(429);
     expect(limited.turnstileCalls).toHaveLength(0);
     expect(limited.users.size).toBe(0);
@@ -261,13 +346,13 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
 
   it('transmet le jeton cf-turnstile-response au vérificateur', async () => {
     const ctx = build();
-    await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD }, '?cf-turnstile-response=jeton-42');
+    await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME }, '?cf-turnstile-response=jeton-42');
     expect(ctx.turnstileCalls).toEqual([{ token: 'jeton-42', remoteIp: '203.0.113.7' }]);
   });
 
   it('échec d’envoi : réponse inchangée 202, échec signalé au port, aucune fuite', async () => {
     const ctx = build({ sendFails: true });
-    const response = await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD });
+    const response = await post(ctx.app, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME });
     expect(response.status).toBe(202);
     expect(ctx.failures).toEqual(['verification']);
   });
@@ -278,7 +363,7 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
       ...ctx.deps,
       accounts: { ...ctx.deps.accounts, createUnverifiedAccount: async () => Promise.reject(new Error('D1 down: secret-interne')) },
     });
-    const response = await post(broken, REGISTER, { email: 'a@example.ma', password: PASSWORD });
+    const response = await post(broken, REGISTER, { email: 'a@example.ma', password: PASSWORD, full_name: FULL_NAME });
     expect(response.status).toBe(500);
     expect(response.headers.get('Content-Type')).toContain('application/problem+json');
     expect(await response.text()).not.toContain('secret-interne');
@@ -286,7 +371,7 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
 });
 
 async function registerAndGetToken(ctx: ReturnType<typeof build>, email = 'v@example.ma'): Promise<string> {
-  await post(ctx.app, REGISTER, { email, password: PASSWORD });
+  await post(ctx.app, REGISTER, { email, password: PASSWORD, full_name: FULL_NAME });
   const token = ctx.mails.at(-1)?.token;
   if (token === undefined) {
     throw new Error('jeton attendu');
