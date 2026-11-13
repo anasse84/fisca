@@ -11,10 +11,8 @@
  * - POST /api/v1/auth/passkeys/register/options (CTR-API-37), /register/verify (CTR-API-38),
  *   /authenticate/options (CTR-API-39) et /authenticate/verify (CTR-API-40).
  *
- * La référence `lib="dom"` donne au typage les API Web standard (crypto, Request, Response) que le paquet
- * @fisca/auth-rbac utilise ; elle évite de toucher à apps/api-hono/tsconfig.json, hors périmètre.
+ * Les API Web standard (crypto, Request, Response) sont typées par la lib DOM du tsconfig de apps/api-hono.
  */
-/// <reference lib="dom" />
 import {
   createAccountLifecycleRouter,
   createAuthRouter,
