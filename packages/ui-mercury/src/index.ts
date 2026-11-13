@@ -32,3 +32,9 @@ export {
   windowIndexes,
 } from './grid-core.ts';
 export type { FeedState, FeedUpdate, GridDensity, GridWindow } from './grid-core.ts';
+export { DEFAULT_RESULT_LIMIT, groupHits, normalizeSearchText, prepareCommands, searchCommands } from './command-search.ts';
+export type { HitGroup, PaletteCommand, PreparedCommand, SearchHit } from './command-search.ts';
+export { CommandPalette } from './CommandPalette.tsx';
+export type { CommandPaletteLabels, CommandPaletteProps } from './CommandPalette.tsx';
+export { SplitScreenReviewDrawer } from './SplitScreenReviewDrawer.tsx';
+export type { ReviewAiProposal, SplitScreenReviewDrawerLabels, SplitScreenReviewDrawerProps } from './SplitScreenReviewDrawer.tsx';

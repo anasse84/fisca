@@ -1,0 +1,131 @@
+/* Palette de commande Cmd+K (Doc_08 Section 05) : propriétés logiques uniquement (RTL/LTR). */
+.fisca-palette__backdrop {
+  position: fixed;
+  inset-block: 0;
+  inset-inline: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block-start: 12vh;
+  padding-inline: 16px;
+  background: rgb(20 20 19 / 0.45);
+}
+
+.fisca-palette {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(640px, 100%);
+  max-block-size: 70vh;
+  overflow: hidden;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgb(20 20 19 / 0.28);
+}
+
+.fisca-palette__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+  padding-inline: 12px;
+  border-block-end: 1px solid var(--line-border);
+}
+
+.fisca-palette__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding-inline: 4px;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.fisca-palette__close {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding-inline: 12px;
+  color: var(--text-secondary);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-palette__input:focus-visible,
+.fisca-palette__close:focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+.fisca-palette__list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: 4px;
+}
+
+.fisca-palette__heading {
+  padding-block: 8px 4px;
+  padding-inline: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.fisca-palette__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-block-size: 44px;
+  padding-inline: 16px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fisca-palette__option[aria-selected="true"] {
+  background: var(--bg-subtle);
+  border-inline-start: 3px solid var(--brand-indigo);
+  padding-inline-start: 13px;
+}
+
+.fisca-palette__shortcut {
+  color: var(--text-secondary);
+  font-size: 12px;
+  unicode-bidi: isolate;
+}
+
+.fisca-palette__empty,
+.fisca-palette__status {
+  padding-block: 16px;
+  padding-inline: 16px;
+  color: var(--text-secondary);
+  text-align: start;
+}
+
+.fisca-palette__status {
+  padding-block: 0;
+  padding-inline: 0;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fisca-palette__backdrop,
+  .fisca-palette {
+    transition: none;
+    animation: none;
+  }
+}
