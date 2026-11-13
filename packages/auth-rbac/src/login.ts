@@ -7,7 +7,8 @@
  * dérivation PBKDF2 factice égalise le temps de réponse.
  */
 
-import { LOCKOUT_DEFAULT_POLICY, authenticatePassword, initialLockoutState } from './auth-2fa.ts';
+import { LOCKOUT_DEFAULT_POLICY, PRODUCTION_PASSWORD_SERVICE, authenticatePassword, decoyPasswordHash, initialLockoutState } from './auth-2fa.ts';
+import type { PasswordService } from './auth-2fa.ts';
 import type { LockoutState } from './auth-2fa.ts';
 import { completeFirstFactor } from './first-factor.ts';
 import type { FirstFactorDeps, FirstFactorOutcome } from './first-factor.ts';
@@ -31,6 +32,8 @@ export interface LoginDeps {
   /** Valeur du secret AUTH_PEPPER (CTR-SEC-01). */
   readonly pepper: string;
   readonly flow: FirstFactorDeps;
+  /** Configuration de mots de passe ; production (100 000 itérations, borne 100 000) par défaut. */
+  readonly passwordService?: PasswordService;
 }
 
 export type LoginErrorCode = 'LOGIN_INVALID_CREDENTIALS' | 'LOGIN_ACCOUNT_LOCKED';
@@ -48,22 +51,21 @@ export class LoginError extends Error {
   }
 }
 
-/** Empreinte bien formée qui ne correspond à aucun mot de passe : sert uniquement à égaliser le temps de calcul. */
-const DECOY_HASH = `pbkdf2_sha512$100000$${'00'.repeat(16)}$${'00'.repeat(32)}`;
-
 export async function loginWithPassword(
   deps: LoginDeps,
   input: { readonly email: string; readonly password: string },
 ): Promise<FirstFactorOutcome> {
   const nowEpochMs = deps.flow.mfa.nowEpochSec() * 1000;
+  const passwordService = deps.passwordService ?? PRODUCTION_PASSWORD_SERVICE;
   const account = await deps.accounts.findByEmailNormalized(normalizeEmail(input.email));
   if (account === null || account.passwordHash === null) {
     await authenticatePassword({
       plainPassword: input.password,
       pepper: deps.pepper,
-      storedHash: DECOY_HASH,
+      storedHash: decoyPasswordHash(passwordService),
       state: initialLockoutState(),
       nowEpochMs,
+      passwordService,
     });
     throw new LoginError('LOGIN_INVALID_CREDENTIALS', 'identifiants invalides.');
   }
@@ -74,6 +76,7 @@ export async function loginWithPassword(
     state: account.lockout,
     nowEpochMs,
     policy: LOCKOUT_DEFAULT_POLICY,
+    passwordService,
   });
   if (result.outcome === 'LOCKED') {
     throw new LoginError('LOGIN_ACCOUNT_LOCKED', 'compte temporairement verrouillé.', Math.ceil(result.retryAfterMs / 1000));

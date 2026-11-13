@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LoginRouterDeps, MfaRouterDeps } from '@fisca/auth-rbac';
 import { createAuthRoutes, createLoginRoutes } from './index.ts';
-import { PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
+import { LOW_COST_PASSWORD_SERVICE, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
 
 const LOGIN = '/api/v1/auth/login';
 const VERIFY = '/api/v1/auth/2fa/verify';
@@ -12,7 +12,7 @@ async function build(options: { turnstileOk?: boolean; rateOk?: boolean } = {}) 
   const turnstileCalls: { token: string | null; remoteIp: string | null }[] = [];
   const deps: LoginRouterDeps = {
     accounts: kit.accounts,
-    pepper: PEPPER,
+    pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE,
     flow: kit.flow,
     turnstile: {
       verify: async (input) => {

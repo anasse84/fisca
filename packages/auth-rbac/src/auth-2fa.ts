@@ -10,6 +10,9 @@
  * le mfa_challenge_token. L'orchestration (ports, moteur) vit dans mfa-engine.ts, les routes dans mfa-routes.ts.
  */
 
+import { PRODUCTION_PASSWORD_SERVICE, timingSafeEqualBytes } from './password-service.ts';
+import type { PasswordService } from './password-service.ts';
+
 // ---------------------------------------------------------------------------
 // Utilitaires hexadécimaux (internes)
 // ---------------------------------------------------------------------------
@@ -37,132 +40,46 @@ function hexToBytes(hex: string): Uint8Array<ArrayBuffer> | null {
 }
 
 // ---------------------------------------------------------------------------
-// Mot de passe : PBKDF2-HMAC-SHA512 + pepper
+// Mot de passe : PBKDF2-HMAC-SHA512 + pepper (voir password-service.ts)
 // ---------------------------------------------------------------------------
 
-export const PASSWORD_HASH_SCHEME = 'pbkdf2_sha512' as const;
-export const PASSWORD_PBKDF2_ITERATIONS = 100000 as const;
-export const PASSWORD_SALT_BYTES = 16 as const;
-export const PASSWORD_DERIVED_BITS = 256 as const;
-export const PASSWORD_MIN_LENGTH = 12 as const;
-export const PASSWORD_MAX_LENGTH = 128 as const;
-
-/** Format exact : pbkdf2_sha512$100000$<sel hex 32>$<empreinte hex 64> (ERRATA C et D-01). */
-export const PASSWORD_HASH_FORMAT_REGEX = /^pbkdf2_sha512\$100000\$[0-9a-f]{32}\$[0-9a-f]{64}$/;
-
-export interface ParsedPasswordHash {
-  readonly iterations: typeof PASSWORD_PBKDF2_ITERATIONS;
-  readonly saltHex: string;
-  readonly hashHex: string;
-}
-
-/** Décode une empreinte stockée ; renvoie null (jamais d'exception) si le format n'est pas exact. */
-export function parseStoredPasswordHash(stored: string): ParsedPasswordHash | null {
-  if (!PASSWORD_HASH_FORMAT_REGEX.test(stored)) {
-    return null;
-  }
-  const parts = stored.split('$');
-  const saltHex = parts[2];
-  const hashHex = parts[3];
-  if (saltHex === undefined || hashHex === undefined) {
-    return null;
-  }
-  return { iterations: PASSWORD_PBKDF2_ITERATIONS, saltHex, hashHex };
-}
+export {
+  PASSWORD_DERIVED_BITS,
+  PASSWORD_HASH_FORMAT_REGEX,
+  PASSWORD_HASH_SCHEME,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PBKDF2_ITERATIONS,
+  PASSWORD_SALT_BYTES,
+  PRODUCTION_PASSWORD_SERVICE,
+  decoyPasswordHash,
+  parseStoredPasswordHash,
+  timingSafeEqualBytes,
+} from './password-service.ts';
+export type { ParsedPasswordHash, PasswordService } from './password-service.ts';
 
 /**
- * Comparaison en temps constant : parcourt toute la longueur et accumule les différences par OU exclusif,
- * sans sortie anticipée sur le contenu. Les longueurs différentes sont refusées (la longueur n'est pas secrète).
- */
-export function timingSafeEqualBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-  let diff = 0;
-  for (let index = 0; index < left.length; index += 1) {
-    diff |= (left[index] ?? 0) ^ (right[index] ?? 0);
-  }
-  return diff === 0;
-}
-
-function assertPasswordPolicy(plainPassword: string): void {
-  if (plainPassword.length < PASSWORD_MIN_LENGTH || plainPassword.length > PASSWORD_MAX_LENGTH) {
-    throw new Error('AUTH_PASSWORD_LENGTH_POLICY: Le mot de passe doit contenir entre 12 et 128 caractères.');
-  }
-}
-
-function assertPepper(pepper: string): void {
-  if (pepper.length === 0) {
-    throw new Error('AUTH_PEPPER_MISSING: Le secret AUTH_PEPPER doit être fourni par l’appelant.');
-  }
-}
-
-async function derivePasswordBytes(plainPassword: string, pepper: string, salt: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(`${plainPassword}\u0000${pepper}`),
-    'PBKDF2',
-    false,
-    ['deriveBits'],
-  );
-  const derived = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: PASSWORD_PBKDF2_ITERATIONS, hash: 'SHA-512' },
-    keyMaterial,
-    PASSWORD_DERIVED_BITS,
-  );
-  return new Uint8Array(derived);
-}
-
-/**
- * Hache un mot de passe en WebCrypto natif (PBKDF2-HMAC-SHA512, 100 000 itérations, sel de 16 octets, pepper).
- * `providedSaltHex` (32 caractères hexadécimaux minuscules) sert aux tests et à la revérification ;
- * sans lui, le sel est aléatoire.
+ * Hache un mot de passe avec la configuration de production (PBKDF2-HMAC-SHA512, 100 000 itérations, sel de
+ * 16 octets, pepper). `providedSaltHex` sert aux tests et à la revérification.
  */
 export async function hashPasswordWorkerSafe(
   plainPassword: string,
   serverPepper: string,
   providedSaltHex?: string,
 ): Promise<string> {
-  assertPasswordPolicy(plainPassword);
-  assertPepper(serverPepper);
-  let saltBytes: Uint8Array<ArrayBuffer>;
-  if (providedSaltHex === undefined) {
-    saltBytes = crypto.getRandomValues(new Uint8Array(PASSWORD_SALT_BYTES));
-  } else {
-    const decoded = hexToBytes(providedSaltHex);
-    if (decoded === null || decoded.length !== PASSWORD_SALT_BYTES) {
-      throw new Error('AUTH_SALT_INVALID: Le sel doit contenir exactement 16 octets en hexadécimal minuscule.');
-    }
-    saltBytes = decoded;
-  }
-  const derived = await derivePasswordBytes(plainPassword, serverPepper, saltBytes);
-  return `${PASSWORD_HASH_SCHEME}$${PASSWORD_PBKDF2_ITERATIONS}$${bytesToHex(saltBytes)}$${bytesToHex(derived)}`;
+  return PRODUCTION_PASSWORD_SERVICE.hash(plainPassword, serverPepper, providedSaltHex);
 }
 
 /**
- * Vérifie un mot de passe contre une empreinte stockée. Renvoie false (jamais d'exception) si l'empreinte est
- * malformée, si le mot de passe est hors politique, si le pepper est vide ou si l'empreinte ne correspond pas.
- * La comparaison se fait en temps constant.
+ * Vérifie un mot de passe contre une empreinte stockée avec la configuration de production : refuse (false,
+ * jamais d'exception) une empreinte malformée ou sous 100 000 itérations. Comparaison en temps constant.
  */
 export async function verifyPasswordWorkerSafe(
   plainPassword: string,
   serverPepper: string,
   storedHash: string,
 ): Promise<boolean> {
-  const parsed = parseStoredPasswordHash(storedHash);
-  if (parsed === null || serverPepper.length === 0) {
-    return false;
-  }
-  if (plainPassword.length < PASSWORD_MIN_LENGTH || plainPassword.length > PASSWORD_MAX_LENGTH) {
-    return false;
-  }
-  const salt = hexToBytes(parsed.saltHex);
-  const expected = hexToBytes(parsed.hashHex);
-  if (salt === null || expected === null) {
-    return false;
-  }
-  const actual = await derivePasswordBytes(plainPassword, serverPepper, salt);
-  return timingSafeEqualBytes(actual, expected);
+  return PRODUCTION_PASSWORD_SERVICE.verify(plainPassword, serverPepper, storedHash);
 }
 
 // ---------------------------------------------------------------------------
@@ -240,6 +157,8 @@ export interface AuthenticatePasswordParams {
   readonly state: LockoutState;
   readonly nowEpochMs: number;
   readonly policy?: LockoutPolicy;
+  /** Configuration de mots de passe ; production (100 000 itérations) par défaut. */
+  readonly passwordService?: PasswordService;
 }
 
 export interface AuthenticatePasswordResult {
@@ -260,7 +179,7 @@ export async function authenticatePassword(params: AuthenticatePasswordParams): 
     const until = params.state.lockedUntilEpochMs ?? params.nowEpochMs;
     return { outcome: 'LOCKED', state: params.state, retryAfterMs: until - params.nowEpochMs };
   }
-  const ok = await verifyPasswordWorkerSafe(params.plainPassword, params.pepper, params.storedHash);
+  const ok = await (params.passwordService ?? PRODUCTION_PASSWORD_SERVICE).verify(params.plainPassword, params.pepper, params.storedHash);
   if (ok) {
     return { outcome: 'SUCCESS', state: recordSuccessfulAttempt(), retryAfterMs: 0 };
   }

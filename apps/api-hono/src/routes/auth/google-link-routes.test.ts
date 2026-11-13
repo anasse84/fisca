@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { PENDING_LINK_MAX_ATTEMPTS, base64UrlEncode, hashPasswordWorkerSafe } from '@fisca/auth-rbac';
+import { PENDING_LINK_MAX_ATTEMPTS, base64UrlEncode } from '@fisca/auth-rbac';
 import type { FirstFactorDeps, GoogleLinkRouterDeps, LinkOAuthAccountInput, PendingLink } from '@fisca/auth-rbac';
 import { createAuthRoutes, createGoogleLinkRoutes } from './index.ts';
-import { NOW, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
+import { LOW_COST_PASSWORD_SERVICE, NOW, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
 
 const CONFIRM = '/api/v1/auth/google/link/confirm';
 const EMAIL_TOKEN = 'jeton-de-lien-email-factice';
@@ -10,7 +10,7 @@ const encoder = new TextEncoder();
 
 async function build(options: { turnstileOk?: boolean; rateOk?: boolean; policy?: boolean; linkedSub?: string } = {}) {
   const kit = await buildKit();
-  const passwordHash = await hashPasswordWorkerSafe(PASSWORD, PEPPER);
+  const passwordHash = await LOW_COST_PASSWORD_SERVICE.hash(PASSWORD, PEPPER);
   const pending = new Map<string, PendingLink>();
   const linked: LinkOAuthAccountInput[] = [];
   const rateKeys: string[] = [];
@@ -51,7 +51,7 @@ async function build(options: { turnstileOk?: boolean; rateOk?: boolean; policy?
         return link;
       },
     },
-    pepper: PEPPER,
+    pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE,
     nowEpochSec: () => kit.now(),
     login,
     turnstile: {

@@ -12,7 +12,8 @@
  * Aucun envoi réel, aucune horloge lue ici.
  */
 
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, hashPasswordWorkerSafe } from './auth-2fa.ts';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PRODUCTION_PASSWORD_SERVICE } from './auth-2fa.ts';
+import type { PasswordService } from './auth-2fa.ts';
 import { encodeBase64Url, secureRandomBytes, sha256Bytes } from './encoding.ts';
 import type { RandomSource } from './encoding.ts';
 import { normalizeEmail } from './oauth-google.ts';
@@ -93,6 +94,8 @@ export interface AccountLifecycleDeps {
   readonly email: AccountEmailSender;
   /** Valeur du secret AUTH_PEPPER (CTR-SEC-01). */
   readonly pepper: string;
+  /** Configuration de mots de passe ; production (100 000 itérations, borne 100 000) par défaut. */
+  readonly passwordService?: PasswordService;
   readonly nowEpochSec: () => number;
   readonly randomBytes?: RandomSource;
   readonly newUserId?: () => string;
@@ -191,7 +194,7 @@ export async function registerAccount(
   if (fullName === null) {
     throw new AccountLifecycleError('REGISTRATION_INPUT_INVALID', `le nom complet doit contenir de 1 à ${FULL_NAME_MAX_LENGTH} caractères, sans caractère de contrôle.`);
   }
-  const passwordHash = await hashPasswordWorkerSafe(input.password, deps.pepper);
+  const passwordHash = await (deps.passwordService ?? PRODUCTION_PASSWORD_SERVICE).hash(input.password, deps.pepper);
   const userId = (deps.newUserId ?? (() => crypto.randomUUID()))();
   const result = await deps.accounts.createUnverifiedAccount({
     userId,

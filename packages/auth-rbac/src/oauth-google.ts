@@ -13,7 +13,8 @@
  *   `OAuthAccountRepository` que l'implémentation D1 satisfera.
  */
 
-import { timingSafeEqualBytes, verifyPasswordWorkerSafe } from './auth-2fa.ts';
+import { PRODUCTION_PASSWORD_SERVICE, timingSafeEqualBytes } from './auth-2fa.ts';
+import type { PasswordService } from './auth-2fa.ts';
 
 // ---------------------------------------------------------------------------
 // Constantes publiques de Google (documentation OpenID Connect de Google)
@@ -668,6 +669,8 @@ export interface ConfirmPendingLinkDeps {
   readonly nowEpochSec: () => number;
   /** Valeur de AUTH_PEPPER, fournie par l'environnement. */
   readonly pepper: string;
+  /** Configuration de mots de passe ; production (100 000 itérations, borne 100 000) par défaut. */
+  readonly passwordService?: PasswordService;
 }
 
 async function proofIsValid(link: PendingLink, proof: LinkProof, deps: ConfirmPendingLinkDeps): Promise<boolean> {
@@ -682,7 +685,7 @@ async function proofIsValid(link: PendingLink, proof: LinkProof, deps: ConfirmPe
   if (user === null || user.userId !== link.userId || user.passwordHash === null) {
     return false;
   }
-  return verifyPasswordWorkerSafe(proof.password, deps.pepper, user.passwordHash);
+  return (deps.passwordService ?? PRODUCTION_PASSWORD_SERVICE).verify(proof.password, deps.pepper, user.passwordHash);
 }
 
 export async function confirmPendingLink(

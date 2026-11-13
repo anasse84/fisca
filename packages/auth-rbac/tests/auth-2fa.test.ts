@@ -3,6 +3,7 @@ import {
   LOCKOUT_DEFAULT_POLICY,
   PASSWORD_HASH_FORMAT_REGEX,
   PASSWORD_PBKDF2_ITERATIONS,
+  PRODUCTION_PASSWORD_SERVICE,
   authenticatePassword,
   hashPasswordWorkerSafe,
   initialLockoutState,
@@ -13,83 +14,89 @@ import {
   timingSafeEqualBytes,
   verifyPasswordWorkerSafe,
 } from '../src/index.ts';
+import { TEST_PASSWORD_ITERATIONS, createLowCostPasswordService } from '../src/testing.ts';
 
 // Valeurs factices de test uniquement : jamais le vrai secret AUTH_PEPPER.
 const TEST_PEPPER = 'pepper-factice-de-test-uniquement';
 const OTHER_PEPPER = 'autre-pepper-factice-de-test';
 const PASSWORD = 'Correct-Horse-Battery-42';
 const FIXED_SALT_HEX = '00112233445566778899aabbccddeeff';
+// Coût bas réservé aux tests (fabrique non exportée par l'index public) ; un seul test garde le coût réel.
+const LOW = createLowCostPasswordService();
+const LOW_HASH_FORMAT_REGEX = new RegExp(`^pbkdf2_sha512\\$${TEST_PASSWORD_ITERATIONS}\\$[0-9a-f]{32}\\$[0-9a-f]{64}$`);
 
 describe('hashPasswordWorkerSafe : format', () => {
   it('produit pbkdf2_sha512$100000$<sel hex 32>$<empreinte hex 64>', async () => {
+    // Seul test au coût réel : prouve le paramètre de production (un hash + une vérification à 100 000 itérations).
     const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
     expect(stored).toMatch(/^pbkdf2_sha512\$100000\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
     expect(stored).toMatch(PASSWORD_HASH_FORMAT_REGEX);
     const parts = stored.split('$');
     expect(parts).toHaveLength(4);
     expect(parts[0]).toBe('pbkdf2_sha512');
-  });
-
-  it('utilise exactement 100000 itérations', async () => {
-    expect(PASSWORD_PBKDF2_ITERATIONS).toBe(100000);
-    const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
     expect(stored.split('$')[1]).toBe('100000');
+    await expect(verifyPasswordWorkerSafe(PASSWORD, TEST_PEPPER, stored)).resolves.toBe(true);
+  }, 20_000);
+
+  it('utilise exactement 100000 itérations', () => {
+    expect(PASSWORD_PBKDF2_ITERATIONS).toBe(100000);
+    expect(PRODUCTION_PASSWORD_SERVICE.iterations).toBe(100000);
   });
 
   it('tire un sel aléatoire distinct à chaque appel', async () => {
-    const first = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
-    const second = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const first = await LOW.hash(PASSWORD, TEST_PEPPER);
+    const second = await LOW.hash(PASSWORD, TEST_PEPPER);
     expect(first.split('$')[2]).not.toBe(second.split('$')[2]);
     expect(first).not.toBe(second);
   });
 
   it('est déterministe pour un sel fourni et change avec le pepper', async () => {
-    const a = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
-    const b = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
-    const c = await hashPasswordWorkerSafe(PASSWORD, OTHER_PEPPER, FIXED_SALT_HEX);
+    const a = await LOW.hash(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
+    const b = await LOW.hash(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
+    const c = await LOW.hash(PASSWORD, OTHER_PEPPER, FIXED_SALT_HEX);
     expect(a).toBe(b);
     expect(a).not.toBe(c);
     expect(a.split('$')[2]).toBe(FIXED_SALT_HEX);
   });
 
   it('applique la politique de longueur 12 à 128 caractères', async () => {
-    await expect(hashPasswordWorkerSafe('court', TEST_PEPPER)).rejects.toThrow('AUTH_PASSWORD_LENGTH_POLICY');
-    await expect(hashPasswordWorkerSafe('x'.repeat(129), TEST_PEPPER)).rejects.toThrow('AUTH_PASSWORD_LENGTH_POLICY');
-    await expect(hashPasswordWorkerSafe('x'.repeat(12), TEST_PEPPER)).resolves.toMatch(PASSWORD_HASH_FORMAT_REGEX);
-    await expect(hashPasswordWorkerSafe('x'.repeat(128), TEST_PEPPER)).resolves.toMatch(PASSWORD_HASH_FORMAT_REGEX);
+    await expect(LOW.hash('court', TEST_PEPPER)).rejects.toThrow('AUTH_PASSWORD_LENGTH_POLICY');
+    await expect(LOW.hash('x'.repeat(129), TEST_PEPPER)).rejects.toThrow('AUTH_PASSWORD_LENGTH_POLICY');
+    await expect(LOW.hash('x'.repeat(12), TEST_PEPPER)).resolves.toMatch(LOW_HASH_FORMAT_REGEX);
+    await expect(LOW.hash('x'.repeat(128), TEST_PEPPER)).resolves.toMatch(LOW_HASH_FORMAT_REGEX);
   });
 
   it('refuse un pepper vide et un sel fourni invalide', async () => {
-    await expect(hashPasswordWorkerSafe(PASSWORD, '')).rejects.toThrow('AUTH_PEPPER_MISSING');
-    await expect(hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, 'zz')).rejects.toThrow('AUTH_SALT_INVALID');
-    await expect(hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, '00ff')).rejects.toThrow('AUTH_SALT_INVALID');
+    await expect(LOW.hash(PASSWORD, '')).rejects.toThrow('AUTH_PEPPER_MISSING');
+    await expect(LOW.hash(PASSWORD, TEST_PEPPER, 'zz')).rejects.toThrow('AUTH_SALT_INVALID');
+    await expect(LOW.hash(PASSWORD, TEST_PEPPER, '00ff')).rejects.toThrow('AUTH_SALT_INVALID');
   });
 });
 
 describe('verifyPasswordWorkerSafe', () => {
   it('accepte le bon mot de passe avec le bon pepper', async () => {
-    const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
-    await expect(verifyPasswordWorkerSafe(PASSWORD, TEST_PEPPER, stored)).resolves.toBe(true);
+    const stored = await LOW.hash(PASSWORD, TEST_PEPPER);
+    await expect(LOW.verify(PASSWORD, TEST_PEPPER, stored)).resolves.toBe(true);
   });
 
   it('refuse un mot de passe faux', async () => {
-    const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
-    await expect(verifyPasswordWorkerSafe('Mauvais-Mot-De-Passe-1', TEST_PEPPER, stored)).resolves.toBe(false);
+    const stored = await LOW.hash(PASSWORD, TEST_PEPPER);
+    await expect(LOW.verify('Mauvais-Mot-De-Passe-1', TEST_PEPPER, stored)).resolves.toBe(false);
   });
 
   it('refuse un pepper différent', async () => {
-    const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
-    await expect(verifyPasswordWorkerSafe(PASSWORD, OTHER_PEPPER, stored)).resolves.toBe(false);
+    const stored = await LOW.hash(PASSWORD, TEST_PEPPER);
+    await expect(LOW.verify(PASSWORD, OTHER_PEPPER, stored)).resolves.toBe(false);
   });
 
   it('refuse sans exception un mot de passe hors politique ou un pepper vide', async () => {
-    const stored = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
-    await expect(verifyPasswordWorkerSafe('court', TEST_PEPPER, stored)).resolves.toBe(false);
-    await expect(verifyPasswordWorkerSafe(PASSWORD, '', stored)).resolves.toBe(false);
+    const stored = await LOW.hash(PASSWORD, TEST_PEPPER);
+    await expect(LOW.verify('court', TEST_PEPPER, stored)).resolves.toBe(false);
+    await expect(LOW.verify(PASSWORD, '', stored)).resolves.toBe(false);
   });
 
   it('refuse sans exception toute empreinte malformée', async () => {
-    const good = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
+    const good = await LOW.hash(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
     const [, , salt, digest] = good.split('$');
     const malformed: readonly string[] = [
       '',
@@ -98,7 +105,6 @@ describe('verifyPasswordWorkerSafe', () => {
       `pbkdf2_sha512$100000$${salt}`,
       `pbkdf2_sha512$100000$${salt}$${digest}$extra`,
       `pbkdf2_sha256$100000$${salt}$${digest}`,
-      `pbkdf2_sha512$99999$${salt}$${digest}`,
       `pbkdf2_sha512$100000$${salt}$${String(digest).slice(0, 62)}`,
       `pbkdf2_sha512$100000$${String(salt).slice(0, 30)}$${digest}`,
       `pbkdf2_sha512$100000$${'g'.repeat(32)}$${digest}`,
@@ -106,15 +112,19 @@ describe('verifyPasswordWorkerSafe', () => {
       `PBKDF2_SHA512$100000$${salt}$${digest}`,
       `pbkdf2_sha512$100000$${String(salt).toUpperCase()}$${digest}`,
     ];
+    // 99999 itérations : bien formé (le hash porte son coût) mais sous la borne de production, donc refusé.
+    const belowBound = `pbkdf2_sha512$99999$${salt}$${digest}`;
+    expect(parseStoredPasswordHash(belowBound)?.iterations).toBe(99999);
+    await expect(verifyPasswordWorkerSafe(PASSWORD, TEST_PEPPER, belowBound)).resolves.toBe(false);
     for (const candidate of malformed) {
       expect(parseStoredPasswordHash(candidate)).toBeNull();
-      await expect(verifyPasswordWorkerSafe(PASSWORD, TEST_PEPPER, candidate)).resolves.toBe(false);
+      await expect(LOW.verify(PASSWORD, TEST_PEPPER, candidate)).resolves.toBe(false);
     }
   });
 
   it('parseStoredPasswordHash décode une empreinte valide', async () => {
-    const good = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
-    const parsed = parseStoredPasswordHash(good);
+    const good = await LOW.hash(PASSWORD, TEST_PEPPER, FIXED_SALT_HEX);
+    const parsed = parseStoredPasswordHash(good.replace(`$${TEST_PASSWORD_ITERATIONS}$`, '$100000$'));
     expect(parsed).not.toBeNull();
     expect(parsed?.saltHex).toBe(FIXED_SALT_HEX);
     expect(parsed?.iterations).toBe(100000);
@@ -208,7 +218,7 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
   const T0 = 1_700_000_000_000;
 
   it('verrouille après 5 mauvais mots de passe, refuse même le bon, puis déverrouille', async () => {
-    const storedHash = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const storedHash = await LOW.hash(PASSWORD, TEST_PEPPER);
     let state = initialLockoutState();
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const result = await authenticatePassword({
@@ -217,6 +227,7 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
         storedHash,
         state,
         nowEpochMs: T0,
+        passwordService: LOW,
       });
       expect(result.outcome).toBe('FAILURE');
       state = result.state;
@@ -227,6 +238,7 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
       storedHash,
       state,
       nowEpochMs: T0 + 1000,
+      passwordService: LOW,
     });
     expect(locked.outcome).toBe('LOCKED');
     expect(locked.retryAfterMs).toBe(15 * 60 * 1000 - 1000);
@@ -237,19 +249,21 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
       storedHash,
       state,
       nowEpochMs: T0 + 15 * 60 * 1000,
+      passwordService: LOW,
     });
     expect(unlocked.outcome).toBe('SUCCESS');
     expect(unlocked.state).toEqual(initialLockoutState());
   });
 
   it('un succès remet le compteur à zéro', async () => {
-    const storedHash = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const storedHash = await LOW.hash(PASSWORD, TEST_PEPPER);
     const failed = await authenticatePassword({
       plainPassword: 'Mauvais-Mot-De-Passe-1',
       pepper: TEST_PEPPER,
       storedHash,
       state: initialLockoutState(),
       nowEpochMs: T0,
+      passwordService: LOW,
     });
     expect(failed.state.consecutiveFailures).toBe(1);
     const ok = await authenticatePassword({
@@ -258,6 +272,7 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
       storedHash,
       state: failed.state,
       nowEpochMs: T0 + 10,
+      passwordService: LOW,
     });
     expect(ok.outcome).toBe('SUCCESS');
     expect(ok.state.consecutiveFailures).toBe(0);
@@ -270,6 +285,7 @@ describe('authenticatePassword (vérification + verrouillage)', () => {
       storedHash: 'malformee',
       state: initialLockoutState(),
       nowEpochMs: T0,
+      passwordService: LOW,
     });
     expect(result.outcome).toBe('FAILURE');
     expect(result.state.consecutiveFailures).toBe(1);

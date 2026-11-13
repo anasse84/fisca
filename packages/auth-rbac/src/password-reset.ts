@@ -9,7 +9,8 @@
  * Les stockages sont des ports (table `users`, jetons, refresh : S1B) ; aucune horloge lue ici.
  */
 
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, hashPasswordWorkerSafe } from './auth-2fa.ts';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PRODUCTION_PASSWORD_SERVICE } from './auth-2fa.ts';
+import type { PasswordService } from './auth-2fa.ts';
 import { hashOneTimeToken } from './account-lifecycle.ts';
 import type { OneTimeTokenStore } from './account-lifecycle.ts';
 import type { RefreshTokenStore } from './refresh-session.ts';
@@ -34,6 +35,8 @@ export interface PasswordResetDeps {
   readonly refreshStore: Pick<RefreshTokenStore, 'revokeFamily'>;
   /** Valeur du secret AUTH_PEPPER (CTR-SEC-01). */
   readonly pepper: string;
+  /** Configuration de mots de passe ; production (100 000 itérations, borne 100 000) par défaut. */
+  readonly passwordService?: PasswordService;
   readonly nowEpochSec: () => number;
 }
 
@@ -57,7 +60,7 @@ export async function resetPassword(
   if (input.newPassword.length < PASSWORD_MIN_LENGTH || input.newPassword.length > PASSWORD_MAX_LENGTH) {
     throw new PasswordResetError('PASSWORD_RESET_INPUT_INVALID', `le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères.`);
   }
-  const passwordHash = await hashPasswordWorkerSafe(input.newPassword, deps.pepper);
+  const passwordHash = await (deps.passwordService ?? PRODUCTION_PASSWORD_SERVICE).hash(input.newPassword, deps.pepper);
   if (input.token.length === 0 || input.token.length > MAX_TOKEN_LENGTH) {
     throw new PasswordResetError('PASSWORD_RESET_TOKEN_INVALID', 'jeton invalide.');
   }

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { verifyPasswordWorkerSafe } from '@fisca/auth-rbac';
 import type { AccountLifecycleRouterDeps, OneTimeTokenRecord, PasswordResetRouterDeps } from '@fisca/auth-rbac';
 import { createAccountLifecycleRoutes, createAuthRoutes, createPasswordResetRoutes } from './index.ts';
-import { PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
+import { LOW_COST_HASH_FORMAT, LOW_COST_PASSWORD_SERVICE, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
 
 const FORGOT = '/api/v1/auth/password/forgot';
 const REGISTER = '/api/v1/auth/register';
@@ -70,7 +69,7 @@ async function build(options: { turnstileOk?: boolean; rateOk?: boolean; credent
         mails.push({ kind: 'reset', token: message.token });
       },
     },
-    pepper: PEPPER,
+    pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE,
     nowEpochSec: () => kit.now(),
     turnstile: { verify: async () => true },
     rateLimiter: { allow: async () => true },
@@ -90,7 +89,7 @@ async function build(options: { turnstileOk?: boolean; rateOk?: boolean; credent
       listFamilyIds: async (userId) => [...new Set([...kit.refreshRows.values()].filter((row) => row.userId === userId).map((row) => row.familyId))],
     },
     refreshStore: kit.refreshStore,
-    pepper: PEPPER,
+    pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE,
     nowEpochSec: () => kit.now(),
     ...guard,
   };
@@ -145,10 +144,10 @@ describe('POST /api/v1/auth/password/reset (CTR-API-41)', () => {
     const body = (await response.json()) as Record<string, unknown>;
     expect(body).toEqual({ status: 'PASSWORD_RESET' });
     const stored = ctx.hashes.get('u-1');
-    expect(stored).toMatch(/^pbkdf2_sha512\$100000\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
+    expect(stored).toMatch(LOW_COST_HASH_FORMAT);
     expect(stored).not.toContain(NEW_PASSWORD);
-    expect(await verifyPasswordWorkerSafe(NEW_PASSWORD, PEPPER, stored ?? '')).toBe(true);
-    expect(await verifyPasswordWorkerSafe(PASSWORD, PEPPER, stored ?? '')).toBe(false);
+    expect(await LOW_COST_PASSWORD_SERVICE.verify(NEW_PASSWORD, PEPPER, stored ?? '')).toBe(true);
+    expect(await LOW_COST_PASSWORD_SERVICE.verify(PASSWORD, PEPPER, stored ?? '')).toBe(false);
     expect(ctx.kit.issuedSessions).toEqual([]);
     expect(ctx.kit.refreshRows.size).toBe(0);
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createJwtSessionAuthenticator } from '@fisca/auth-rbac';
 import type { PasskeyRouterDeps, SessionRouterDeps } from '@fisca/auth-rbac';
 import { createAuthRoutes, createPasskeyRoutes } from './index.ts';
-import { CALLBACK_PATH, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
+import { CALLBACK_PATH, LOW_COST_PASSWORD_SERVICE, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
 
 const OK = { verify: async () => true };
 const OPEN = { allow: async () => true };
@@ -31,7 +31,7 @@ async function build() {
   const app = createAuthRoutes(
     { oauth: google.oauth, turnstile: OK, rateLimiter: OPEN, login: kit.flow },
     { ...kit.mfa, authenticator: passkeys.authenticator, turnstile: OK, rateLimiter: OPEN },
-    { accounts: kit.accounts, pepper: PEPPER, flow: kit.flow, turnstile: OK, rateLimiter: OPEN },
+    { accounts: kit.accounts, pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE, flow: kit.flow, turnstile: OK, rateLimiter: OPEN },
     { session, passkeys },
   );
   return { kit, app, passkeys };

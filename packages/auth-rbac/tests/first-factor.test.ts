@@ -9,11 +9,11 @@ import {
   loginWithPassword,
 } from '../src/index.ts';
 import type { LoginDeps } from '../src/index.ts';
-import { PASSWORD, PEPPER, buildFlowHarness } from './flow-fixtures.ts';
+import { LOW_COST_PASSWORD_SERVICE, PASSWORD, PEPPER, buildFlowHarness } from './flow-fixtures.ts';
 
 async function loginDeps() {
   const h = await buildFlowHarness();
-  const deps: LoginDeps = { accounts: h.accounts, pepper: PEPPER, flow: h.flow };
+  const deps: LoginDeps = { accounts: h.accounts, pepper: PEPPER, flow: h.flow, passwordService: LOW_COST_PASSWORD_SERVICE };
   return { h, deps };
 }
 

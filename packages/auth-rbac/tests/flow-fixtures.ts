@@ -3,7 +3,6 @@ import {
   createSessionService,
   enableTotp,
   generateTotpCodeRfc6238,
-  hashPasswordWorkerSafe,
   setupTotp,
 } from '../src/index.ts';
 import type {
@@ -16,7 +15,11 @@ import type {
   RefreshTokenRecord,
   SessionService,
 } from '../src/index.ts';
+import { createLowCostPasswordService } from '../src/testing.ts';
 import { generateEd25519PrivateJwkJson } from './jwt-fixtures.ts';
+
+/** Coût PBKDF2 bas réservé aux tests (la production reste à 100 000 itérations). */
+export const LOW_COST_PASSWORD_SERVICE = createLowCostPasswordService();
 
 export const NOW = 1_800_000_000;
 export const PEPPER = 'pepper-factice-de-test';
@@ -190,7 +193,7 @@ export async function buildFlowHarness(): Promise<FlowHarness> {
         email: email.trim().toLowerCase(),
         account: {
           userId,
-          passwordHash: await hashPasswordWorkerSafe(password, PEPPER),
+          passwordHash: await LOW_COST_PASSWORD_SERVICE.hash(password, PEPPER),
           lockout: { consecutiveFailures: 0, lockedUntilEpochMs: null },
         },
       });

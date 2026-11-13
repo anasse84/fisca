@@ -11,10 +11,10 @@ import {
   confirmPendingLink,
   createJwksProvider,
   generateCodeVerifier,
-  hashPasswordWorkerSafe,
   isValidCodeVerifier,
   verifyGoogleIdToken,
 } from '../src/index.ts';
+import { createLowCostPasswordService } from '../src/testing.ts';
 import type {
   GoogleOAuthDeps,
   GoogleOAuthErrorCode,
@@ -30,6 +30,8 @@ const CLIENT_ID = 'client-id-factice.apps.googleusercontent.com';
 const CLIENT_SECRET = 'secret-factice-de-test';
 const REDIRECT_URI = 'https://auth.fisca.ma/api/v1/auth/google/callback';
 const TEST_PEPPER = 'pepper-factice-de-test-uniquement';
+// Coût PBKDF2 bas réservé aux tests (fabrique hors index public).
+const LOW = createLowCostPasswordService();
 const PASSWORD = 'Correct-Horse-Battery-42';
 const NOW = 1_800_000_000;
 const KID = 'kid-de-test-1';
@@ -595,7 +597,7 @@ describe('Safe Account Linking sur sub', () => {
   it("ne rattache jamais par l'e-mail seul : collision avec un compte non lié → preuve exigée", async () => {
     const world = createWorld();
     const signer = await createSigner();
-    const hash = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const hash = await LOW.hash(PASSWORD, TEST_PEPPER);
     world.users.push({ userId: 'u-victime', email: 'amina@example.ma', passwordHash: hash });
     const { outcome } = await login(world, signer);
     expect(outcome.kind).toBe('LINK_PROOF_REQUIRED');
@@ -618,13 +620,13 @@ describe('Safe Account Linking sur sub', () => {
   it('lie après une preuve par mot de passe correcte', async () => {
     const world = createWorld();
     const signer = await createSigner();
-    const hash = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const hash = await LOW.hash(PASSWORD, TEST_PEPPER);
     world.users.push({ userId: 'u-1', email: 'amina@example.ma', passwordHash: hash });
     const { outcome, deps } = await login(world, signer);
     if (outcome.kind !== 'LINK_PROOF_REQUIRED') throw new Error('inattendu');
     const result = await confirmPendingLink(
       { pendingLinkId: outcome.pendingLinkId, proof: { method: 'PASSWORD', password: PASSWORD } },
-      { ...deps, pepper: TEST_PEPPER },
+      { ...deps, pepper: TEST_PEPPER, passwordService: LOW },
     );
     expect(result).toEqual({ kind: 'LINKED', userId: 'u-1' });
     expect(world.links).toEqual([{ userId: 'u-1', subject: 'google-sub-111', providerEmail: 'Amina@Example.ma' }]);
@@ -633,11 +635,11 @@ describe('Safe Account Linking sur sub', () => {
   it('refuse un mauvais mot de passe, borne les essais et ne lie rien', async () => {
     const world = createWorld();
     const signer = await createSigner();
-    const hash = await hashPasswordWorkerSafe(PASSWORD, TEST_PEPPER);
+    const hash = await LOW.hash(PASSWORD, TEST_PEPPER);
     world.users.push({ userId: 'u-1', email: 'amina@example.ma', passwordHash: hash });
     const { outcome, deps } = await login(world, signer);
     if (outcome.kind !== 'LINK_PROOF_REQUIRED') throw new Error('inattendu');
-    const confirmDeps = { ...deps, pepper: TEST_PEPPER };
+    const confirmDeps = { ...deps, pepper: TEST_PEPPER, passwordService: LOW };
     for (let attempt = 0; attempt < PENDING_LINK_MAX_ATTEMPTS; attempt += 1) {
       await expectOAuthError(
         confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'PASSWORD', password: 'Mauvais-Mot-De-Passe-1' } }, confirmDeps),
@@ -658,7 +660,7 @@ describe('Safe Account Linking sur sub', () => {
     const { outcome, deps } = await login(world, signer);
     if (outcome.kind !== 'LINK_PROOF_REQUIRED') throw new Error('inattendu');
     await expectOAuthError(
-      confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'PASSWORD', password: PASSWORD } }, { ...deps, pepper: TEST_PEPPER }),
+      confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'PASSWORD', password: PASSWORD } }, { ...deps, pepper: TEST_PEPPER, passwordService: LOW }),
       'LINK_PROOF_INVALID',
     );
     expect(world.links).toHaveLength(0);
@@ -670,7 +672,7 @@ describe('Safe Account Linking sur sub', () => {
     world.users.push({ userId: 'u-1', email: 'amina@example.ma', passwordHash: null });
     const { outcome, deps } = await login(world, signer);
     if (outcome.kind !== 'LINK_PROOF_REQUIRED') throw new Error('inattendu');
-    const confirmDeps = { ...deps, pepper: TEST_PEPPER };
+    const confirmDeps = { ...deps, pepper: TEST_PEPPER, passwordService: LOW };
     await expectOAuthError(
       confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'EMAIL_LINK', token: 'jeton-forge' } }, confirmDeps),
       'LINK_PROOF_INVALID',
@@ -689,8 +691,8 @@ describe('Safe Account Linking sur sub', () => {
     if (outcome.kind !== 'LINK_PROOF_REQUIRED') throw new Error('inattendu');
     const token = world.sentProofs[0]?.token ?? '';
     const proof = { method: 'EMAIL_LINK', token } as const;
-    await expectOAuthError(confirmPendingLink({ pendingLinkId: 'inconnu', proof }, { ...deps, pepper: TEST_PEPPER }), 'LINK_PENDING_NOT_FOUND');
-    const late = { ...deps, pepper: TEST_PEPPER, nowEpochSec: () => NOW + 24 * 3600 };
+    await expectOAuthError(confirmPendingLink({ pendingLinkId: 'inconnu', proof }, { ...deps, pepper: TEST_PEPPER, passwordService: LOW }), 'LINK_PENDING_NOT_FOUND');
+    const late = { ...deps, pepper: TEST_PEPPER, passwordService: LOW, nowEpochSec: () => NOW + 24 * 3600 };
     await expectOAuthError(confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof }, late), 'LINK_PENDING_EXPIRED');
     await expectOAuthError(confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof }, late), 'LINK_PENDING_NOT_FOUND');
     expect(world.links).toHaveLength(0);
@@ -705,7 +707,7 @@ describe('Safe Account Linking sur sub', () => {
     world.links.push({ userId: 'u-autre', subject: 'google-sub-111', providerEmail: 'x@example.ma' });
     const token = world.sentProofs[0]?.token ?? '';
     await expectOAuthError(
-      confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'EMAIL_LINK', token } }, { ...deps, pepper: TEST_PEPPER }),
+      confirmPendingLink({ pendingLinkId: outcome.pendingLinkId, proof: { method: 'EMAIL_LINK', token } }, { ...deps, pepper: TEST_PEPPER, passwordService: LOW }),
       'SUB_ALREADY_LINKED',
     );
     expect(world.links).toHaveLength(1);
