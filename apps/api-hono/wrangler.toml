@@ -1,0 +1,80 @@
+# wrangler.toml — apps/api-hono (fichier de jonction, ERRATA B-02 : propriétaire S0).
+# Source : Doc_04 § 11. Juridiction UE sur le stockage (Loi 09-08, art. 43).
+# Les identifiants à zéros (database_id, id KV) sont des emplacements : ils sont remplacés au
+# provisionnement par P4-C (scripts/provision-cloudflare-prod.sh), jamais par un secret dans Git.
+# Les classes Durable Object, Container et Workflow citées ci-dessous sont livrées par leurs sessions
+# productrices (registre CTR-BND-04 à 08 : S1B, P2-A, P3-B) ; ce fichier ne fait que les déclarer.
+# Aucun secret ici : les secrets passent par Cloudflare Secrets Store (CTR-SEC-*).
+
+name = "fisca-core-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+INFRA_PROVIDER_MODE = "CLOUDFLARE_EDGE"
+DGI_XHUB_ENVIRONMENT = "sandbox"
+
+# 1. Base Maîtresse Control Plane (Juridiction UE - Liste blanche CNDP Loi 09-08)
+[[d1_databases]]
+binding = "CONTROL_PLANE_DB"
+database_name = "fisca-control-plane-eu"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# 2. Coffre-fort Probant WORM 10 ans (Art. 211 CGI - Zéro frais d'Egress, Juridiction UE)
+[[r2_buckets]]
+binding = "R2_LEGAL_VAULT"
+bucket_name = "fisca-worm-vault-10y-eu"
+jurisdiction = "eu"
+
+# 3. Cache Haute Vitesse des Entitlements, Règles AST Actives & Disjoncteurs
+[[kv_namespaces]]
+binding = "FISCA_FAST_KV"
+id = "00000000000000000000000000000000"
+
+# 4. Durable Objects : Séquenceur Fiscal sans trou, Mémoire Hindsight & Conteneurs Linux
+[durable_objects]
+bindings = [
+  { name = "INVOICE_SEQUENCER", class_name = "InvoiceSequencerDO" },
+  { name = "AGENT_HINDSIGHT_MEMORY", class_name = "AgentHindsightMemoryDO" },
+  { name = "FISCAL_JAVA_CONTAINER", class_name = "FiscalJavaContainerDO" },
+  { name = "DOCLING_PYTHON_CONTAINER", class_name = "DoclingPythonContainerDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["InvoiceSequencerDO", "AgentHindsightMemoryDO"]
+
+# 5. MicroVMs Linux Serverless (ph-ubl, PHIVE, Mustangproject, esig/dss & Docling)
+[[containers]]
+class_name = "FiscalJavaContainerDO"
+image = "../../containers/fiscal-java/Dockerfile"
+max_instances = 20
+
+[[containers]]
+class_name = "DoclingPythonContainerDO"
+image = "../../containers/docling-python/Dockerfile"
+max_instances = 15
+
+# 6. Workflows Durables (Clearance xHub DGI & Relances mensuelles)
+[[workflows]]
+name = "dgi-clearance-workflow"
+binding = "DGI_CLEARANCE_WORKFLOW"
+class_name = "DgiClearanceWorkflow"
+
+# 7. Files Asynchrones (Ingestion OCR, Sync ERP & Miroir Souverain Maroc)
+[[queues.producers]]
+queue = "fisca-invoice-ingestion"
+binding = "INVOICE_QUEUE"
+
+[[queues.producers]]
+queue = "fisca-sovereign-mirror"
+binding = "SOVEREIGN_MIRROR_QUEUE"
+
+# 8. Inférence Workers AI & Index Vectoriel CGNC / CGI
+[ai]
+binding = "AI"
+
+[[vectorize]]
+binding = "CGNC_VECTOR_INDEX"
+index_name = "fisca-maroc-cgnc-cgi-v1"

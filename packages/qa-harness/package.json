@@ -1,0 +1,19 @@
+{
+  "name": "@fisca/qa-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fisca/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@typescript-eslint/rule-tester": "8.72.2",
+    "@typescript-eslint/utils": "8.72.2"
+  }
+}

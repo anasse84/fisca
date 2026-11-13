@@ -1,0 +1,33 @@
+{
+  "name": "@fisca/api-hono",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen:routes": "node ../../scripts/gen-route-manifest.ts",
+    "typecheck": "pnpm run gen:routes && tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "pnpm run gen:routes && vitest run",
+    "test": "pnpm run gen:routes && vitest run"
+  },
+  "dependencies": {
+    "@fisca/shared-types": "workspace:*",
+    "@fisca/db-schema": "workspace:*",
+    "@fisca/auth-rbac": "workspace:*",
+    "@fisca/crypto-e2ee": "workspace:*",
+    "@fisca/compliance-cndp": "workspace:*",
+    "@fisca/qa-harness": "workspace:*",
+    "@fisca/fiscal-ast": "workspace:*",
+    "@fisca/ubl-xades": "workspace:*",
+    "@fisca/vault-merkle": "workspace:*",
+    "@fisca/edi-simpl": "workspace:*",
+    "@fisca/fec-auditor": "workspace:*",
+    "@fisca/ai-agents": "workspace:*",
+    "@fisca/external-integrations": "workspace:*",
+    "@fisca/billing-metering": "workspace:*",
+    "@fisca/factorflow": "workspace:*",
+    "@fisca/pra-reversibility": "workspace:*",
+    "@fisca/ui-mercury": "workspace:*",
+    "@fisca/i18n": "workspace:*"
+  }
+}

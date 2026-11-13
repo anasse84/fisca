@@ -1,0 +1,30 @@
+{
+  "name": "fisca",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "gen:routes": "node scripts/gen-route-manifest.ts",
+    "typecheck": "turbo run typecheck && tsc -p scripts/tsconfig.json",
+    "lint": "turbo run lint && eslint scripts",
+    "test:unit": "turbo run test:unit && vitest run scripts",
+    "test": "turbo run test && vitest run scripts",
+    "build": "turbo run build",
+    "verify:fast": "turbo run typecheck lint test:unit && tsc -p scripts/tsconfig.json && eslint scripts && vitest run scripts && pnpm enforce",
+    "enforce": "node scripts/enforce-constitution.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.14.0",
+    "turbo": "^2.11.11",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

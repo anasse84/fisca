@@ -1,0 +1,18 @@
+{
+  "schema": "fisca-golden-vectors/1",
+  "package": "@fisca/shared-types",
+  "ruleDate": "2026-11-13",
+  "note": "Valeurs recalculables à la main : montant × taux (bps) ÷ 10000, arrondi demi supérieur. Tarifs et remises sont commerciaux (Doc_03, Doc_12), pas des articles du CGI.",
+  "vectors": [
+    { "id": "VEC-PRIM-01", "label": "Prorata TPE 15/30 jours", "law": "Tarif commercial Doc_03 §11 (aucun article du CGI)", "state": "NON RECOUPÉ", "amountCents": 14900, "rateBps": 5000, "calc": "14900 × 5000 / 10000 = 7450", "expectedCents": 7450 },
+    { "id": "VEC-PRIM-02", "label": "Prorata PME complet 15/30 jours", "law": "Tarif commercial Doc_03 §11 (aucun article du CGI)", "state": "NON RECOUPÉ", "amountCents": 24900, "rateBps": 5000, "calc": "24900 × 5000 / 10000 = 12450", "expectedCents": 12450 },
+    { "id": "VEC-PRIM-03", "label": "Remise volume 15 % dès 100 dossiers", "law": "Tarif commercial Doc_03 §10, ERRATA D-06 (1 500 bps)", "state": "NON RECOUPÉ", "amountCents": 1630000, "rateBps": 1500, "calc": "1630000 × 1500 / 10000 = 244500", "expectedCents": 244500 },
+    { "id": "VEC-PRIM-04", "label": "TVA 20 % sur facture Cabinet Moyen", "law": "Taux de TVA 2026, ERRATA D-04 / VEC-CGI-05", "state": "NON RECOUPÉ", "amountCents": 1032800, "rateBps": 2000, "calc": "1032800 × 2000 / 10000 = 206560", "expectedCents": 206560 },
+    { "id": "VEC-PRIM-05", "label": "Avoir SLA 25 %", "law": "Contrat SLA Doc_12 (aucun article du CGI)", "state": "NON RECOUPÉ", "amountCents": 1013000, "rateBps": 2500, "calc": "1013000 × 2500 / 10000 = 253250", "expectedCents": 253250 }
+  ],
+  "ice": [
+    { "id": "VEC-ICE-01", "value": "003976749000084", "valid": true, "state": "NON RECOUPÉ", "law": "Contrôle de cohérence seulement (ERRATA section E) ; 3976749000084 mod 97 = 0" },
+    { "id": "VEC-ICE-02", "value": "001534290000057", "valid": true, "state": "NON RECOUPÉ", "law": "Contrôle de cohérence seulement (ERRATA section E)" },
+    { "id": "VEC-ICE-03", "value": "123456789000057", "valid": false, "state": "NON RECOUPÉ", "law": "Reste 43 modulo 97 (Doc_18 annexe V)" }
+  ]
+}

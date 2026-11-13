@@ -1,0 +1,212 @@
+{
+  "schema": "fisca-golden-vectors/2",
+  "package": "@fisca/qa-harness",
+  "ruleDate": "2026-11-13",
+  "note": "Vecteurs VEC-CGI-01 à 06 (auteur : S0, ERRATA B-09). Date de la règle = date de l'état de vérification de l'ERRATA section E (2026-11-13), aucune date de publication d'article n'étant fournie par les spécifications. Les valeurs attendues viennent de ce fichier, jamais de la sortie du code testé. VEC-CGI-07 à 120 : chaque session écrit les siens dans <paquet>/tests/golden/*.vectors.json.",
+  "vectors": [
+    {
+      "id": "VEC-CGI-01",
+      "label": "Plafond d'espèces, 7 200 MAD TTC, TVA 20 %",
+      "law": "CGI art. 11-II et 106-II (plafonds de 5 000 MAD par jour et 50 000 MAD par mois et par fournisseur)",
+      "ruleDate": "2026-11-13",
+      "state": "RECOUPÉ",
+      "stateNote": "Plafonds recoupés auprès de plusieurs sources professionnelles marocaines de 2026 (ERRATA E). Base du plafond (TTC) à faire valider par l'expert-comptable : paramètre daté cap_basis, TTC par défaut.",
+      "kind": "ART_11_CASH_CEILING",
+      "calc": "TVA = 600000 × 2000 / 10000 = 120000 ; TTC = 720000. Plafond journalier TTC 500000 (le mensuel 5000000 n'est pas atteint) : admis TTC = min(720000, 500000, 5000000) = 500000. HT déductible = 500000 × 10000 / 12000 = 416666,67 → 416667 (demi supérieur). TVA récupérable = 500000 − 416667 = 83333. Réintégré tableau 3 = 600000 − 416667 = 183333. TVA perdue = 120000 − 83333 = 36667.",
+      "cases": [
+        {
+          "name": "720000 TTC payés en espèces le même jour",
+          "input": {
+            "invoiceHtCents": 600000,
+            "invoiceVatCents": 120000,
+            "vatRateBps": 2000,
+            "alreadyPaidCashTodayTtcCents": 0,
+            "alreadyPaidCashMonthTtcCents": 0,
+            "dailyCapTtcCents": 500000,
+            "monthlyCapTtcCents": 5000000
+          },
+          "expected": {
+            "allowedTtcCents": 500000,
+            "deductibleHtCents": 416667,
+            "recoverableVatCents": 83333,
+            "reintegratedTable3HtCents": 183333,
+            "nonRecoverableVatCents": 36667
+          }
+        }
+      ]
+    },
+    {
+      "id": "VEC-CGI-02",
+      "label": "Pénalité de retard de paiement, 12 345 MAD TTC",
+      "law": "Loi 69-21 sur les délais de paiement (pénalité : taux directeur de Bank Al-Maghrib majoré de 0,85 point par mois supplémentaire entamé)",
+      "ruleDate": "2026-11-13",
+      "state": "NON RECOUPÉ",
+      "stateNote": "Le taux de 360 points de base suppose un taux directeur de 2,75 % : donnée datée de D1 à saisir à sa valeur en vigueur (ERRATA E). Convention de décompte des mois entamés non précisée par les spécifications : 46 jours de retard (ERRATA D-13, et non 45) valent 2 mois entamés.",
+      "kind": "LAW_69_21_PENALTY",
+      "calc": "Taux = 275 + (2 − 1) × 85 = 360 bps. 1234500 × 360 = 444420000 ; ÷ 1000000 = 444,42 MAD ; arrondi au dirham supérieur = 445 MAD = 44500 centimes.",
+      "cases": [
+        {
+          "name": "46 jours de retard, 2 mois entamés",
+          "context": { "delayDays": 46 },
+          "input": {
+            "unpaidTtcCents": 1234500,
+            "startedMonthsOfDelay": 2,
+            "bamBaseRateBps": 275,
+            "monthlyIncrementBps": 85,
+            "hasDocumentedDisputeR2": false
+          },
+          "expected": {
+            "totalPenaltyBps": 360,
+            "penaltyCents": 44500
+          }
+        }
+      ]
+    },
+    {
+      "id": "VEC-CGI-03",
+      "label": "Retenue à la source de TVA, 10 000 MAD HT, TVA 2 000 MAD",
+      "law": "CGI art. 117 (retenue à la source de TVA : 75 % avec attestation de régularité de moins de 6 mois, 100 % sans)",
+      "ruleDate": "2026-11-13",
+      "state": "NON RECOUPÉ",
+      "stateNote": "Champ d'application et seuils d'exclusion à faire valider (ERRATA E). Le seuil d'exclusion de 500000 centimes TTC provient du code de référence de Doc_14 § 11, pas de l'ERRATA.",
+      "kind": "ART_117_RAS_TVA",
+      "calc": "HT 1000000 + TVA 200000 = TTC 1200000, au-dessus du seuil de 500000. Paiement le 2026-06-15. Attestation du 2026-02-15 (4 mois) : limite 2026-08-15, valide → 7500 bps, RAS = 200000 × 7500 / 10000 = 150000. Attestation du 2025-11-15 (7 mois) : limite 2026-05-15, expirée → 10000 bps, RAS = 200000.",
+      "cases": [
+        {
+          "name": "attestation de 4 mois au paiement",
+          "input": {
+            "invoiceTtcCents": 1200000,
+            "invoiceVatCents": 200000,
+            "paymentDateIso": "2026-06-15",
+            "taxClearanceIssuedDateIso": "2026-02-15",
+            "exclusionThresholdTtcCents": 500000,
+            "attestationValidityMonths": 6,
+            "reducedRasRateBps": 7500,
+            "fullRasRateBps": 10000
+          },
+          "expected": { "rasRateBps": 7500, "rasVatCents": 150000 }
+        },
+        {
+          "name": "attestation de 7 mois au paiement",
+          "input": {
+            "invoiceTtcCents": 1200000,
+            "invoiceVatCents": 200000,
+            "paymentDateIso": "2026-06-15",
+            "taxClearanceIssuedDateIso": "2025-11-15",
+            "exclusionThresholdTtcCents": 500000,
+            "attestationValidityMonths": 6,
+            "reducedRasRateBps": 7500,
+            "fullRasRateBps": 10000
+          },
+          "expected": { "rasRateBps": 10000, "rasVatCents": 200000 }
+        }
+      ]
+    },
+    {
+      "id": "VEC-CGI-04",
+      "label": "Seuil auto-entrepreneur de 80 000 MAD par client",
+      "law": "Régime de l'auto-entrepreneur : seuil de 80 000 MAD par client, retenue à la source de l'IR de 30 % sur le surplus (ERRATA E)",
+      "ruleDate": "2026-11-13",
+      "state": "NON RECOUPÉ",
+      "stateNote": "Assiette exacte de la retenue à faire valider (ERRATA E). Numéro d'article non fourni par les spécifications.",
+      "kind": "AUTO_ENTREPRENEUR_THRESHOLD",
+      "calc": "Cumul après facture = 7500000 + 1200000 = 8700000. Surplus au-dessus de 8000000 = 700000 (inférieur à la facture de 1200000). Retenue = 700000 × 3000 / 10000 = 210000.",
+      "cases": [
+        {
+          "name": "cumul 75 000 MAD puis facture de 12 000 MAD",
+          "input": {
+            "clientThresholdCents": 8000000,
+            "cumulBeforeInvoiceCents": 7500000,
+            "invoiceCents": 1200000,
+            "withholdingRateBps": 3000
+          },
+          "expected": { "surplusCents": 700000, "withholdingCents": 210000 }
+        }
+      ]
+    },
+    {
+      "id": "VEC-CGI-05",
+      "label": "Réforme de la TVA 2026 : taux de 14 % refusé",
+      "law": "Loi de finances 2026 (taux de TVA admis dès 2026 : 2000, 1000 et 0 bps ; ADR-04, ERRATA D-04)",
+      "ruleDate": "2026-11-13",
+      "state": "NON RECOUPÉ",
+      "stateNote": "Cohérence entre documents seulement ; calendrier de convergence des taux à faire valider (ERRATA E). Une pièce antérieure à 2026 n'entre pas comme ligne de facture (D-04) : aucun cas d'archive 2025 ici.",
+      "kind": "LF2026_VAT_RATE",
+      "calc": "Facture émise le 2026-02-01 : 1400 bps n'est pas dans {2000, 1000, 0} → rejet ADR_04_LF2026_VAT_VIOLATION. Les trois taux admis passent. Une date d'émission illisible (vide, « abc », « 26-02-01 », « 2026-13-45 ») est rejetée avec ADR_04_UNREADABLE_ISSUE_DATE, jamais devinée.",
+      "cases": [
+        {
+          "name": "1400 bps en 2026",
+          "input": { "vatRateBps": 1400, "issueDateIso": "2026-02-01" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_LF2026_VAT_VIOLATION" }
+        },
+        {
+          "name": "2000 bps en 2026",
+          "input": { "vatRateBps": 2000, "issueDateIso": "2026-02-01" },
+          "expected": { "accepted": true, "errorCode": "" }
+        },
+        {
+          "name": "1000 bps en 2026",
+          "input": { "vatRateBps": 1000, "issueDateIso": "2026-02-01" },
+          "expected": { "accepted": true, "errorCode": "" }
+        },
+        {
+          "name": "0 bps en 2026",
+          "input": { "vatRateBps": 0, "issueDateIso": "2026-02-01" },
+          "expected": { "accepted": true, "errorCode": "" }
+        },
+        {
+          "name": "1400 bps, date vide",
+          "input": { "vatRateBps": 1400, "issueDateIso": "" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « abc »",
+          "input": { "vatRateBps": 1400, "issueDateIso": "abc" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « 26-02-01 » (année sur 2 chiffres)",
+          "input": { "vatRateBps": 1400, "issueDateIso": "26-02-01" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        },
+        {
+          "name": "1400 bps, date « 2026-13-45 » (mois et jour impossibles)",
+          "input": { "vatRateBps": 1400, "issueDateIso": "2026-13-45" },
+          "expected": { "accepted": false, "errorCode": "ADR_04_UNREADABLE_ISSUE_DATE" }
+        }
+      ]
+    },
+    {
+      "id": "VEC-CGI-06",
+      "label": "Décompte BTP : retenue de garantie de 10 % et débours",
+      "law": "Décompte de travaux : retenue de garantie, débours hors champ de la TVA, TVA sur la retenue exigible à sa libération (Doc_14 § 03 ; article du CGI non fourni par les spécifications)",
+      "ruleDate": "2026-11-13",
+      "state": "NON RECOUPÉ",
+      "stateNote": "Traitement de la retenue de garantie à faire valider (ERRATA E). Les montants chiffrés sont dérivés par S0 de la phrase de Doc_14 (« Débours 0 TVA ; TVA sur retenue différée à libération ») sous les hypothèses listées : à faire confirmer.",
+      "assumptions": [
+        "La retenue de garantie se calcule sur le HT des travaux, hors débours.",
+        "La TVA sur la retenue (au taux de 2000 bps) est la seule TVA différée ; le reste de la TVA est exigible au décompte.",
+        "Les débours ne portent aucune TVA."
+      ],
+      "kind": "BTP_SETTLEMENT",
+      "calc": "Retenue = 10000000 × 1000 / 10000 = 1000000. TVA sur travaux = 10000000 × 2000 / 10000 = 2000000. TVA sur retenue différée = 1000000 × 2000 / 10000 = 200000. TVA exigible au décompte = 2000000 − 200000 = 1800000. TVA sur débours (500000) = 0.",
+      "cases": [
+        {
+          "name": "10 000 000 HT, 500 000 de débours, retenue de 10 %",
+          "input": {
+            "worksHtCents": 10000000,
+            "deboursCents": 500000,
+            "vatRateBps": 2000,
+            "retentionBps": 1000
+          },
+          "expected": {
+            "retentionCents": 1000000,
+            "deboursVatCents": 0,
+            "deferredVatOnRetentionCents": 200000,
+            "vatDueNowCents": 1800000
+          }
+        }
+      ]
+    }
+  ]
+}
