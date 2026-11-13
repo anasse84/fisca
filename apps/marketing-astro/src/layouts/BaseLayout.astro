@@ -3,16 +3,30 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import { buildPageHead } from '../i18n/head.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
+import { buildFiscaJsonLdGraph } from '../seo/jsonld.ts';
+import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
 
 interface Props {
   locale: MarketingLocale;
   slug: string;
   title: string;
   description: string;
+  legislation?: LegislationRef;
+  howTo?: HowToInput;
+  faqs?: readonly FaqPair[];
 }
 
-const { locale, slug, title, description } = Astro.props;
+const { locale, slug, title, description, legislation, howTo, faqs } = Astro.props;
 const head = buildPageHead(locale, slug, { title, description });
+const jsonLd = buildFiscaJsonLdGraph({
+  pageUrl: head.canonical,
+  locale,
+  title,
+  description,
+  ...(legislation === undefined ? {} : { legislation }),
+  ...(howTo === undefined ? {} : { howTo }),
+  ...(faqs === undefined ? {} : { faqs }),
+});
 ---
 <html lang={head.htmlLang} dir={head.dir}>
   <head>
@@ -28,6 +42,7 @@ const head = buildPageHead(locale, slug, { title, description });
     <meta property="og:description" content={head.description} />
     <meta property="og:url" content={head.canonical} />
     <meta property="og:locale" content={head.htmlLang} />
+    <script type="application/ld+json" set:html={jsonLd} />
   </head>
   <body>
     <header class="site-header"><span class="brand">Fisca</span></header>
