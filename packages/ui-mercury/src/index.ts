@@ -10,3 +10,8 @@ export {
   parseTokenDeclarations,
 } from './tokens.ts';
 export type { SemanticTokenName, ThemeName, ThemeTokens } from './tokens.ts';
+export { formatCentimesMad } from './format-centimes.ts';
+export { FiscalAmount, FiscalStatusBadge, FiscalTerm } from './FiscalPrimitives.tsx';
+export type { FiscaLocale, FiscalAmountProps, FiscalStatus, FiscalStatusBadgeProps, FiscalTermProps } from './FiscalPrimitives.tsx';
+export { AiCrafterAmountField, AiCrafterCard, AiCrafterConfidence } from './AiCrafterCards.tsx';
+export type { AiCrafterAmountFieldProps, AiCrafterCardProps, AiCrafterConfidenceProps, AiCrafterDecision } from './AiCrafterCards.tsx';
