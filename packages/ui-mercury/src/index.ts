@@ -15,3 +15,20 @@ export { FiscalAmount, FiscalStatusBadge, FiscalTerm } from './FiscalPrimitives.
 export type { FiscaLocale, FiscalAmountProps, FiscalStatus, FiscalStatusBadgeProps, FiscalTermProps } from './FiscalPrimitives.tsx';
 export { AiCrafterAmountField, AiCrafterCard, AiCrafterConfidence } from './AiCrafterCards.tsx';
 export type { AiCrafterAmountFieldProps, AiCrafterCardProps, AiCrafterConfidenceProps, AiCrafterDecision } from './AiCrafterCards.tsx';
+export { MercuryGrid, amountCentsColumn, textColumn } from './MercuryGrid.tsx';
+export type { GridRowBase, MercuryGridColumn, MercuryGridLabels, MercuryGridProps, RowListener } from './MercuryGrid.tsx';
+export {
+  ROW_HEIGHT_PX,
+  computeWindow,
+  createFeed,
+  measureLayoutShift,
+  newRowCount,
+  nextActiveIndex,
+  noteScroll,
+  receiveRows,
+  revealNewRows,
+  scrollTopToReveal,
+  visibleRowRects,
+  windowIndexes,
+} from './grid-core.ts';
+export type { FeedState, FeedUpdate, GridDensity, GridWindow } from './grid-core.ts';

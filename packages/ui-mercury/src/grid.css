@@ -1,0 +1,108 @@
+/* Grille virtuelle Mercury (Doc_08 Sections 04 et 10) : propriétés logiques uniquement (RTL/LTR). */
+.fisca-grid {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  font-size: 14px;
+}
+
+.fisca-grid[data-density="compact"] {
+  font-size: 12.5px;
+}
+
+.fisca-grid__scroller {
+  position: relative;
+  block-size: 100%;
+  overflow: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+}
+
+.fisca-grid__header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--fisca-grid-columns);
+  min-inline-size: 100%;
+  inline-size: var(--fisca-grid-width);
+  background: var(--bg-subtle);
+  border-block-end: 1px solid var(--line-border);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.fisca-grid__body {
+  position: relative;
+  min-inline-size: 100%;
+  inline-size: var(--fisca-grid-width);
+}
+
+.fisca-grid__row {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  display: grid;
+  grid-template-columns: var(--fisca-grid-columns);
+  inline-size: 100%;
+  box-sizing: border-box;
+  border-block-end: 1px solid var(--line-border);
+  contain: layout paint;
+}
+
+.fisca-grid__row[aria-selected="true"] {
+  background: var(--bg-subtle);
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: -2px;
+}
+
+.fisca-grid__row:focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: -2px;
+}
+
+.fisca-grid__cell,
+.fisca-grid__head-cell {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+  padding-inline: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fisca-grid__cell > .fisca-tabular-num,
+.fisca-grid__head-cell--end {
+  margin-inline-start: auto;
+}
+
+.fisca-grid__skeleton {
+  display: block;
+  block-size: 0.75em;
+  inline-size: 60%;
+  border-radius: 4px;
+  background: var(--line-border);
+}
+
+.fisca-grid__status {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 16px;
+  z-index: 2;
+}
+
+.fisca-grid__new-rows {
+  padding-block: 4px;
+  padding-inline: 12px;
+  border: 1px solid var(--brand-emerald);
+  border-radius: 999px;
+  background: var(--status-cleared-bg);
+  color: var(--status-cleared-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
