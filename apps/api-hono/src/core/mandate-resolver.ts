@@ -48,6 +48,22 @@ export interface MandateResolver {
   resolveMandate(query: { readonly userId: string; readonly companyId: string }): Promise<MandateAccess | null>;
 }
 
+/**
+ * Présence d'au moins un mandat cabinet ACTIVE sur le dossier, quel que soit l'utilisateur (visa implicite du mode direct,
+ * Doc_09 § 06B : seulement si le dossier n'a AUCUN mandat actif). Une panne remonte (le routeur répond 503).
+ */
+export interface CpaMandatePresence {
+  hasActiveMandate(companyId: string): Promise<boolean>;
+}
+
+export const CPA_ACTIVE_MANDATE_PRESENCE_SQL = `SELECT 1 AS present FROM company_cpa_mandates WHERE company_id = ? AND status = 'ACTIVE' AND revoked_at IS NULL LIMIT 1`;
+
+export function createSqlCpaMandatePresence(controlPlane: TenantSqlDriver): CpaMandatePresence {
+  return {
+    hasActiveMandate: async (companyId) => (await controlPlane.query<{ readonly present: number }>({ sql: CPA_ACTIVE_MANDATE_PRESENCE_SQL, params: [companyId] })).length > 0,
+  };
+}
+
 // ---------------------------------------------------------------- rôle effectif
 
 /**

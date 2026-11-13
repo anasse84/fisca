@@ -70,6 +70,7 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
       actorId: call.tenant.userId,
       role: call.tenant.role,
       permissionCeiling: call.tenant.permissionCeiling,
+      ...(call.tenant.activeCpaMandate === null ? {} : { activeCpaMandate: call.tenant.activeCpaMandate }),
       assignedCompanyIds: [call.tenant.companyId],
       orgPlanSegment: profile.orgPlanSegment,
       activeHumanMembersCount: profile.activeHumanMembersCount,

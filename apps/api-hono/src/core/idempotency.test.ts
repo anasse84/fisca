@@ -110,6 +110,7 @@ describe.each(KINDS)('port IdempotencyStore : %s', (kind) => {
         plan: 'PLAN_TEST',
         canAccessPayrollPii: true,
         permissionCeiling: null,
+        activeCpaMandate: null,
         tenantDb: createFakeDriver(COMPANY_A),
       }));
       c.set('auth', { userId: c.req.header('x-test-user') ?? USER_1, sessionId: null, boundCompanyId: null });

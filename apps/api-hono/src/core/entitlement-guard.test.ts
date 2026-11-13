@@ -27,7 +27,7 @@ function setup(rows: EntitlementRows | null, policy: Partial<RoutePolicy> = {}, 
   app.use('*', async (c, next) => {
     c.set('tenant', Object.freeze({
       userId: USER_1, role: 'OWNER_GERANT', companyId: COMPANY_A, organizationId: ORG_1,
-      accessKind: 'MEMBERSHIP', plan: 'PLAN_TEST', canAccessPayrollPii: true, permissionCeiling: null, tenantDb: createFakeDriver(COMPANY_A),
+      accessKind: 'MEMBERSHIP', plan: 'PLAN_TEST', canAccessPayrollPii: true, permissionCeiling: null, activeCpaMandate: null, tenantDb: createFakeDriver(COMPANY_A),
     }));
     c.set('routePolicy', routePolicy);
     await next();

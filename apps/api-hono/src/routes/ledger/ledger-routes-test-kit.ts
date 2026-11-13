@@ -44,6 +44,7 @@ import {
   actorOf,
   openBareSqliteDriver,
   openSqliteBackend,
+  PostgresHarness,
   seedLedger,
   testCipher,
   testOnlyHasher,
@@ -97,9 +98,15 @@ export interface CallOptions {
   readonly rawBody?: string;
 }
 
-export async function buildKit(options: { withMandates?: boolean } = {}): Promise<Kit> {
+/** Base PostgreSQL 16 du kit (schéma temporaire par harnais) ; `closeKitPostgres` le supprime. */
+const kitPostgres = new PostgresHarness();
+export async function closeKitPostgres(): Promise<void> {
+  await kitPostgres.close();
+}
+
+export async function buildKit(options: { withMandates?: boolean; backend?: 'sqlite' | 'postgres' } = {}): Promise<Kit> {
   const withMandates = options.withMandates ?? true;
-  const backend = await openSqliteBackend();
+  const backend = options.backend === 'postgres' ? await kitPostgres.fresh() : await openSqliteBackend();
   await seedLedger(backend.driver);
   const controlDb = openBareSqliteDriver('control-plane');
   await ensureTenantSchemaUpToDate(null, controlDb, 'control-plane', CONTROL_PLANE_MIGRATIONS);

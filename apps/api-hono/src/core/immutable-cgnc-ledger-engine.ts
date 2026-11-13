@@ -194,6 +194,21 @@ export interface LedgerActor {
   readonly mfaVerifiedAtEpochSec?: number | undefined;
   /** Plafond de permissions d'un accès par mandat (intersection, décision 2 du pilote) ; null ou absent : appartenance directe, aucun plafond. */
   readonly permissionCeiling?: ReadonlySet<PermissionAction> | null | undefined;
+  /**
+   * Le dossier a-t-il au moins un mandat cabinet ACTIVE ? Renseigné par la colle (TenantRouter → ledger-api) selon la voie d'accès.
+   * `false` = aucun mandat cabinet actif connu (mode direct) ; `true` ou absent (inconnu) : visa du chef de mission exigé, comme
+   * avant (défaut sûr). Seule cette valeur à `false`, avec le plan DIRECT_PME et le rôle OWNER_GERANT, ouvre le visa implicite.
+   */
+  readonly activeCpaMandate?: boolean | undefined;
+}
+
+/** Acteur et motif du visa implicite de mode direct (Doc_09 § 06B) : l'audit nomme le gérant au nom duquel le système vise. */
+export const DIRECT_MODE_IMPLICIT_VISA_ACTOR_ID = 'SYSTEM:DIRECT_MODE_IMPLICIT_VISA';
+export const DIRECT_MODE_IMPLICIT_VISA_PROOF_PREFIX = 'DIRECT_MODE_IMPLICIT_VISA:on_behalf_of=';
+
+/** Règle du pilote : jamais pour un autre rôle que OWNER_GERANT, jamais en présence (ou dans l'ignorance) d'un mandat cabinet actif. */
+function directModeImplicitVisaApplies(actor: LedgerActor): boolean {
+  return actor.role === 'OWNER_GERANT' && actor.orgPlanSegment === 'DIRECT_PME' && actor.activeCpaMandate === false;
 }
 
 export interface DraftLineInput {
@@ -572,7 +587,7 @@ export class ImmutableCgncLedgerEngine {
 
   /** Niveau 3 : l'expert-comptable (ou le gérant en direct, Doc_09 § 06B) scelle (REVISEE_CYCLE → POSTED), Step-Up exigé. */
   sealEntry(actor: LedgerActor, input: EntryTransitionInput): Promise<EntryTransitionResult> {
-    return this.transitionEntry(actor, input, { from: 'REVISEE_CYCLE', to: 'POSTED', permission: 'LEDGER_POST_IMMUTABLE' });
+    return this.transitionEntry(actor, input, { from: 'REVISEE_CYCLE', to: 'POSTED', permission: 'LEDGER_POST_IMMUTABLE', directModeVisa: true });
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -1099,7 +1114,7 @@ export class ImmutableCgncLedgerEngine {
   private async transitionEntry(
     actor: LedgerActor,
     input: EntryTransitionInput,
-    spec: { readonly from: JournalEntryState; readonly to: JournalEntryState; readonly permission: PermissionAction },
+    spec: { readonly from: JournalEntryState; readonly to: JournalEntryState; readonly permission: PermissionAction; readonly directModeVisa?: boolean },
   ): Promise<EntryTransitionResult> {
     const key = assertKey(input.idempotencyKey);
     if ((await this.replayOf(actor, key, 'journal_entries', input.entryId, spec.from, spec.to)) !== null) {
@@ -1115,12 +1130,36 @@ export class ImmutableCgncLedgerEngine {
     if (entry.status === 'POSTED') {
       throw new LedgerError('LEDGER_ENTRY_ALREADY_POSTED', `la pièce ${entry.entry_reference} est déjà scellée (POSTED) ; seule une contre-passation la corrige.`);
     }
-    if (entry.status !== spec.from) {
+    const implicitVisa = spec.directModeVisa === true && entry.status === 'DRAFT' && directModeImplicitVisaApplies(actor);
+    if (entry.status !== spec.from && !implicitVisa) {
       throw new LedgerError('LEDGER_ENTRY_NOT_IN_EXPECTED_STATE', `la pièce ${entry.entry_reference} est ${entry.status} : ${spec.from} attendu pour passer à ${spec.to}.`);
     }
 
     const auditId = this.newId();
-    const state = await this.entityState<JournalEntryState>('journal_entries', entry.id, spec.from);
+    let state = await this.entityState<JournalEntryState>('journal_entries', entry.id, spec.from);
+    let implicit: { readonly update: SqlStatementParams; readonly audit: SqlStatementParams } | null = null;
+    if (implicitVisa) {
+      // Visa implicite : la FSM valide DRAFT → REVISEE_CYCLE (HUMAN_USER seul autorisé), l'audit enregistre l'acteur système.
+      const visaKey = `${key}#direct-mode-visa`;
+      const visaState = await this.entityState<JournalEntryState>('journal_entries', entry.id, 'DRAFT');
+      const visa = wrapFsm(() =>
+        applyTransition(
+          JOURNAL_ENTRY_FSM,
+          visaState,
+          { entityTable: 'journal_entries', entityId: entry.id, expectedFromState: 'DRAFT', targetState: 'REVISEE_CYCLE', actorKind: 'HUMAN_USER', actorId: actor.actorId, idempotencyKey: visaKey },
+          [],
+          { nowIso, auditId: this.newId() },
+        ),
+      );
+      implicit = {
+        update: { sql: `UPDATE journal_entries SET status = 'REVISEE_CYCLE' WHERE id = ? AND status = 'DRAFT'`, params: [entry.id] },
+        audit: guardedAudit(
+          { ...visa.audit, actorKind: 'DETERMINISTIC_SYSTEM', actorId: DIRECT_MODE_IMPLICIT_VISA_ACTOR_ID, proofRef: `${DIRECT_MODE_IMPLICIT_VISA_PROOF_PREFIX}${actor.actorId}` },
+          { guardSql: `EXISTS (SELECT 1 FROM journal_entries WHERE id = ? AND status = 'REVISEE_CYCLE')`, guardParams: [entry.id] },
+        ),
+      };
+      state = { ...state, state: 'REVISEE_CYCLE', version: state.version + 1, appliedIdempotencyKeys: [...state.appliedIdempotencyKeys, visaKey] };
+    }
     const applied = wrapFsm(() =>
       applyTransition(
         JOURNAL_ENTRY_FSM,
@@ -1145,6 +1184,7 @@ export class ImmutableCgncLedgerEngine {
       sealed = await this.prepareSeal(entry, nowIso);
       const journalId = entry.journal_id;
       statements = [
+        ...(implicit === null ? [] : [implicit.update, implicit.audit]),
         {
           sql: `UPDATE journal_entries SET status = 'POSTED', validated_at = ?, previous_entry_hash = ?, entry_hash = ? WHERE id = ? AND status = 'REVISEE_CYCLE'`,
           params: [nowIso, sealed.previousEntryHash, sealed.entryHash, entry.id],

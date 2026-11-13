@@ -10,7 +10,7 @@
 import { createMiddleware } from 'hono/factory';
 import { SessionJwtError, type AccessTokenClaims, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
 import { InfrastructureError, assertValidCompanyId, type TenantSqlDriver } from '@fisca/shared-types';
-import type { MandateAccess, MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
+import type { CpaMandatePresence, MandateAccess, MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
 import {
   AUTH_REQUIRED_PROBLEM,
   TENANT_OUT_OF_SCOPE_PROBLEM,
@@ -111,6 +111,11 @@ export interface TenantContext {
    * `max_delegated_role` ; `null` pour une appartenance directe (aucun plafond). Appliqué par `assertPermissionWithinMandateCeiling`.
    */
   readonly permissionCeiling: ReadonlySet<PermissionAction> | null;
+  /**
+   * Le dossier a-t-il un mandat cabinet ACTIVE ? Accès par mandat : true ; appartenance directe : lu via `cpaMandatePresence` ;
+   * `null` = inconnu (port absent), traité comme « mandat actif » par le moteur (visa du chef exigé, défaut sûr).
+   */
+  readonly activeCpaMandate: boolean | null;
   readonly tenantDb: TenantSqlDriver;
 }
 
@@ -274,6 +279,8 @@ export interface TenantRouterDeps {
   readonly tenants: TenantDatabaseProvider;
   /** Voie C. Absent : échec fermé, tout accès par mandat à un dossier ZERO_KNOWLEDGE_E2EE est refusé. */
   readonly keyGrants?: TenantKeyGrantReader;
+  /** Absent : `TenantContext.activeCpaMandate` vaut null pour une appartenance directe (inconnu, défaut sûr). */
+  readonly cpaMandatePresence?: CpaMandatePresence;
 }
 
 function isTenantDenial(error: unknown): boolean {
@@ -344,6 +351,13 @@ export function createTenantRouter(deps: TenantRouterDeps) {
       return respondProblem(c, TENANT_OUT_OF_SCOPE_PROBLEM);
     }
 
+    let activeCpaMandate: boolean | null;
+    try {
+      activeCpaMandate = mandate !== null ? true : deps.cpaMandatePresence === undefined ? null : await deps.cpaMandatePresence.hasActiveMandate(companyId);
+    } catch {
+      return respondProblem(c, TENANT_UNAVAILABLE_PROBLEM);
+    }
+
     let tenantDb: TenantSqlDriver;
     try {
       tenantDb = await deps.tenants.getTenantDbUpToDate(companyId);
@@ -379,6 +393,7 @@ export function createTenantRouter(deps: TenantRouterDeps) {
         plan: access.planCode,
         canAccessPayrollPii: mandate === null ? true : mandate.canAccessPayrollPii,
         permissionCeiling: mandate === null ? null : mandate.permissionCeiling,
+        activeCpaMandate,
         tenantDb,
       }),
     );

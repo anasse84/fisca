@@ -4,13 +4,13 @@
  * - décision 2 : le plafond de permissions d'un accès par mandat est appliqué par la route de lettrage et par le moteur ;
  * - décision 5 : lettrage rejoué AVEC la même Idempotency-Key = réponse mémorisée ; SANS clé identique = 409 conservé.
  */
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { PermissionAction } from '@fisca/auth-rbac';
 import { ProblemBodySchema } from '../../core/api-v1-schemas.ts';
 import { LedgerError } from '../../core/immutable-cgnc-ledger-engine.ts';
 import { mandatePermissionCeiling } from '../../core/mandate-resolver.ts';
-import { COMPANY_A, KEY, L, SALE_INVOICE_LINES, USER_2, buildKit, grantMandate, type Kit } from './ledger-routes-test-kit.ts';
+import { COMPANY_A, KEY, L, SALE_INVOICE_LINES, USER_2, buildKit, closeKitPostgres, grantMandate, type Kit } from './ledger-routes-test-kit.ts';
 
 const RECONCILE = '/api/v1/banking/reconcile';
 
@@ -34,9 +34,13 @@ const reconcileBody = (bankTransactionId: string, invoiceEntryId: string) => ({
   candidates: [{ invoiceEntryId, settledBeforeCents: 0 }],
 });
 
-describe('décision 5 : lettrage et Idempotency-Key (pipeline complet, store SQL)', () => {
+afterAll(async () => {
+  await closeKitPostgres();
+});
+
+describe.each(['sqlite', 'postgres'] as const)('décision 5 : lettrage et Idempotency-Key (pipeline complet, store SQL) sur %s', (backend) => {
   it('même clé : la 2e réponse EST la mémorisée (statut, corps, Idempotent-Replayed: true), un seul brouillon VAT_CLEARING, un seul lettrage ; clé différente : 409', async () => {
-    const kit = await buildKit();
+    const kit = await buildKit({ backend });
     const inv = await invoice(kit);
     await bank(kit, 'bk-idem', 87500);
     const key = KEY(0xabc);

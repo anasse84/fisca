@@ -16,7 +16,7 @@ import {
   type InternalErrorReport,
   type TraceContext,
 } from './problem-details.ts';
-import type { MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
+import type { CpaMandatePresence, MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
 import {
   createAuthenticationMiddleware,
   createTenantRouter,
@@ -36,6 +36,8 @@ export interface RequestPipelineDeps {
   readonly tenants: TenantDatabaseProvider;
   /** Absent : échec fermé, tout accès par mandat à un dossier ZERO_KNOWLEDGE_E2EE est refusé (voie C). */
   readonly keyGrants?: TenantKeyGrantReader;
+  /** Absent : présence d'un mandat cabinet inconnue pour une appartenance directe (défaut sûr : visa du chef exigé). */
+  readonly cpaMandatePresence?: CpaMandatePresence;
   readonly entitlements: { readonly source: EntitlementSource; readonly kv: FastKv; readonly cacheTtlSec: number };
   readonly idempotencyStore: IdempotencyStore;
   readonly nowMs: () => number;
@@ -78,6 +80,7 @@ export function createRequestPipeline(deps: RequestPipelineDeps): RequestPipelin
         ...(deps.mandates === undefined ? {} : { mandates: deps.mandates }),
         tenants: deps.tenants,
         ...(deps.keyGrants === undefined ? {} : { keyGrants: deps.keyGrants }),
+        ...(deps.cpaMandatePresence === undefined ? {} : { cpaMandatePresence: deps.cpaMandatePresence }),
       }),
     },
     {
