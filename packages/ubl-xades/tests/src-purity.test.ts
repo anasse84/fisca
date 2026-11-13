@@ -13,7 +13,9 @@ describe('src/signature : pureté WebCrypto / Workers', () => {
     expect(code).not.toMatch(/from\s+['"]node:/);
     expect(code).not.toMatch(/require\(/);
     expect(code).not.toMatch(/\bBuffer\b/);
-    expect(code).not.toMatch(/\b(?:window|globalThis\.document|DOMParser|XMLSerializer|XMLHttpRequest|fetch)\b/);
+    expect(code).not.toMatch(/\b(?:window|globalThis\.document|DOMParser|XMLSerializer|XMLHttpRequest)\b/);
+    // Aucun appel réseau direct : `fetch` global interdit ; seul le client HTTP injecté (`config.http.fetch`, propriété) est permis (csc-client.ts).
+    expect(code).not.toMatch(/(?<![.\w])fetch\s*\(|globalThis\.fetch/);
     expect(code).not.toMatch(/generateKey|exportKey|createTestTimestampProvider|TEST_TSA/);
   });
 

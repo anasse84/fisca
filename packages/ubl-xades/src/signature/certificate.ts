@@ -25,6 +25,8 @@ export const OID = {
 export interface ParsedCertificate {
   readonly der: Uint8Array;
   readonly issuerDer: Uint8Array;
+  /** Encodage DER du Name du sujet (RDNSequence complète). */
+  readonly subjectDer: Uint8Array;
   /** Encodage DER complet de l'INTEGER du numéro de série. */
   readonly serialDer: Uint8Array;
   readonly serialNumber: bigint;
@@ -44,6 +46,7 @@ export function parseCertificate(der: Uint8Array): ParsedCertificate {
     const serial = expectTag(tbs[index], TAG.INTEGER);
     index += 2; // numéro de série, algorithme de signature
     const issuer = expectTag(tbs[index], TAG.SEQUENCE);
+    const subject = expectTag(tbs[index + 2], TAG.SEQUENCE);
     const spki = expectTag(tbs[index + 3], TAG.SEQUENCE);
     const spkiParts = children(spki);
     const algorithmParts = children(expectTag(spkiParts[0], TAG.SEQUENCE));
@@ -52,13 +55,28 @@ export function parseCertificate(der: Uint8Array): ParsedCertificate {
     if (keyOid === OID.rsaEncryption) algorithm = 'RSA_PKCS1_SHA256';
     else if (keyOid === OID.ecPublicKey && algorithmParts[1] !== undefined && decodeOid(algorithmParts[1]) === OID.prime256v1) algorithm = 'ECDSA_P256_SHA256';
     else throw new UblSignatureError('CERTIFICATE_KEY_UNSUPPORTED', 'Clé du certificat non supportée (RSA ou ECDSA P-256 attendus).');
-    return { der, issuerDer: issuer.raw, serialDer: serial.raw, serialNumber: decodeInteger(serial), spkiDer: spki.raw, algorithm };
+    return { der, issuerDer: issuer.raw, subjectDer: subject.raw, serialDer: serial.raw, serialNumber: decodeInteger(serial), spkiDer: spki.raw, algorithm };
   } catch (error) {
     if (error instanceof UblSignatureError) {
       if (error.code === 'CERTIFICATE_KEY_UNSUPPORTED') throw error;
       throw invalid();
     }
     throw error;
+  }
+}
+
+/** Longueur en octets du module RSA (zéros de tête exclus) d'une SubjectPublicKeyInfo ; sert à borner la signature RSA brute d'un HSM distant. */
+export function rsaModulusLengthBytes(spkiDer: Uint8Array): number {
+  try {
+    const spki = children(expectTag(parseDer(spkiDer), TAG.SEQUENCE));
+    const bits = expectTag(spki[1], TAG.BIT_STRING).content;
+    const publicKey = children(expectTag(parseDer(bits.subarray(1)), TAG.SEQUENCE));
+    const modulus = expectTag(publicKey[0], TAG.INTEGER).content;
+    let start = 0;
+    while (start < modulus.length - 1 && modulus[start] === 0) start += 1;
+    return modulus.length - start;
+  } catch {
+    throw invalid();
   }
 }
 
@@ -124,4 +142,51 @@ export function distinguishedNameRfc2253(nameDer: Uint8Array): string {
         .join('+'),
     )
     .join(',');
+}
+
+/** Valeurs textuelles décodées d'un attribut DER (UTF8String, PrintableString, IA5String) ; undefined pour tout autre type ou UTF-8 invalide. */
+function textualValue(node: DerNode): string | undefined {
+  if (node.tag !== TAG.UTF8_STRING && node.tag !== TAG.PRINTABLE_STRING && node.tag !== TAG.IA5_STRING) return undefined;
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(node.content);
+  } catch {
+    return undefined;
+  }
+}
+
+const SUBJECT_DN_KEYS: Readonly<Record<string, string>> = {
+  ...DN_KEYWORDS,
+  // Les deux attributs lus par assertCertificateMatchesEmitter (ERRATA D-22) : écrits en OID numérique, reconnus tels quels par l'invariant.
+  '2.5.4.97': '2.5.4.97',
+  '2.5.4.5': '2.5.4.5',
+};
+
+function escapeInvariantDnValue(value: string): string {
+  return value.replace(/[\\,+/"]/g, (character) => `\\${character}`);
+}
+
+/**
+ * Subject DN d'un certificat X.509 DER, sous la forme lue par `assertCertificateMatchesEmitter` (@fisca/shared-types) :
+ * « CLÉ=valeur » séparés par des virgules, RDN dans l'ordre inverse (RFC 2253), organizationIdentifier et serialNumber
+ * en OID numérique (2.5.4.97, 2.5.4.5), séparateurs de l'invariant (« , + / ») et « \ » et guillemets échappés pour qu'une
+ * valeur ne puisse jamais fabriquer un second attribut. Les attributs de type inconnu ou de codage non textuel sont omis
+ * (un identifiant illisible n'est donc jamais reconnu : échec fermé côté invariant). Le CN est écrit mais n'est jamais lu par l'invariant.
+ */
+export function subjectDistinguishedNameForEmitterCheck(subjectDer: Uint8Array): string {
+  try {
+    const rdns = children(expectTag(parseDer(subjectDer), TAG.SEQUENCE)).reverse();
+    const attributes: string[] = [];
+    for (const rdn of rdns) {
+      for (const pair of children(expectTag(rdn, TAG.SET))) {
+        const parts = children(expectTag(pair, TAG.SEQUENCE));
+        const type = decodeOid(expectTag(parts[0], TAG.OID));
+        const key = SUBJECT_DN_KEYS[type];
+        const value = parts[1] === undefined ? undefined : textualValue(parts[1]);
+        if (key !== undefined && value !== undefined) attributes.push(`${key}=${escapeInvariantDnValue(value)}`);
+      }
+    }
+    return attributes.join(',');
+  } catch {
+    throw invalid();
+  }
 }

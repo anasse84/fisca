@@ -53,7 +53,19 @@ export interface SignUblXadesOptions {
    * « SigningCertificateV2 » (EN 319 132-1, IssuerSerialV2) est correct pour XML-DSig mais REFUSÉ par ces XSD (xmllint).
    */
   readonly signingCertificateElement?: 'SigningCertificate' | 'SigningCertificateV2';
+  /**
+   * Numéro de série de certificat de plus de `XMLLINT_MAX_SERIAL_DIGITS` chiffres décimaux avec « SigningCertificate » :
+   * refusé par défaut (échec fermé UBL_SIGNATURE_SERIAL_UNSUPPORTED), car xmllint (libxml2) refuse alors le XML au XSD alors
+   * que `xs:integer` est non borné. `true` : émet quand même le XML (valide pour un validateur sans cette limite, non validé par xmllint).
+   */
+  readonly allowLongSerialNumber?: boolean;
 }
+
+/**
+ * Nombre maximal de chiffres décimaux de `ds:X509SerialNumber` (`xs:integer`) accepté par xmllint (libxml2 2.10.x, mesuré :
+ * 24 chiffres valides, 25 refusés). Limite de l'outil de validation, pas du schéma XSD OASIS.
+ */
+export const XMLLINT_MAX_SERIAL_DIGITS = 24;
 
 export interface SignedUblXades {
   readonly xml: string;
@@ -226,6 +238,16 @@ export async function signUblXades(xml: string, options: SignUblXadesOptions): P
   }
   const certificate = parseCertificate(options.certificateDer);
   const algorithm = certificate.algorithm;
+  if (
+    (options.signingCertificateElement ?? 'SigningCertificate') === 'SigningCertificate' &&
+    options.allowLongSerialNumber !== true &&
+    certificate.serialNumber.toString().length > XMLLINT_MAX_SERIAL_DIGITS
+  ) {
+    throw refusal(
+      'UBL_SIGNATURE_SERIAL_UNSUPPORTED',
+      `Numéro de série du certificat de plus de ${XMLLINT_MAX_SERIAL_DIGITS} chiffres décimaux : refusé par xmllint dans xades:SigningCertificate (option allowLongSerialNumber pour passer outre).`,
+    );
+  }
   const plan = planInsertion(document);
   const assemble = (signature: string): string => `${plan.prefix}${plan.wrap[0]}${signature}${plan.wrap[1]}${plan.suffix}`;
 

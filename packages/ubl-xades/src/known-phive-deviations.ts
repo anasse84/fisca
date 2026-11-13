@@ -39,3 +39,42 @@ export const KNOWN_PHIVE_DEVIATIONS: readonly KnownPhiveDeviation[] = [
 
 /** Identifiants de règles, triés (comparaison directe avec la sortie PHIVE). */
 export const KNOWN_PHIVE_DEVIATION_RULE_IDS: readonly string[] = KNOWN_PHIVE_DEVIATIONS.map((deviation) => deviation.ruleId).sort();
+
+/**
+ * Limites CONNUES du profil provisoire de signature (hors PHIVE : aucune de ces limites n'est une règle EN 16931, donc aucune n'entre
+ * dans KNOWN_PHIVE_DEVIATIONS). Liste unique, testée dans `tests/known-phive-deviations.test.ts` ; chaque ligne renvoie au README.
+ * Elle ne dit rien de conformité : le profil est provisoire et non qualifié (ERRATA B-13).
+ */
+export interface KnownProfileLimitation {
+  /** Identifiant stable de la limite. */
+  readonly id: string;
+  /** Énoncé de la limite, en une phrase. */
+  readonly statement: string;
+  /** Comportement du paquet face à cette limite. */
+  readonly behavior: string;
+}
+
+export const KNOWN_PROFILE_LIMITATIONS: readonly KnownProfileLimitation[] = [
+  {
+    id: 'SIGNING_CERTIFICATE_V2_REFUSED_BY_XSD',
+    statement:
+      'xades:SigningCertificateV2 (EN 319 132-1, IssuerSerialV2) est refusé par le XSD OASIS UBL 2.1 vendorisé (UBL-XAdESv132-2.1.xsd ne définit que SigningCertificate) ; xmllint le refuse.',
+    behavior: 'xades:SigningCertificate (V1, condensé SHA-256 et ds:X509IssuerSerial) est émis par défaut ; SigningCertificateV2 reste une option explicite, non validée au XSD.',
+  },
+  {
+    id: 'SERIAL_NUMBER_OVER_24_DIGITS_REFUSED_BY_XMLLINT',
+    statement:
+      'Un numéro de série de certificat de plus de 24 chiffres décimaux dans ds:X509SerialNumber (xs:integer, non borné dans le schéma) est refusé par xmllint (libxml2 2.10.x : 24 chiffres valides, 25 refusés).',
+    behavior: 'signUblXades échoue fermé avec UBL_SIGNATURE_SERIAL_UNSUPPORTED ; l’option allowLongSerialNumber émet le XML malgré tout (non validé par xmllint).',
+  },
+  {
+    id: 'PADES_CLASSIC_XREF_ONLY',
+    statement: 'PAdES : xref classique seulement ; un PDF à flux xref ou à flux d’objets (PDF/A-3b Factur-X courant) n’est pas pris en charge.',
+    behavior: 'Échec fermé PDF_UNSUPPORTED_STRUCTURE.',
+  },
+  {
+    id: 'RFC3161_PARTIAL_CHECK',
+    statement: 'Contrôle RFC 3161 partiel : structure, empreinte, nonce et genTime seulement ; signature de la TSA, chaîne de certification et révocation non évaluées.',
+    behavior: 'Le résultat de vérification porte trust = NOT_EVALUATED ; aucun horodatage n’est présenté comme qualifié.',
+  },
+];

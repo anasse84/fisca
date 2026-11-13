@@ -27,7 +27,8 @@ export type UblSignatureErrorCode =
   | 'XADES_CERTIFICATE_MISMATCH'
   | 'XADES_TIMESTAMP_MISSING'
   | 'XADES_ALGORITHM_REFUSED'
-  | 'XADES_REFERENCE_AMBIGUOUS';
+  | 'XADES_REFERENCE_AMBIGUOUS'
+  | 'UBL_SIGNATURE_SERIAL_UNSUPPORTED';
 
 export class UblSignatureError extends Error {
   readonly code: UblSignatureErrorCode;

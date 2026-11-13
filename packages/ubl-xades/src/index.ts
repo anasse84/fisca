@@ -22,8 +22,29 @@ export * from './signature/types.ts';
 export { canonicalizeC14n11, canonicalizeExclusive, canonicalizeTree, joinXmlBase, C14N11_ALGORITHM, EXC_C14N_ALGORITHM } from './signature/c14n.ts';
 export { parseXml } from './signature/xml-parser.ts';
 export type { XmlDocument, XmlElement } from './signature/xml-parser.ts';
-export { signUblXades, verifyUblXades, NS_DS, NS_XADES, NS_UBL_EXT } from './signature/xades.ts';
+export { signUblXades, verifyUblXades, XMLLINT_MAX_SERIAL_DIGITS, NS_DS, NS_XADES, NS_UBL_EXT } from './signature/xades.ts';
 export type { SignUblXadesOptions, SignedUblXades, SignaturePolicyHypothesis, VerifyUblXadesOptions, VerifyUblXadesResult } from './signature/xades.ts';
+export {
+  CSC_DEFAULT_TIMEOUT_MS,
+  CSC_HASH_ALGORITHM_OID,
+  CSC_MAX_LOGIN_RETRIES,
+  CSC_SIGN_ALGO_OID,
+  CscSignerError,
+  fetchBaridEsignCscV2Certificate,
+  normalizeCscSignature,
+  signDigestViaBaridEsignCscV2,
+} from './signature/csc-client.ts';
+export type {
+  BaridEsignCscV2Config,
+  CscAuthObject,
+  CscHttpClient,
+  CscPhase,
+  CscRequestInit,
+  CscResponse,
+  CscSignerErrorCode,
+  NormalizeCscSignatureOptions,
+} from './signature/csc-client.ts';
+export { subjectDistinguishedNameForEmitterCheck } from './signature/certificate.ts';
 export { buildTimeStampRequest, parseTimeStampToken, extractTimeStampTokenFromResponse } from './signature/timestamp.ts';
 export type { ParsedTimeStampToken, TimeStampRequest, TimeStampRequestOptions } from './signature/timestamp.ts';
 export { preparePadesSignature, finalizePadesSignature, signPades } from './signature/pades.ts';
