@@ -9,9 +9,9 @@ import {
   createSessionService,
   enableTotp,
   generateTotpCodeRfc6238,
-  hashPasswordWorkerSafe,
   setupTotp,
 } from '@fisca/auth-rbac';
+import { createLowCostPasswordService } from '@fisca/auth-rbac/testing';
 import type {
   FirstFactorDeps,
   GoogleOAuthDeps,
@@ -29,6 +29,12 @@ import type {
 
 export const NOW = 1_800_000_000;
 export const PEPPER = 'pepper-factice-de-test';
+/** Coût PBKDF2 bas réservé aux tests (fabrique hors index public ; la production reste à 100 000 itérations). */
+export const LOW_COST_PASSWORD_SERVICE = createLowCostPasswordService();
+/** Format du hash au coût bas : même schéma que la production, itérations du service de test. */
+export const LOW_COST_HASH_FORMAT = new RegExp(
+  `^pbkdf2_sha512\\$${LOW_COST_PASSWORD_SERVICE.iterations}\\$[0-9a-f]{32}\\$[0-9a-f]{64}$`,
+);
 export const PASSWORD = 'mot-de-passe-factice-12';
 export const CLIENT_ID = 'client-id-factice.apps.googleusercontent.com';
 export const CALLBACK_PATH = '/api/v1/auth/google/callback';
@@ -202,7 +208,7 @@ export async function buildKit(): Promise<Kit> {
         email,
         account: {
           userId,
-          passwordHash: await hashPasswordWorkerSafe(PASSWORD, PEPPER),
+          passwordHash: await LOW_COST_PASSWORD_SERVICE.hash(PASSWORD, PEPPER),
           lockout: { consecutiveFailures: 0, lockedUntilEpochMs: null },
         },
       });

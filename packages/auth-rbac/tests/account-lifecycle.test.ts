@@ -9,6 +9,7 @@ import {
   verifyEmailToken,
 } from '../src/index.ts';
 import type { AccountLifecycleDeps, NewUnverifiedAccount, OneTimeTokenRecord } from '../src/index.ts';
+import { createLowCostPasswordService } from '../src/testing.ts';
 
 function build(randomByte = 7) {
   const created: NewUnverifiedAccount[] = [];
@@ -54,6 +55,7 @@ function build(randomByte = 7) {
       },
     },
     pepper: 'pepper-factice-de-test',
+    passwordService: createLowCostPasswordService(),
     nowEpochSec: () => 1000,
     randomBytes: (length) => new Uint8Array(length).fill(randomByte),
     newUserId: () => 'u-new',

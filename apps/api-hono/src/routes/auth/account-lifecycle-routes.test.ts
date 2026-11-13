@@ -7,7 +7,7 @@ import type {
   RegistrationInsertResult,
 } from '@fisca/auth-rbac';
 import { createAccountLifecycleRoutes, createAuthRoutes } from './index.ts';
-import { PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
+import { LOW_COST_HASH_FORMAT, LOW_COST_PASSWORD_SERVICE, PASSWORD, PEPPER, buildGoogleKit, buildKit } from './test-kit.ts';
 
 const REGISTER = '/api/v1/auth/register';
 const VERIFY = '/api/v1/auth/verify-email';
@@ -101,7 +101,7 @@ function build(options: { turnstileOk?: boolean; blockedKeys?: readonly string[]
         mails.push({ kind: 'reset', ...message });
       },
     },
-    pepper: PEPPER,
+    pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE,
     nowEpochSec: () => now,
     newUserId: () => {
       counter += 1;
@@ -164,7 +164,7 @@ describe('POST /api/v1/auth/register (CTR-API-01)', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.emailNormalized).toBe('nadia@example.ma');
     expect(rows[0]?.emailVerified).toBe(false);
-    expect(rows[0]?.passwordHash).toMatch(/^pbkdf2_sha512\$100000\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
+    expect(rows[0]?.passwordHash).toMatch(LOW_COST_HASH_FORMAT);
     expect(rows[0]?.passwordHash).not.toContain(PASSWORD);
     expect(mails).toHaveLength(1);
     const mail = mails[0];
@@ -559,7 +559,7 @@ describe('colle : montage par createAuthRoutes', () => {
     const open = { allow: async () => true };
     const lifecycle = build().deps;
     const mfa = { ...kit.mfa, authenticator: { authenticate: async () => null }, turnstile: ok, rateLimiter: open };
-    const login = { accounts: kit.accounts, pepper: PEPPER, flow: kit.flow, turnstile: ok, rateLimiter: open };
+    const login = { accounts: kit.accounts, pepper: PEPPER, passwordService: LOW_COST_PASSWORD_SERVICE, flow: kit.flow, turnstile: ok, rateLimiter: open };
     const without = createAuthRoutes({ oauth: google.oauth, turnstile: ok, rateLimiter: open }, mfa, login);
     const withLifecycle = createAuthRoutes({ oauth: google.oauth, turnstile: ok, rateLimiter: open }, mfa, login, undefined, lifecycle);
     const init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' };
