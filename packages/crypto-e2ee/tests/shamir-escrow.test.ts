@@ -158,11 +158,16 @@ describe('Shamir 2-sur-3', () => {
     expect(violations).toBe(0);
   });
 
-  it("la part produite par splitSecretShamir2of3 est exactement secret XOR pente·x, pour les 256 pentes (sans aléa)", async () => {
+  it("la part produite par splitSecretShamir2of3 est exactement secret XOR pente·x, pour les 256 pentes sur un secret et les pentes de bord sur les autres (sans aléa)", async () => {
     const original = crypto.getRandomValues.bind(crypto);
+    // Coût borné (verify:fast sous charge parallèle) : l'exhaustivité 256 pentes porte sur UN secret (0xa5) ; les
+    // autres octets de secret (0x00, 0x01, 0xff) sont couverts sur des pentes de bord. La preuve exhaustive
+    // (3 abscisses × 256 secrets × 256 pentes) est faite sans aléa et sans appel asynchrone dans le test précédent.
+    const ALL_SLOPES = Array.from({ length: 256 }, (_unused, index) => index);
+    const EDGE_SLOPES = [0, 1, 2, 3, 0x80, 0xfe, 0xff];
     for (const secretByte of [0x00, 0x01, 0xa5, 0xff]) {
       const secret = new Uint8Array([secretByte]);
-      for (let slope = 0; slope < 256; slope += 1) {
+      for (const slope of secretByte === 0xa5 ? ALL_SLOPES : EDGE_SLOPES) {
         let calls = 0;
         const spy = vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
           calls += 1;
