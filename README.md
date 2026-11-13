@@ -2,7 +2,7 @@
 
 SaaS marocain de facturation électronique et de comptabilité ([fisca.ma](https://fisca.ma)), édité par SYNAPTIC SYSTEMS SARL AU.
 
-Ce dépôt est construit par l'usine logicielle Fisca (agents Hyperagent), vague par vague (S0 à S5), selon la cartographie `docs/orchestration/cartographie-6-vagues.md`. La structure du monorepo (pnpm + Turborepo) est créée par la Session 0 sur la branche `feat/w0-foundation`.
+Ce dépôt est construit par l'usine logicielle Fisca (agents Hyperagent), vague par vague (S0 à S5), selon le guide d'exécution `docs/orchestration/README.md` (17 sessions, 132 tickets). La structure du monorepo (pnpm + Turborepo) est créée par la Session 0 sur la branche `feat/w0-foundation`.
 
 ## Règles de contribution
 
@@ -14,4 +14,7 @@ Ce dépôt est construit par l'usine logicielle Fisca (agents Hyperagent), vague
 ## Documentation
 
 - `docs/specs/` : les 18 documents de spécification en Markdown, source de vérité fonctionnelle.
-- `docs/orchestration/` : cartographie des vagues, branches dédiées et dossiers verrouillés par session.
+- `docs/specs/ERRATA.md` : corrections et arbitrages, qui priment sur les 18 documents.
+- `docs/orchestration/` : matrice des sessions, protocole de boucle, barrières QA, bac à sable, scripts de garde de référence.
+- `docs/reference/dgi/` : schémas XSD et cahiers des charges officiels de la DGI, à déposer par le propriétaire du projet.
+- `.meta/` : matrice des sessions lisible par les scripts, graines du backlog et du registre des contrats.

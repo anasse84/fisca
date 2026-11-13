@@ -1,0 +1,739 @@
+{
+  "version": "2026-11-13",
+  "always_allowed_paths": [
+    "pnpm-lock.yaml",
+    ".meta/"
+  ],
+  "protected_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "scripts/harness-check.sh",
+    "scripts/enforce-constitution.ts",
+    "packages/qa-harness/src/fiscal-golden-suite.ts",
+    ".meta/session-scopes.json",
+    "docs/specs/"
+  ],
+  "agent_aliases": {
+    "Fisca-Backend-Core-Builder": "Fisca-Core-Backend-Fiscal",
+    "Fisca-EDI-ERP-Specialist": "Fisca-Containers-EDI-ERP",
+    "Fisca-Frontend-POS-Builder": "Fisca-Frontend-Mobile-Growth"
+  },
+  "branch_aliases": {
+    "feat/w0-bootstrap": "feat/w0-foundation",
+    "release/v1.0.0": "feat/w5-release-v1.0.0"
+  },
+  "sessions": [
+    {
+      "session_id": "S0",
+      "wave": 0,
+      "mode": "séquentiel",
+      "title": "Amorçage du monorepo, constitution et harnais",
+      "agents": [
+        "Fisca-Lead-Orchestrator"
+      ],
+      "git_branch": "feat/w0-foundation",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "(racine du dépôt : mode orchestrateur FISCA_ORCHESTRATOR_MODE=1)"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_01_PRD",
+          "file": "docs/specs/01-prd.md"
+        },
+        {
+          "id": "Doc_04_TDD",
+          "file": "docs/specs/04-tdd-architecture.md"
+        },
+        {
+          "id": "Doc_05_ADR",
+          "file": "docs/specs/05-adr.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        },
+        {
+          "id": "Doc_15_AGENTS_MD",
+          "file": "docs/specs/15-agents-md-constitution.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 8,
+      "prerequisite": "PR des spécifications fusionnée sur main",
+      "pushed": true
+    },
+    {
+      "session_id": "S1A",
+      "wave": 1,
+      "mode": "séquentiel",
+      "title": "Socle sécurité : auth 2FA, RBAC/SoD, E2EE, CNDP",
+      "agents": [
+        "Fisca-Core-Backend-Fiscal"
+      ],
+      "git_branch": "feat/w1-auth-crypto-cndp",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "packages/auth-rbac",
+        "apps/api-hono/src/routes/auth",
+        "packages/crypto-e2ee",
+        "packages/compliance-cndp"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_09_RBAC_SoD",
+          "file": "docs/specs/09-auth-rbac-sod.md"
+        },
+        {
+          "id": "Doc_10_STRIDE_Crypto",
+          "file": "docs/specs/10-stride-crypto.md"
+        },
+        {
+          "id": "Doc_11_CNDP_Souverainete",
+          "file": "docs/specs/11-cndp-sovereignty.md"
+        },
+        {
+          "id": "Doc_15_AGENTS_MD",
+          "file": "docs/specs/15-agents-md-constitution.md"
+        }
+      ],
+      "rubrics": [
+        "R2"
+      ],
+      "tickets": 10,
+      "prerequisite": "Pont S0 certifié et fusionné",
+      "pushed": true
+    },
+    {
+      "session_id": "S1B",
+      "wave": 1,
+      "mode": "séquentiel",
+      "title": "Socle données : schémas D1, triggers PAF, AST CGI, CGNC",
+      "agents": [
+        "Fisca-Core-Backend-Fiscal"
+      ],
+      "git_branch": "feat/w1-erd-ast-cgnc",
+      "base_ref": "origin/feat/w1-auth-crypto-cndp (branche empilée sur S1A)",
+      "scope_dirs": [
+        "packages/db-schema",
+        "apps/api-hono/src/core",
+        "packages/fiscal-ast",
+        "apps/api-hono/src/routes/ledger"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_04_TDD",
+          "file": "docs/specs/04-tdd-architecture.md"
+        },
+        {
+          "id": "Doc_06_ERD",
+          "file": "docs/specs/06-erd-data-lifecycle.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_15_AGENTS_MD",
+          "file": "docs/specs/15-agents-md-constitution.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 12,
+      "prerequisite": "Tous les tickets S1A en IN_REVIEW",
+      "pushed": true
+    },
+    {
+      "session_id": "G1",
+      "wave": 1,
+      "mode": "barrière QA",
+      "title": "Audit du socle (S1A + S1B)",
+      "agents": [
+        "Fisca-QA-Security-Auditor"
+      ],
+      "git_branch": "audit/gate-1",
+      "base_ref": "local uniquement",
+      "scope_dirs": [
+        "packages/qa-harness",
+        ".meta"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_06_ERD",
+          "file": "docs/specs/06-erd-data-lifecycle.md"
+        },
+        {
+          "id": "Doc_09_RBAC_SoD",
+          "file": "docs/specs/09-auth-rbac-sod.md"
+        },
+        {
+          "id": "Doc_10_STRIDE_Crypto",
+          "file": "docs/specs/10-stride-crypto.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 3,
+      "prerequisite": "Tous les tickets S1A et S1B en IN_REVIEW",
+      "pushed": false
+    },
+    {
+      "session_id": "P2-A",
+      "wave": 2,
+      "mode": "parallèle",
+      "title": "Clearance xHub, Loi 43-20, Merkle, API sync POS",
+      "agents": [
+        "Fisca-Containers-EDI-ERP"
+      ],
+      "git_branch": "feat/w2-xhub-4320-merkle",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "containers/fiscal-java",
+        "packages/ubl-xades",
+        "packages/vault-merkle",
+        "apps/api-hono/src/routes/invoices",
+        "apps/api-hono/src/routes/pos"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_05_ADR",
+          "file": "docs/specs/05-adr.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_10_STRIDE_Crypto",
+          "file": "docs/specs/10-stride-crypto.md"
+        },
+        {
+          "id": "Doc_17_Third_Party_Integrations",
+          "file": "docs/specs/17-third-party-integrations.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 10,
+      "prerequisite": "G1 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "P2-B",
+      "wave": 2,
+      "mode": "parallèle",
+      "title": "Design Mercury, i18n, espace PME, caisse POS hors-ligne",
+      "agents": [
+        "Fisca-Frontend-Mobile-Growth"
+      ],
+      "git_branch": "feat/w2-ui-pme-pos",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "packages/ui-mercury",
+        "packages/i18n",
+        "apps/web-saas/src/shared",
+        "apps/web-saas/src/pme",
+        "apps/pos-pwa"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_01_PRD",
+          "file": "docs/specs/01-prd.md"
+        },
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_08_Design_i18n",
+          "file": "docs/specs/08-design-system-i18n.md"
+        }
+      ],
+      "rubrics": [
+        "R3"
+      ],
+      "tickets": 12,
+      "prerequisite": "G1 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "P2-C",
+      "wave": 2,
+      "mode": "parallèle",
+      "title": "Site Astro 6 langues, SEO/GEO, 6 outils gratuits",
+      "agents": [
+        "Fisca-Frontend-Mobile-Growth"
+      ],
+      "git_branch": "feat/w2-astro-growth",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "apps/marketing-astro"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_03_Entitlements_Pricing",
+          "file": "docs/specs/03-entitlements-pricing.md"
+        },
+        {
+          "id": "Doc_08_Design_i18n",
+          "file": "docs/specs/08-design-system-i18n.md"
+        },
+        {
+          "id": "Doc_11_CNDP_Souverainete",
+          "file": "docs/specs/11-cndp-sovereignty.md"
+        },
+        {
+          "id": "Doc_18_SEO_GEO_AEO",
+          "file": "docs/specs/18-seo-geo-aeo.md"
+        }
+      ],
+      "rubrics": [
+        "R3"
+      ],
+      "tickets": 8,
+      "prerequisite": "G1 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "G2",
+      "wave": 2,
+      "mode": "barrière QA",
+      "title": "Audit de la vague 2",
+      "agents": [
+        "Fisca-QA-Security-Auditor"
+      ],
+      "git_branch": "audit/gate-2",
+      "base_ref": "local uniquement",
+      "scope_dirs": [
+        "packages/qa-harness",
+        ".meta"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_08_Design_i18n",
+          "file": "docs/specs/08-design-system-i18n.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        },
+        {
+          "id": "Doc_18_SEO_GEO_AEO",
+          "file": "docs/specs/18-seo-geo-aeo.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R3"
+      ],
+      "tickets": 3,
+      "prerequisite": "Tous les tickets P2-A/B/C en IN_REVIEW",
+      "pushed": false
+    },
+    {
+      "session_id": "P3-A",
+      "wave": 3,
+      "mode": "parallèle",
+      "title": "Usine EDI SIMPL et FEC-MA",
+      "agents": [
+        "Fisca-Containers-EDI-ERP"
+      ],
+      "git_branch": "feat/w3-edi-simpl-fec",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "packages/edi-simpl",
+        "packages/fec-auditor",
+        "apps/api-hono/src/routes/edi"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_06_ERD",
+          "file": "docs/specs/06-erd-data-lifecycle.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        }
+      ],
+      "rubrics": [
+        "R1"
+      ],
+      "tickets": 12,
+      "prerequisite": "G2 fusionnée + XSD officiels DGI déposés",
+      "pushed": true
+    },
+    {
+      "session_id": "P3-B",
+      "wave": 3,
+      "mode": "parallèle",
+      "title": "11 agents IA, Hindsight, FinOps, MCP",
+      "agents": [
+        "Fisca-Core-Backend-Fiscal"
+      ],
+      "git_branch": "feat/w3-ai-agents-mcp",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "containers/docling-python",
+        "packages/ai-agents",
+        "apps/api-hono/src/routes/purchases",
+        "apps/api-hono/src/routes/mcp"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_04_TDD",
+          "file": "docs/specs/04-tdd-architecture.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_10_STRIDE_Crypto",
+          "file": "docs/specs/10-stride-crypto.md"
+        },
+        {
+          "id": "Doc_13_FinOps",
+          "file": "docs/specs/13-finops.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 10,
+      "prerequisite": "G2 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "P3-C",
+      "wave": 3,
+      "mode": "parallèle",
+      "title": "Connecteurs Odoo, Sage 100, Camel et services tiers",
+      "agents": [
+        "Fisca-Containers-EDI-ERP"
+      ],
+      "git_branch": "feat/w3-erp-third-party",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "packages/external-integrations",
+        "apps/api-hono/src/routes/webhooks",
+        "connectors/odoo-l10n-ma",
+        "connectors/sage100-dotnet",
+        "apps/api-hono/src/routes/erp",
+        "containers/camel-bridge"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_05_ADR",
+          "file": "docs/specs/05-adr.md"
+        },
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        },
+        {
+          "id": "Doc_17_Third_Party_Integrations",
+          "file": "docs/specs/17-third-party-integrations.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 9,
+      "prerequisite": "G2 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "G3",
+      "wave": 3,
+      "mode": "barrière QA",
+      "title": "Audit de la vague 3",
+      "agents": [
+        "Fisca-QA-Security-Auditor"
+      ],
+      "git_branch": "audit/gate-3",
+      "base_ref": "local uniquement",
+      "scope_dirs": [
+        "packages/qa-harness",
+        ".meta"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_07_API_EDI",
+          "file": "docs/specs/07-api-edi-contracts.md"
+        },
+        {
+          "id": "Doc_13_FinOps",
+          "file": "docs/specs/13-finops.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        },
+        {
+          "id": "Doc_17_Third_Party_Integrations",
+          "file": "docs/specs/17-third-party-integrations.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 3,
+      "prerequisite": "Tous les tickets P3-A/B/C en IN_REVIEW",
+      "pushed": false
+    },
+    {
+      "session_id": "P4-A",
+      "wave": 4,
+      "mode": "parallèle",
+      "title": "Portails fiduciaire et corporate, mobile Capacitor",
+      "agents": [
+        "Fisca-Frontend-Mobile-Growth"
+      ],
+      "git_branch": "feat/w4-oec-corp-mobile",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "apps/web-saas/src/fiduciary",
+        "apps/web-saas/src/enterprise",
+        "apps/mobile-capacitor"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_01_PRD",
+          "file": "docs/specs/01-prd.md"
+        },
+        {
+          "id": "Doc_08_Design_i18n",
+          "file": "docs/specs/08-design-system-i18n.md"
+        },
+        {
+          "id": "Doc_09_RBAC_SoD",
+          "file": "docs/specs/09-auth-rbac-sod.md"
+        }
+      ],
+      "rubrics": [
+        "R2",
+        "R3"
+      ],
+      "tickets": 9,
+      "prerequisite": "G3 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "P4-B",
+      "wave": 4,
+      "mode": "parallèle",
+      "title": "Metering, FactorFlow, PRA et réversibilité",
+      "agents": [
+        "Fisca-Core-Backend-Fiscal"
+      ],
+      "git_branch": "feat/w4-billing-factor-pra",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "packages/billing-metering",
+        "apps/api-hono/src/routes/billing",
+        "packages/factorflow",
+        "apps/api-hono/src/routes/factorflow",
+        "packages/pra-reversibility"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_02_State_Machines",
+          "file": "docs/specs/02-state-machines.md"
+        },
+        {
+          "id": "Doc_03_Entitlements_Pricing",
+          "file": "docs/specs/03-entitlements-pricing.md"
+        },
+        {
+          "id": "Doc_12_SLA_DPA_PRA_Reversibilite",
+          "file": "docs/specs/12-sla-dpa-pra-reversibility.md"
+        },
+        {
+          "id": "Doc_13_FinOps",
+          "file": "docs/specs/13-finops.md"
+        },
+        {
+          "id": "Doc_17_Third_Party_Integrations",
+          "file": "docs/specs/17-third-party-integrations.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2"
+      ],
+      "tickets": 9,
+      "prerequisite": "G3 fusionnée",
+      "pushed": true
+    },
+    {
+      "session_id": "P4-C",
+      "wave": 4,
+      "mode": "parallèle",
+      "title": "Nœud souverain Maroc, Multi-DNS, CI/CD",
+      "agents": [
+        "Fisca-Core-Backend-Fiscal"
+      ],
+      "git_branch": "feat/w4-sovereign-cicd",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "apps/standby-vps",
+        "ops",
+        "scripts/provision-cloudflare-prod.sh",
+        ".github/workflows"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_04_TDD",
+          "file": "docs/specs/04-tdd-architecture.md"
+        },
+        {
+          "id": "Doc_11_CNDP_Souverainete",
+          "file": "docs/specs/11-cndp-sovereignty.md"
+        },
+        {
+          "id": "Doc_12_SLA_DPA_PRA_Reversibilite",
+          "file": "docs/specs/12-sla-dpa-pra-reversibility.md"
+        },
+        {
+          "id": "Doc_16_Cloud_Deploy",
+          "file": "docs/specs/16-cloud-deploy.md"
+        }
+      ],
+      "rubrics": [
+        "R2"
+      ],
+      "tickets": 7,
+      "prerequisite": "G3 fusionnée + permission Workflows sur le jeton GitHub",
+      "pushed": true
+    },
+    {
+      "session_id": "G4",
+      "wave": 4,
+      "mode": "barrière QA",
+      "title": "Audit intégral de la vague 4",
+      "agents": [
+        "Fisca-QA-Security-Auditor"
+      ],
+      "git_branch": "audit/gate-4",
+      "base_ref": "local uniquement",
+      "scope_dirs": [
+        "packages/qa-harness",
+        ".meta"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_03_Entitlements_Pricing",
+          "file": "docs/specs/03-entitlements-pricing.md"
+        },
+        {
+          "id": "Doc_09_RBAC_SoD",
+          "file": "docs/specs/09-auth-rbac-sod.md"
+        },
+        {
+          "id": "Doc_12_SLA_DPA_PRA_Reversibilite",
+          "file": "docs/specs/12-sla-dpa-pra-reversibility.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "tickets": 3,
+      "prerequisite": "Tous les tickets P4-A/B/C en IN_REVIEW",
+      "pushed": false
+    },
+    {
+      "session_id": "S5",
+      "wave": 5,
+      "mode": "release",
+      "title": "Release v1.0.0 : staging, SBOM, go-live",
+      "agents": [
+        "Fisca-Lead-Orchestrator",
+        "Fisca-QA-Security-Auditor"
+      ],
+      "git_branch": "feat/w5-release-v1.0.0",
+      "base_ref": "origin/main",
+      "scope_dirs": [
+        "ops",
+        ".meta",
+        "packages/qa-harness"
+      ],
+      "spec_docs": [
+        {
+          "id": "Doc_11_CNDP_Souverainete",
+          "file": "docs/specs/11-cndp-sovereignty.md"
+        },
+        {
+          "id": "Doc_12_SLA_DPA_PRA_Reversibilite",
+          "file": "docs/specs/12-sla-dpa-pra-reversibility.md"
+        },
+        {
+          "id": "Doc_14_QA",
+          "file": "docs/specs/14-qa-harness.md"
+        },
+        {
+          "id": "Doc_16_Cloud_Deploy",
+          "file": "docs/specs/16-cloud-deploy.md"
+        }
+      ],
+      "rubrics": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "tickets": 4,
+      "prerequisite": "G4 fusionnée",
+      "pushed": true
+    }
+  ]
+}
