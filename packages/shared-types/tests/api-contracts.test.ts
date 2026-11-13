@@ -126,6 +126,15 @@ describe('ProblemDetailsSchema (RFC 9457)', () => {
     detail: 'montant décimal',
   };
 
+  it('accepte instance et issues[] (membres d\'extension de Doc_07 § 01), les refuse malformés', () => {
+    const issues = [{ path: 'lines[0].unitPriceCents', message: 'entier requis', code: 'ADR_03_FLOAT_FORBIDDEN' }, { path: 'issueDate', message: 'date illisible' }];
+    expect(ProblemDetailsSchema.safeParse({ ...problem, instance: '/api/v1/ledger/entries/e1/post', issues }).success).toBe(true);
+    expect(ProblemDetailsSchema.safeParse({ ...problem, issues: [] }).success).toBe(true);
+    expect(ProblemDetailsSchema.safeParse({ ...problem, issues: [{ path: 'x' }] }).success).toBe(false);
+    expect(ProblemDetailsSchema.safeParse({ ...problem, issues: 'x' }).success).toBe(false);
+    expect(ProblemDetailsSchema.safeParse({ ...problem, instance: 42 }).success).toBe(false);
+  });
+
   it('accepte une enveloppe valide, legalRef optionnel', () => {
     expect(ProblemDetailsSchema.safeParse(problem).success).toBe(true);
     expect(ProblemDetailsSchema.safeParse({ ...problem, legalRef: 'Art. 91 CGI' }).success).toBe(true);
