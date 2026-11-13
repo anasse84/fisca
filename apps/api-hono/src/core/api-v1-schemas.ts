@@ -7,6 +7,7 @@
  * Zéro flottant : tous les montants sont des centimes entiers (`_cents`, ADR-03).
  */
 import { z } from 'zod';
+import { LEDGER_REVIEW_CYCLES, LEDGER_SOURCE_DOCUMENT_TYPES } from '@fisca/db-schema';
 import { CentimesIntSchema, Ice15Schema, ProblemDetailsSchema, isReadableIsoDate } from '@fisca/shared-types';
 
 export const IsoDateSchema = z
@@ -76,6 +77,69 @@ export const PostEntryResponseSchema = z.discriminatedUnion('action', [
   }),
 ]);
 export type PostEntryResponse = z.infer<typeof PostEntryResponseSchema>;
+
+// ---------------------------------------------------------------- POST /api/v1/ledger/entries (CTR-API-45)
+
+const DraftLineRequestSchema = z.strictObject({
+  accountNumber: z.string().min(1).max(32),
+  debitCents: CentimesIntSchema.nonnegative(),
+  creditCents: CentimesIntSchema.nonnegative(),
+  description: z.string().max(500),
+  auxiliaryAccount: z.string().min(1).max(64).nullable().optional(),
+  isTaxDeductible: z.boolean().optional(),
+  table3ReintegrationCode: z.string().min(1).max(32).nullable().optional(),
+  reconciliationCode: z.string().min(1).max(64).nullable().optional(),
+});
+
+/** Le moteur arbitre tout le reste : équilibre, exercice, journal, comptes, types réservés (REVERSAL, VAT_CLEARING). */
+export const CreateDraftRequestSchema = z.strictObject({
+  journalId: z.string().min(1).max(64),
+  fiscalYearId: z.string().min(1).max(64),
+  entryDate: IsoDateSchema,
+  reviewCycle: z.enum(LEDGER_REVIEW_CYCLES),
+  sourceDocumentType: z.enum(LEDGER_SOURCE_DOCUMENT_TYPES),
+  /** `POSTED` ne s'atteint que par le scellement (ERRATA D-03) : seuls les deux états préparatoires sont acceptés. */
+  initialState: z.enum(['IA_PROPOSITION', 'DRAFT']).default('DRAFT'),
+  lines: z.array(DraftLineRequestSchema).min(1).max(500),
+  invoiceId: z.string().min(1).max(64).nullable().optional(),
+  partnerId: z.string().min(1).max(64).nullable().optional(),
+  dgiClearanceUuid: z.string().min(1).max(64).nullable().optional(),
+});
+export type CreateDraftRequest = z.infer<typeof CreateDraftRequestSchema>;
+
+export const CreateDraftResponseSchema = z.strictObject({
+  entryId: z.string(),
+  entryReference: z.string(),
+  sequenceNumber: z.number().int().positive(),
+  status: z.enum(['IA_PROPOSITION', 'DRAFT']),
+});
+export type CreateDraftResponse = z.infer<typeof CreateDraftResponseSchema>;
+
+// ---------------------------------------------------------------- POST /api/v1/ledger/entries/:id/submit (CTR-API-46)
+
+/** Aucun champ : l'état de départ et l'acteur viennent du moteur et du jeton, jamais du corps. */
+export const SubmitEntryRequestSchema = z.strictObject({});
+
+export const SubmitEntryResponseSchema = z.strictObject({
+  entryId: z.string(),
+  fromState: JournalEntryStateSchema,
+  toState: JournalEntryStateSchema,
+  replayed: z.boolean(),
+});
+export type SubmitEntryResponse = z.infer<typeof SubmitEntryResponseSchema>;
+
+// ---------------------------------------------------------------- GET /api/v1/ledger/verify-chain (CTR-API-47)
+
+export const VerifyChainQuerySchema = z.strictObject({ journalId: z.string().min(1).max(64) });
+
+export const VerifyChainResponseSchema = z.strictObject({
+  journalId: z.string(),
+  valid: z.boolean(),
+  length: z.number().int().nonnegative(),
+  /** Première pièce dont l'empreinte ne se rejoue pas ; null si la chaîne est intacte ou si seule la tête du journal diverge. */
+  brokenAtEntryId: z.string().nullable(),
+});
+export type VerifyChainResponse = z.infer<typeof VerifyChainResponseSchema>;
 
 // ---------------------------------------------------------------- POST /api/v1/banking/reconcile (CTR-API-12)
 

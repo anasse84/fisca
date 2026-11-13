@@ -1,9 +1,11 @@
 /**
  * Contrats des routes REST v1 du socle (ticket T-S1B-12) : source unique de la colle des routes ET du document OpenAPI.
- * Les noms de route sont EXACTEMENT ceux de `fisca_contracts_registry` (CTR-API-10 à CTR-API-13) ; aucune autre route n'est créée.
+ * Les noms de route sont EXACTEMENT ceux de `fisca_contracts_registry` (CTR-API-10 à 13, puis 45 à 47 : lignes à inscrire par le propriétaire) ; aucune autre route n'est créée.
  */
 import type { z } from 'zod';
 import {
+  CreateDraftRequestSchema,
+  CreateDraftResponseSchema,
   HealthDeepResponseSchema,
   IceLookupResponseSchema,
   IceParamSchema,
@@ -12,6 +14,10 @@ import {
   PostEntryResponseSchema,
   ReconcileRequestSchema,
   ReconcileResponseSchema,
+  SubmitEntryRequestSchema,
+  SubmitEntryResponseSchema,
+  VerifyChainQuerySchema,
+  VerifyChainResponseSchema,
 } from './api-v1-schemas.ts';
 
 export type ApiMethod = 'get' | 'post';
@@ -23,7 +29,7 @@ export interface ApiResponseContract {
 }
 
 export interface ApiRouteContract {
-  readonly registryId: 'CTR-API-10' | 'CTR-API-11' | 'CTR-API-12' | 'CTR-API-13';
+  readonly registryId: 'CTR-API-10' | 'CTR-API-11' | 'CTR-API-12' | 'CTR-API-13' | 'CTR-API-45' | 'CTR-API-46' | 'CTR-API-47';
   readonly method: ApiMethod;
   /** Syntaxe Hono (`:param`). */
   readonly path: string;
@@ -36,6 +42,8 @@ export interface ApiRouteContract {
   /** Exige `Idempotency-Key` (UUIDv7, 72 h) : toute écriture. */
   readonly idempotencyKey: boolean;
   readonly params?: z.ZodType;
+  /** Paramètres de requête (`?a=b`), objet strict. */
+  readonly query?: z.ZodType;
   readonly body?: z.ZodType;
   readonly success: readonly ApiResponseContract[];
   /** Statuts d'erreur possibles, tous en `application/problem+json`. */
@@ -103,6 +111,46 @@ export const API_V1_ROUTE_CONTRACTS: readonly ApiRouteContract[] = [
       { status: 503, description: 'Au moins une dépendance est en panne.', schema: HealthDeepResponseSchema },
     ],
     errorStatuses: [],
+  },
+  {
+    registryId: 'CTR-API-45',
+    method: 'post',
+    path: '/api/v1/ledger/entries',
+    summary: "Création d'un brouillon d'écriture (DRAFT ou IA_PROPOSITION), lignes en centimes entiers.",
+    tag: 'Grand Livre',
+    auth: 'BEARER',
+    companyHeader: true,
+    idempotencyKey: true,
+    body: CreateDraftRequestSchema,
+    success: [{ status: 201, description: 'Brouillon créé.', schema: CreateDraftResponseSchema }],
+    errorStatuses: [400, 401, 403, 404, 409, 422, 503],
+  },
+  {
+    registryId: 'CTR-API-46',
+    method: 'post',
+    path: '/api/v1/ledger/entries/:id/submit',
+    summary: "Vérification d'une proposition IA par l'aide-comptable (IA_PROPOSITION → DRAFT).",
+    tag: 'Grand Livre',
+    auth: 'BEARER',
+    companyHeader: true,
+    idempotencyKey: true,
+    params: LedgerEntryParamSchema,
+    body: SubmitEntryRequestSchema,
+    success: [{ status: 200, description: 'Pièce passée en DRAFT.', schema: SubmitEntryResponseSchema }],
+    errorStatuses: [400, 401, 403, 404, 409, 422, 503],
+  },
+  {
+    registryId: 'CTR-API-47',
+    method: 'get',
+    path: '/api/v1/ledger/verify-chain',
+    summary: "Vérification de la chaîne de hachage d'un journal (lecture ; une chaîne altérée est un résultat, pas une erreur).",
+    tag: 'Grand Livre',
+    auth: 'BEARER',
+    companyHeader: true,
+    idempotencyKey: false,
+    query: VerifyChainQuerySchema,
+    success: [{ status: 200, description: 'Verdict de la chaîne.', schema: VerifyChainResponseSchema }],
+    errorStatuses: [400, 401, 403, 404, 503],
   },
 ];
 

@@ -35,15 +35,20 @@ function schemaOf(schema: z.ZodType): JsonObject {
 }
 
 function pathParameters(contract: ApiRouteContract): readonly JsonObject[] {
-  if (contract.params === undefined) {
+  return [...locatedParameters(contract.params, 'path'), ...locatedParameters(contract.query, 'query')];
+}
+
+function locatedParameters(schema: z.ZodType | undefined, location: 'path' | 'query'): readonly JsonObject[] {
+  if (schema === undefined) {
     return [];
   }
-  const generated = schemaOf(contract.params);
+  const generated = schemaOf(schema);
+  const required = Array.isArray(generated['required']) ? generated['required'] : [];
   const properties = generated['properties'];
   if (typeof properties !== 'object' || properties === null || Array.isArray(properties)) {
     return [];
   }
-  return Object.entries(properties).map(([name, schema]) => ({ name, in: 'path', required: true, schema }));
+  return Object.entries(properties).map(([name, propertySchema]) => ({ name, in: location, required: location === 'path' || required.includes(name), schema: propertySchema }));
 }
 
 function headerParameters(contract: ApiRouteContract): readonly JsonObject[] {

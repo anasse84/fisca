@@ -4,12 +4,18 @@
  * - GET /api/v1/directory/ice/:ice (CTR-API-10) ;
  * - POST /api/v1/ledger/entries/:id/post (CTR-API-11) ;
  * - POST /api/v1/banking/reconcile (CTR-API-12) ;
- * - GET /api/v1/health/deep (CTR-API-13, logique dans src/core/health-deep.ts, route publique montée avant le pipeline).
+ * - GET /api/v1/health/deep (CTR-API-13, logique dans src/core/health-deep.ts, route publique montée avant le pipeline) ;
+ * - POST /api/v1/ledger/entries (CTR-API-45 : brouillon, `engine.createDraft`) ;
+ * - POST /api/v1/ledger/entries/:id/submit (CTR-API-46 : IA_PROPOSITION → DRAFT, `engine.submitDraft`) ;
+ * - GET /api/v1/ledger/verify-chain?journalId= (CTR-API-47 : `engine.verifyJournalChain`, lecture).
+ * Pas de route de visa par cycle : le moteur ne vise que pièce par pièce (`visaCycle(entryId)`), aucune méthode par code de cycle.
  * Le pipeline (authentification, TenantRouter, EntitlementGuard, Idempotency, RFC 9457) s'applique à `/api/v1/*`.
  */
 import { Hono } from 'hono';
 import { contractOf } from '../../core/api-v1-contracts.ts';
 import {
+  CreateDraftRequestSchema,
+  CreateDraftResponseSchema,
   IceLookupResponseSchema,
   IceParamSchema,
   LedgerEntryParamSchema,
@@ -17,6 +23,10 @@ import {
   PostEntryResponseSchema,
   ReconcileRequestSchema,
   ReconcileResponseSchema,
+  SubmitEntryRequestSchema,
+  SubmitEntryResponseSchema,
+  VerifyChainQuerySchema,
+  VerifyChainResponseSchema,
 } from '../../core/api-v1-schemas.ts';
 import type { CompanyDirectory } from '../../core/company-directory.ts';
 import { createHealthDeepRoute, type HealthDeepDeps } from '../../core/health-deep.ts';
@@ -51,6 +61,9 @@ export function createLedgerRoutes(deps: LedgerRoutesDeps): Hono<PipelineEnv> {
   const icePath = contractOf('CTR-API-10').path;
   const postPath = contractOf('CTR-API-11').path;
   const reconcilePath = contractOf('CTR-API-12').path;
+  const createDraftPath = contractOf('CTR-API-45').path;
+  const submitPath = contractOf('CTR-API-46').path;
+  const verifyChainPath = contractOf('CTR-API-47').path;
 
   function callOf(c: { get(key: 'tenant'): LedgerCall['tenant'] | undefined; get(key: 'auth'): LedgerCall['auth'] | undefined; get(key: 'entitlements'): { readonly readOnly: boolean } | undefined }): LedgerCall {
     const tenant = c.get('tenant');
@@ -92,5 +105,36 @@ export function createLedgerRoutes(deps: LedgerRoutesDeps): Hono<PipelineEnv> {
     return c.json(result, result.outcome === 'MATCHED_FULL' || result.outcome === 'MATCHED_PARTIAL' ? 201 : 200);
   });
 
+  app.post(createDraftPath, async (c) => {
+    const body = parseWithSchema(CreateDraftRequestSchema, await readJsonBody(() => c.req.text()));
+    const result = CreateDraftResponseSchema.parse(await deps.ledger.createDraft(callOf(c), body));
+    return c.json(result, 201);
+  });
+
+  app.post(submitPath, async (c) => {
+    const params = parseWithSchema(LedgerEntryParamSchema, c.req.param());
+    parseWithSchema(SubmitEntryRequestSchema, (await readJsonBody(() => c.req.text())) ?? {});
+    const result = SubmitEntryResponseSchema.parse(
+      await deps.ledger.submitDraft(callOf(c), { entryId: params.id, idempotencyKey: idempotencyKeyOf(c.req.header(IDEMPOTENCY_KEY_HEADER)) }),
+    );
+    return c.json(result, 200);
+  });
+
+  app.get(verifyChainPath, async (c) => {
+    const query = parseWithSchema(VerifyChainQuerySchema, queryObjectOf(c.req.url));
+    return c.json(VerifyChainResponseSchema.parse(await deps.ledger.verifyChain(callOf(c), query)), 200);
+  });
+
   return app;
+}
+
+/** Les clés répétées restent un tableau : le schéma strict les refuse au lieu de n'en lire que la première. */
+function queryObjectOf(url: string): Record<string, string | string[]> {
+  const params = new URL(url).searchParams;
+  const result: Record<string, string | string[]> = {};
+  for (const key of new Set(params.keys())) {
+    const values = params.getAll(key);
+    result[key] = values.length === 1 ? (values[0] ?? '') : values;
+  }
+  return result;
 }

@@ -18,7 +18,16 @@ import {
 } from './immutable-cgnc-ledger-engine.ts';
 import { reconcileBankTransaction } from './bank-reconciliation.ts';
 import { LedgerError } from './ledger-errors.ts';
-import type { PostEntryRequest, PostEntryResponse, ReconcileRequest, ReconcileResponse } from './api-v1-schemas.ts';
+import type {
+  CreateDraftRequest,
+  CreateDraftResponse,
+  PostEntryRequest,
+  PostEntryResponse,
+  ReconcileRequest,
+  ReconcileResponse,
+  SubmitEntryResponse,
+  VerifyChainResponse,
+} from './api-v1-schemas.ts';
 import type { AuthenticatedActor, TenantContext } from './tenant-router.ts';
 
 /** Attributs d'organisation lus au plan de contrôle (hors du jeton) : segment de plan, effectif, ABAC paie. */
@@ -60,6 +69,12 @@ export interface LedgerCall {
 export interface LedgerApi {
   postEntry(call: LedgerCall, input: { readonly entryId: string; readonly body: PostEntryRequest; readonly idempotencyKey: string }): Promise<PostEntryResponse>;
   reconcile(call: LedgerCall, body: ReconcileRequest): Promise<ReconcileResponse>;
+  /** `engine.createDraft`. */
+  createDraft(call: LedgerCall, body: CreateDraftRequest): Promise<CreateDraftResponse>;
+  /** `engine.submitDraft` (IA_PROPOSITION → DRAFT). */
+  submitDraft(call: LedgerCall, input: { readonly entryId: string; readonly idempotencyKey: string }): Promise<SubmitEntryResponse>;
+  /** `engine.verifyJournalChain` : lecture ; le moteur n'évalue aucune permission pour elle. */
+  verifyChain(call: LedgerCall, input: { readonly journalId: string }): Promise<VerifyChainResponse>;
 }
 
 export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
@@ -140,6 +155,46 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
         entryReference: reversal.entryReference,
         sequenceNumber: reversal.sequenceNumber,
         status: reversal.status,
+      };
+    },
+    createDraft: async (call, body) => {
+      const { engine, actor } = await prepare(call);
+      const created = await engine.createDraft(actor, {
+        journalId: body.journalId,
+        fiscalYearId: body.fiscalYearId,
+        entryDate: body.entryDate,
+        reviewCycle: body.reviewCycle,
+        sourceDocumentType: body.sourceDocumentType,
+        initialState: body.initialState,
+        lines: body.lines.map((line) => ({
+          accountNumber: line.accountNumber,
+          debitCents: line.debitCents,
+          creditCents: line.creditCents,
+          description: line.description,
+          ...(line.auxiliaryAccount === undefined ? {} : { auxiliaryAccount: line.auxiliaryAccount }),
+          ...(line.isTaxDeductible === undefined ? {} : { isTaxDeductible: line.isTaxDeductible }),
+          ...(line.table3ReintegrationCode === undefined ? {} : { table3ReintegrationCode: line.table3ReintegrationCode }),
+          ...(line.reconciliationCode === undefined ? {} : { reconciliationCode: line.reconciliationCode }),
+        })),
+        ...(body.invoiceId === undefined ? {} : { invoiceId: body.invoiceId }),
+        ...(body.partnerId === undefined ? {} : { partnerId: body.partnerId }),
+        ...(body.dgiClearanceUuid === undefined ? {} : { dgiClearanceUuid: body.dgiClearanceUuid }),
+      });
+      return { entryId: created.entryId, entryReference: created.entryReference, sequenceNumber: created.sequenceNumber, status: created.status };
+    },
+    submitDraft: async (call, input) => {
+      const { engine, actor } = await prepare(call);
+      const result = await engine.submitDraft(actor, { entryId: input.entryId, idempotencyKey: input.idempotencyKey });
+      return { entryId: result.entryId, fromState: result.fromState, toState: result.toState, replayed: result.replayed };
+    },
+    verifyChain: async (call, input) => {
+      const { engine } = await prepare(call);
+      const verdict = await engine.verifyJournalChain(input.journalId);
+      return {
+        journalId: input.journalId,
+        valid: verdict.valid,
+        length: verdict.length,
+        brokenAtEntryId: verdict.valid ? null : verdict.brokenAtEntryId,
       };
     },
     reconcile: async (call, body) => {
