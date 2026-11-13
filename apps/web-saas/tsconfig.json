@@ -8,10 +8,12 @@
     ],
     "types": [
       "vite/client"
-    ]
+    ],
+    "jsx": "react-jsx"
   },
   "include": [
     "src",
-    "tests"
+    "tests",
+    "../../packages/ui-mercury/src/css.d.ts"
   ]
 }

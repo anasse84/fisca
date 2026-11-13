@@ -679,13 +679,28 @@ export function replayGoldenVector(vector: GoldenVector): GoldenCaseResult[] {
 export const PNM_LINE_WIDTH = 108;
 /** Index (base 0) du sens Débit/Crédit : position 84 (Doc_14 § 11). */
 const PNM_SENSE_INDEX = 83;
+/** Montant : positions 85 à 104 (index 84 à 103), 20 caractères cadrés à droite (Doc_07 § 04). */
+const PNM_AMOUNT_START = 84;
+const PNM_AMOUNT_END = 104;
+/** Type d'écriture : position 105 (index 104), toujours 'N'. Zone réservée : positions 106 à 108, 3 espaces. */
+const PNM_ENTRY_TYPE_INDEX = 104;
+const PNM_RESERVED_START = 105;
+/** Montant admis : espaces à gauche, entier sans signe ni séparateur, point, exactement 2 décimales. */
+const PNM_AMOUNT_PATTERN = /^ *(\d+)\.(\d{2})$/;
+
+/** Convertit un champ montant déjà validé en centimes entiers, par la chaîne (aucun flottant). */
+function pnmAmountToCents(whole: string, decimals: string): bigint {
+  return BigInt(whole) * 100n + BigInt(decimals);
+}
 
 /**
  * Valide un tampon .PNM : au moins une ligne, chaque ligne de 108 caractères ASCII imprimables (0x20 à 0x7E),
  * fin de ligne CRLF partout (y compris après la dernière ligne), aucune ligne vide, sens D ou C en position 84.
  * Un tampon binaire est lu octet par octet (latin1) : tout octet ≥ 0x80 est refusé, un accent UTF-8 aussi.
- * L'équilibre Débit/Crédit par pièce (Doc_14 § 08) n'est pas vérifié ici : les spécifications ne fixent pas
- * la colonne du numéro de pièce ni celle du montant.
+ * Layout Doc_07 § 04 : montant en positions 85 à 104 (strictement positif, `^\s*\d+\.\d{2}$`, cadré à droite),
+ * 'N' en position 105, 3 espaces en positions 106 à 108. Pour chaque pièce (code journal 1-3, date 4-9,
+ * référence 39-51), la somme des débits est égale à celle des crédits et strictement positive, en centimes
+ * entiers (BigInt). Les contrôles de ligne priment sur l'équilibre.
  */
 export function assertValidSage100PnmBuffer(pnmContent: string | Uint8Array): { readonly linesCount: number } {
   const text = typeof pnmContent === 'string' ? pnmContent : Buffer.from(pnmContent).toString('latin1');
@@ -696,6 +711,7 @@ export function assertValidSage100PnmBuffer(pnmContent: string | Uint8Array): { 
     throw new Error('PNM_MISSING_TRAILING_CRLF');
   }
   const lines = text.slice(0, -2).split('\r\n');
+  const pieces = new Map<string, { debit: bigint; credit: bigint }>();
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
     if (line.length === 0) {
@@ -711,6 +727,32 @@ export function assertValidSage100PnmBuffer(pnmContent: string | Uint8Array): { 
     if (sense !== 'D' && sense !== 'C') {
       throw new Error(`PNM_INVALID_DEBIT_CREDIT_FLAG: Reçu '${sense}' à la ligne ${lineNumber}.`);
     }
+    const amountField = line.slice(PNM_AMOUNT_START, PNM_AMOUNT_END);
+    const amountMatch = PNM_AMOUNT_PATTERN.exec(amountField);
+    const amountCents = amountMatch === null ? 0n : pnmAmountToCents(amountMatch[1] ?? '0', amountMatch[2] ?? '00');
+    if (amountMatch === null || amountCents <= 0n) {
+      throw new Error(`PNM_INVALID_AMOUNT_FIELD: Ligne ${lineNumber}, positions 85 à 104 [${amountField}] : montant positif à 2 décimales, cadré à droite, sans signe ni séparateur de milliers attendu.`);
+    }
+    const entryType = line.charAt(PNM_ENTRY_TYPE_INDEX);
+    if (entryType !== 'N') {
+      throw new Error(`PNM_INVALID_ENTRY_TYPE_FLAG: Reçu '${entryType}' en position 105 à la ligne ${lineNumber} (attendu: 'N').`);
+    }
+    if (line.slice(PNM_RESERVED_START) !== '   ') {
+      throw new Error(`PNM_INVALID_RESERVED_ZONE: Ligne ${lineNumber}, positions 106 à 108 [${line.slice(PNM_RESERVED_START)}] : 3 espaces attendus.`);
+    }
+    const pieceKey = `${line.slice(0, 3)}|${line.slice(3, 9)}|${line.slice(38, 51).trimEnd()}`;
+    const totals = pieces.get(pieceKey) ?? { debit: 0n, credit: 0n };
+    if (sense === 'D') {
+      totals.debit += amountCents;
+    } else {
+      totals.credit += amountCents;
+    }
+    pieces.set(pieceKey, totals);
   });
+  for (const [pieceKey, totals] of pieces) {
+    if (totals.debit !== totals.credit || totals.debit <= 0n) {
+      throw new Error(`PNM_UNBALANCED_PIECE: Pièce [${pieceKey}] (journal|date|référence) : débits ${totals.debit} centimes, crédits ${totals.credit} centimes (égalité et somme strictement positive attendues).`);
+    }
+  }
   return { linesCount: lines.length };
 }
