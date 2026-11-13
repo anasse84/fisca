@@ -108,9 +108,10 @@ describe('migrations tenant : forme, ordre et immuabilité', () => {
 
 describe('création du schéma', () => {
   it('toutes les tables de la partie 1 se créent', () => {
-    const db = openTenant();
+    const db = openTenant(1);
     expect(listObjects(db, 'table')).toEqual([...PART1_TABLES].sort());
-    expect([...TENANT_TABLE_NAMES].sort()).toEqual(listObjects(db, 'table'));
+    expect([...TENANT_TABLE_NAMES].slice(0, PART1_TABLES.length).sort()).toEqual(listObjects(db, 'table'));
+    expect([...TENANT_TABLE_NAMES].sort()).toEqual(listObjects(openTenant(), 'table'));
     expect(new Set(TENANT_TABLE_NAMES).size).toBe(TENANT_TABLE_NAMES.length);
   });
 
@@ -143,15 +144,15 @@ describe('création du schéma', () => {
     expect(TENANT_INDEX_NAMES).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir']);
   });
 
-  it("ne crée ni vue ni trigger (Doc_06 § 03 n'en définit aucun)", () => {
+  it("ne crée ni vue ni trigger (Doc_06 § 03 et § 04 n'en définissent aucun)", () => {
     const db = openTenant();
     expect(listObjects(db, 'trigger')).toEqual([]);
     expect(listObjects(db, 'view')).toEqual([]);
   });
 
-  it("ne crée aucune table des tickets suivants (POS, grand livre, sous-livres)", () => {
+  it("ne crée aucune table des tickets suivants (grand livre, sous-livres)", () => {
     const names: readonly string[] = TENANT_TABLE_NAMES;
-    for (const later of ['journal_entries', 'journal_entry_lines', 'pos_tickets', 'subledger_invoices']) {
+    for (const later of ['journal_entries', 'journal_entry_lines', 'subledger_invoices']) {
       expect(names).not.toContain(later);
     }
   });

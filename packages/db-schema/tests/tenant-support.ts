@@ -148,3 +148,61 @@ export function seedPartnerAndInvoice(db: DatabaseSync): void {
   insertRow(db, 'fiscal_partners', partnerRow());
   insertRow(db, 'invoices', invoiceRow());
 }
+
+export const SHA_A = 'a'.repeat(64);
+export const SHA_B = 'b'.repeat(64);
+export const SHA_C = 'c'.repeat(64);
+
+/** Session de caisse ouverte avec un fond de 200,00 ; le comptage aveugle et l'écart ne sont pas encore saisis. */
+export function posSessionRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'sess-1',
+    terminal_id: 'POS-M01-C02',
+    cashier_user_id: 'user-1',
+    opened_at: NOW,
+    opening_float_cents: 20000,
+    status: 'SESSION_OUVERTE_ACTIVE',
+    ...overrides,
+  };
+}
+
+/** Vente B2C de 1 200,00 TTC (1 000,00 HT à 20 % + 200,00 de TVA), payée en carte, premier ticket de la chaîne. */
+export function posTicketRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'tkt-1',
+    session_id: 'sess-1',
+    terminal_id: 'POS-M01-C02',
+    terminal_seq_number: 'POS-M01-C02-2026-000001',
+    issued_at: NOW,
+    ticket_kind: 'SALE_B2C',
+    ht_20_cents: 100000,
+    vat_20_cents: 20000,
+    total_ttc_cents: 120000,
+    paid_card_tpe_cents: 120000,
+    qr_conversion_token: 'qr-token-0001',
+    prev_ticket_sha256: SHA_A,
+    ticket_sha256: SHA_B,
+    ecdsa_signature_b64: 'MEUCIQDsignature',
+    ...overrides,
+  };
+}
+
+export function posZClosureRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'z-1',
+    session_id: 'sess-1',
+    terminal_id: 'POS-M01-C02',
+    closure_number: 1,
+    business_date: '2026-11-13',
+    net_b2c_ht_20_cents: 100000,
+    net_b2c_vat_20_cents: 20000,
+    net_b2c_ht_10_cents: 0,
+    net_b2c_vat_10_cents: 0,
+    net_b2c_ht_0_cents: 0,
+    total_stamp_duty_cents: 0,
+    tpe_gross_cents: 120000,
+    prev_z_sha256: SHA_A,
+    z_sha256: SHA_C,
+    ...overrides,
+  };
+}

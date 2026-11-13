@@ -1,7 +1,8 @@
 /**
  * DDL SQLite de TENANT_DB (une base par société : Cloudflare D1 ou PostgreSQL 16), Partie 1 : Doc_06 § 03
  * (enveloppes de clés E2EE, référentiel des tiers, commandes, bons de livraison, factures et lignes), ticket T-S1B-02.
- * Les tickets suivants (POS, grand livre, sous-livres) AJOUTENT des migrations v2, v3, v4 au tableau `TENANT_MIGRATIONS`.
+ * Les tickets suivants AJOUTENT des migrations au tableau `TENANT_MIGRATIONS` : la v2 (T-S1B-03) porte la caisse Fisca POS
+ * (Doc_06 § 04), le grand livre et les sous-livres suivent en v3 et v4.
  *
  * Règles tenues ici (mêmes que `control-plane.ts`) :
  * - migrations IMMUABLES : une migration appliquée ne se modifie jamais, toute correction est une migration de numéro
@@ -53,6 +54,10 @@ export const UBL_PAYMENT_CODES = ['10_ESPECES', '20_CHEQUE', '30_VIREMENT', '42_
 export const THREE_WAY_MATCH_STATUSES = ['N_A', 'MATCHED', 'ECART_BLOQUE'] as const;
 export const RIB_CHECK_STATUSES = ['OK', 'ALERTE_RIB_DAF', 'DUAL_SIGNED_OK'] as const;
 export const DISPUTE_STATUSES = ['NONE', 'CONTESTEE_DOCUMENTEE'] as const;
+/** États persistés de la session de caisse (Doc_06 § 04 ; Doc_02 § 13 : CAISSE_FERMEE est l'absence de ligne, pas un statut). */
+export const POS_SESSION_STATUSES = ['SESSION_OUVERTE_ACTIVE', 'COMPTAGE_AVEUGLE_PRE_Z', 'CLOTURE_TICKET_Z_SCELLEE'] as const;
+export const POS_TICKET_KINDS = ['SALE_B2C', 'RETURN_REFUND'] as const;
+export const POS_B2B_CONVERSION_STATES = ['NONE', 'CONVERTI_B2B_AVANT_Z', 'CONVERTI_B2B_POST_Z_NEUTRALISE'] as const;
 
 export interface TenantMigration {
   readonly version: number;
@@ -255,10 +260,92 @@ const MIGRATION_1_STATEMENTS: readonly string[] = [
   ...MIGRATION_1_INDEXES.map(([, sql]) => sql),
 ];
 
+
+// ---------------------------------------------------------------------------
+// Migration 2 : TENANT_DB Partie 2, caisse Fisca POS (Doc_06 § 04, Doc_02 § 13)
+//
+// Ces trois tables vivent aussi dans le SQLite WASM (OPFS) du terminal : le DDL reste du SQLite portable.
+// Doc_06 § 04 ne définit AUCUN trigger : aucun n'est créé ici (l'inviolabilité repose sur le chaînage SHA-256, la signature
+// ECDSA vérifiée par le serveur à la synchronisation et l'interdiction de mutation de Doc_06 § 10, « retour par avoir lié »).
+// ÉCARTS ASSUMÉS AVEC Doc_06 § 04 (chacun testé) :
+// 1. `pos_tickets.ecdsa_signature_b64` (NOT NULL) est ajoutée : Doc_06 ne porte pas la signature ECDSA P-256 que la skill
+//    fisca-pos-offline-sce § 2 et la Loi 9 exigent de chaque ticket (signature WebCrypto, clé non extractible) ;
+// 2. `ticket_sha256` et `z_sha256` : CHECK 64 caractères en minuscules (SHA-256 hexadécimal, comme les empreintes de v1) ;
+// 3. `RETURN_REFUND` exige `origin_ticket_id` (skill § 3 : « un retour se fait par ticket d'avoir lié », comme l'avoir 381) ;
+// 4. `expected_closing_cash_cents` et `blind_counted_cash_cents` >= 0 (caisse 5161 jamais négative, Loi 3) ;
+// 5. aucun `vat_rate_bps` n'existe dans ces tables (ventilation en colonnes ht_20, ht_10, ht_0 de Doc_06), donc aucun CHECK de
+//    taux ; aucun `pii_restricted_flag` (Doc_11 § 06 ne vise que Factur-X, grand livre, état 9421 et DRVT) ; aucun index
+//    nommé (Doc_06 § 08 n'en cite aucun pour la caisse).
+// ---------------------------------------------------------------------------
+
+const CREATE_POS_SESSIONS = `CREATE TABLE pos_sessions (
+    id TEXT PRIMARY KEY,
+    terminal_id TEXT NOT NULL,
+    cashier_user_id TEXT NOT NULL,
+    opened_at TEXT NOT NULL,
+    closed_at TEXT,
+    opening_float_cents INTEGER NOT NULL CHECK (opening_float_cents >= 0) ${integerCheck('opening_float_cents')},
+    expected_closing_cash_cents INTEGER NOT NULL DEFAULT 0 CHECK (expected_closing_cash_cents >= 0) ${integerCheck('expected_closing_cash_cents')},
+    blind_counted_cash_cents INTEGER CHECK (blind_counted_cash_cents >= 0) ${integerCheck('blind_counted_cash_cents')},
+    cash_variance_cents INTEGER ${integerCheck('cash_variance_cents')},
+    status TEXT NOT NULL CHECK (status IN (${quoteList(POS_SESSION_STATUSES)}))
+)`;
+
+const CREATE_POS_TICKETS = `CREATE TABLE pos_tickets (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES pos_sessions(id),
+    terminal_id TEXT NOT NULL,
+    terminal_seq_number TEXT NOT NULL UNIQUE,
+    issued_at TEXT NOT NULL,
+    ticket_kind TEXT NOT NULL CHECK (ticket_kind IN (${quoteList(POS_TICKET_KINDS)})),
+    origin_ticket_id TEXT REFERENCES pos_tickets(id),
+    ht_20_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('ht_20_cents')},
+    vat_20_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('vat_20_cents')},
+    ht_10_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('ht_10_cents')},
+    vat_10_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('vat_10_cents')},
+    ht_0_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('ht_0_cents')},
+    stamp_duty_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('stamp_duty_cents')},
+    total_ttc_cents INTEGER NOT NULL CHECK (total_ttc_cents >= 0) ${integerCheck('total_ttc_cents')},
+    paid_cash_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('paid_cash_cents')},
+    paid_card_tpe_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('paid_card_tpe_cents')},
+    paid_delivery_app_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('paid_delivery_app_cents')},
+    qr_conversion_token TEXT NOT NULL UNIQUE,
+    b2b_conversion_state TEXT NOT NULL DEFAULT 'NONE' CHECK (b2b_conversion_state IN (${quoteList(POS_B2B_CONVERSION_STATES)})),
+    converted_invoice_id TEXT REFERENCES invoices(id),
+    prev_ticket_sha256 TEXT NOT NULL,
+    ticket_sha256 TEXT NOT NULL CHECK (length(ticket_sha256) = 64 AND ticket_sha256 = lower(ticket_sha256)),
+    ecdsa_signature_b64 TEXT NOT NULL,
+    CHECK (ticket_kind <> 'RETURN_REFUND' OR origin_ticket_id IS NOT NULL)
+)`;
+
+const CREATE_POS_Z_CLOSURES = `CREATE TABLE pos_z_closures (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL UNIQUE REFERENCES pos_sessions(id),
+    terminal_id TEXT NOT NULL,
+    closure_number INTEGER NOT NULL ${integerCheck('closure_number')},
+    business_date TEXT NOT NULL,
+    net_b2c_ht_20_cents INTEGER NOT NULL ${integerCheck('net_b2c_ht_20_cents')},
+    net_b2c_vat_20_cents INTEGER NOT NULL ${integerCheck('net_b2c_vat_20_cents')},
+    net_b2c_ht_10_cents INTEGER NOT NULL ${integerCheck('net_b2c_ht_10_cents')},
+    net_b2c_vat_10_cents INTEGER NOT NULL ${integerCheck('net_b2c_vat_10_cents')},
+    net_b2c_ht_0_cents INTEGER NOT NULL ${integerCheck('net_b2c_ht_0_cents')},
+    total_stamp_duty_cents INTEGER NOT NULL ${integerCheck('total_stamp_duty_cents')},
+    tpe_gross_cents INTEGER NOT NULL ${integerCheck('tpe_gross_cents')},
+    gl_journal_entry_id TEXT,
+    aip_archive_id TEXT,
+    prev_z_sha256 TEXT NOT NULL,
+    z_sha256 TEXT NOT NULL CHECK (length(z_sha256) = 64 AND z_sha256 = lower(z_sha256)),
+    UNIQUE(terminal_id, closure_number)
+)`;
+
+const MIGRATION_2_TABLES: readonly string[] = ['pos_sessions', 'pos_tickets', 'pos_z_closures'];
+
+const MIGRATION_2_STATEMENTS: readonly string[] = [CREATE_POS_SESSIONS, CREATE_POS_TICKETS, CREATE_POS_Z_CLOSURES];
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
- * IMMUABLES une fois appliquées : T-S1B-03 (POS), 04 (grand livre) et 05 (sous-livres) AJOUTENT les versions 2, 3 et 4
- * à ce tableau, sans toucher à la version 1.
+ * IMMUABLES une fois appliquées : T-S1B-04 (grand livre) et 05 (sous-livres) AJOUTENT les versions 3 et 4
+ * à ce tableau, sans toucher aux versions 1 et 2.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -268,6 +355,14 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     expectedSha256Hex: 'a554a3477c4d1e3561b81e72e243fc72e2be519d155a3120a497ef0d93a04f61',
     tableNames: MIGRATION_1_TABLES,
     indexNames: MIGRATION_1_INDEXES.map(([name]) => name),
+  },
+  {
+    version: 2,
+    name: 'tenant_part2_pos_sessions_tickets_z',
+    upSqlStatements: MIGRATION_2_STATEMENTS,
+    expectedSha256Hex: 'bfb09b92f078d2796cc62c0604bbc50d9bf3b5f7dffc3539704b564dca15b581',
+    tableNames: MIGRATION_2_TABLES,
+    indexNames: [],
   },
 ];
 

@@ -1,10 +1,10 @@
 /**
- * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, Partie 1 (T-S1B-02).
+ * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 et 2 (T-S1B-02, T-S1B-03 : caisse POS).
  *
  * Le DDL de `tenant.ts` fait foi : ce fichier ne sert qu'au typage des requêtes. Un test compare tables, colonnes,
  * nullités, clés primaires, clés étrangères, contraintes UNIQUE et index à PRAGMA sur la base réelle. Les CHECK ne sont pas
  * répétés ici : ils vivent dans le DDL appliqué par les migrations, jamais généré par drizzle-kit.
- * Les tickets suivants ajoutent ici les tables des migrations v2, v3 et v4.
+ * Les tickets suivants ajoutent ici les tables des migrations v3 et v4.
  */
 
 import { index, integer, primaryKey, sqliteTable, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
@@ -13,6 +13,9 @@ import {
   INVOICE_DIRECTIONS,
   PARTNER_ROLES,
   PARTNER_TAX_CATEGORIES,
+  POS_B2B_CONVERSION_STATES,
+  POS_SESSION_STATUSES,
+  POS_TICKET_KINDS,
   PURCHASE_ORDER_STATUSES,
   RIB_CHECK_STATUSES,
   TENANT_GRANTEE_ROLES,
@@ -181,4 +184,66 @@ export const invoiceLines = sqliteTable(
     pcgeAccountNumber: text('pcge_account_number').notNull(),
   },
   (table) => [unique().on(table.invoiceId, table.lineNumber)],
+);
+
+export const posSessions = sqliteTable('pos_sessions', {
+  id: text('id').primaryKey(),
+  terminalId: text('terminal_id').notNull(),
+  cashierUserId: text('cashier_user_id').notNull(),
+  openedAt: text('opened_at').notNull(),
+  closedAt: text('closed_at'),
+  openingFloatCents: integer('opening_float_cents').notNull(),
+  expectedClosingCashCents: integer('expected_closing_cash_cents').notNull().default(0),
+  blindCountedCashCents: integer('blind_counted_cash_cents'),
+  cashVarianceCents: integer('cash_variance_cents'),
+  status: text('status', { enum: POS_SESSION_STATUSES }).notNull(),
+});
+
+export const posTickets = sqliteTable('pos_tickets', {
+  id: text('id').primaryKey(),
+  sessionId: text('session_id').notNull().references(() => posSessions.id),
+  terminalId: text('terminal_id').notNull(),
+  terminalSeqNumber: text('terminal_seq_number').notNull().unique(),
+  issuedAt: text('issued_at').notNull(),
+  ticketKind: text('ticket_kind', { enum: POS_TICKET_KINDS }).notNull(),
+  originTicketId: text('origin_ticket_id').references((): AnySQLiteColumn => posTickets.id),
+  ht20Cents: integer('ht_20_cents').notNull().default(0),
+  vat20Cents: integer('vat_20_cents').notNull().default(0),
+  ht10Cents: integer('ht_10_cents').notNull().default(0),
+  vat10Cents: integer('vat_10_cents').notNull().default(0),
+  ht0Cents: integer('ht_0_cents').notNull().default(0),
+  stampDutyCents: integer('stamp_duty_cents').notNull().default(0),
+  totalTtcCents: integer('total_ttc_cents').notNull(),
+  paidCashCents: integer('paid_cash_cents').notNull().default(0),
+  paidCardTpeCents: integer('paid_card_tpe_cents').notNull().default(0),
+  paidDeliveryAppCents: integer('paid_delivery_app_cents').notNull().default(0),
+  qrConversionToken: text('qr_conversion_token').notNull().unique(),
+  b2bConversionState: text('b2b_conversion_state', { enum: POS_B2B_CONVERSION_STATES }).notNull().default('NONE'),
+  convertedInvoiceId: text('converted_invoice_id').references(() => invoices.id),
+  prevTicketSha256: text('prev_ticket_sha256').notNull(),
+  ticketSha256: text('ticket_sha256').notNull(),
+  ecdsaSignatureB64: text('ecdsa_signature_b64').notNull(),
+});
+
+export const posZClosures = sqliteTable(
+  'pos_z_closures',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id').notNull().unique().references(() => posSessions.id),
+    terminalId: text('terminal_id').notNull(),
+    closureNumber: integer('closure_number').notNull(),
+    businessDate: text('business_date').notNull(),
+    netB2cHt20Cents: integer('net_b2c_ht_20_cents').notNull(),
+    netB2cVat20Cents: integer('net_b2c_vat_20_cents').notNull(),
+    netB2cHt10Cents: integer('net_b2c_ht_10_cents').notNull(),
+    netB2cVat10Cents: integer('net_b2c_vat_10_cents').notNull(),
+    netB2cHt0Cents: integer('net_b2c_ht_0_cents').notNull(),
+    totalStampDutyCents: integer('total_stamp_duty_cents').notNull(),
+    tpeGrossCents: integer('tpe_gross_cents').notNull(),
+    glJournalEntryId: text('gl_journal_entry_id'),
+    aipArchiveId: text('aip_archive_id'),
+    prevZSha256: text('prev_z_sha256').notNull(),
+    zSha256: text('z_sha256').notNull(),
+  },
+  (table) => [unique().on(table.terminalId, table.closureNumber)],
 );

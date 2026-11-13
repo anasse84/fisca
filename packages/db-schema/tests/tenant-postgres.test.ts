@@ -16,13 +16,17 @@ import {
   NON_INTEGER,
   openTenant,
   partnerRow,
+  posSessionRow,
+  posTicketRow,
+  posZClosureRow,
   purchaseOrderRow,
+  SHA_A,
   type RowValues,
 } from './tenant-support.ts';
 
 /**
- * Parité SQLite / PostgreSQL 16 (ERRATA D-11) : aucun trigger n'est défini par Doc_06 § 03, la parité se prouve donc par
- * le chargement du DDL PG-compatible de ces 7 tables et par des refus identiques (CHECK, UNIQUE, FK, NOT NULL) sur les
+ * Parité SQLite / PostgreSQL 16 (ERRATA D-11) : aucun trigger n'est défini par Doc_06 § 03 ni § 04, la parité se prouve donc
+ * par le chargement du DDL PG-compatible des 10 tables (migrations v1 et v2) et par des refus identiques (CHECK, UNIQUE, FK, NOT NULL) sur les
  * DEUX moteurs, exécutés réellement. Le schéma PostgreSQL est temporaire et supprimé en fin de test.
  */
 const PG_URL = process.env['FISCA_TEST_PG_URL'] ?? 'postgres://fisca@127.0.0.1:54329/postgres';
@@ -68,6 +72,35 @@ const CASES: readonly Case[] = [
   { label: 'tiers inexistant', table: 'invoices', values: invoiceRow({ id: 'inv-x', partner_id: 'ghost' }), expected: FK },
   { label: 'facture inexistante', table: 'invoice_lines', values: invoiceLineRow({ id: 'line-x', line_number: 9, invoice_id: 'ghost' }), expected: FK },
   { label: 'bon de livraison inexistant', table: 'invoice_delivery_links', values: { invoice_id: 'inv-1', delivery_note_id: 'ghost' }, expected: FK },
+  { label: 'statut de session POS inconnu', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', status: 'CAISSE_FERMEE' }), expected: CHECK },
+  { label: 'fond de caisse négatif', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', opening_float_cents: -1 }), expected: CHECK },
+  { label: 'comptage aveugle négatif', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', blind_counted_cash_cents: -1 }), expected: CHECK },
+  { label: 'fond de caisse non entier (10.5 lié)', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', opening_float_cents: NON_INTEGER }), expected: NOT_AN_INTEGER },
+  { label: 'écart de caisse textuel', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', cash_variance_cents: 'abc' }), expected: NOT_AN_INTEGER },
+  { label: 'caissier absent', table: 'pos_sessions', values: posSessionRow({ id: 'sess-x', cashier_user_id: null }), expected: NOT_NULL },
+  { label: 'type de ticket POS inconnu', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ticket_kind: 'VOID' }), expected: CHECK },
+  { label: 'retour sans ticket d\'origine', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ticket_kind: 'RETURN_REFUND' }), expected: CHECK },
+  { label: 'état de conversion B2B inconnu', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', b2b_conversion_state: 'CONVERTI' }), expected: CHECK },
+  { label: 'empreinte de ticket en majuscules', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ticket_sha256: 'B'.repeat(64) }), expected: CHECK },
+  { label: 'empreinte de ticket trop courte', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ticket_sha256: 'abc' }), expected: CHECK },
+  { label: 'total TTC de ticket négatif', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', total_ttc_cents: -1 }), expected: CHECK },
+  { label: 'montant de ticket non entier (10.5 lié)', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ht_20_cents: NON_INTEGER }), expected: NOT_AN_INTEGER },
+  { label: 'montant de ticket textuel', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', paid_cash_cents: 'abc' }), expected: NOT_AN_INTEGER },
+  { label: 'ticket POS en doublon (même id)', table: 'pos_tickets', values: posTicketRow({ terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x' }), expected: UNIQUE },
+  { label: 'séquence de terminal dupliquée', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', qr_conversion_token: 'qr-x' }), expected: UNIQUE },
+  { label: 'jeton QR en doublon', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X' }), expected: UNIQUE },
+  { label: 'session POS inexistante pour un ticket', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', session_id: 'ghost' }), expected: FK },
+  { label: 'ticket d\'origine inexistant', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ticket_kind: 'RETURN_REFUND', origin_ticket_id: 'ghost' }), expected: FK },
+  { label: 'facture convertie inexistante', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', converted_invoice_id: 'ghost' }), expected: FK },
+  { label: 'signature ECDSA absente', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', ecdsa_signature_b64: null }), expected: NOT_NULL },
+  { label: 'hash précédent absent', table: 'pos_tickets', values: posTicketRow({ id: 'tkt-x', terminal_seq_number: 'S-X', qr_conversion_token: 'qr-x', prev_ticket_sha256: null }), expected: NOT_NULL },
+  { label: 'seconde clôture Z pour la même session', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', closure_number: 2 }), expected: UNIQUE },
+  { label: 'numéro de clôture dupliqué par terminal', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'sess-2' }), expected: UNIQUE },
+  { label: 'empreinte Z trop courte', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'sess-2', closure_number: 9, z_sha256: 'abc' }), expected: CHECK },
+  { label: 'montant Z non entier (10.5 lié)', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'sess-2', closure_number: 9, tpe_gross_cents: NON_INTEGER }), expected: NOT_AN_INTEGER },
+  { label: 'numéro de clôture textuel', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'sess-2', closure_number: 'abc' }), expected: NOT_AN_INTEGER },
+  { label: 'session POS inexistante pour une clôture Z', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'ghost', closure_number: 9 }), expected: FK },
+  { label: 'empreinte Z précédente absente', table: 'pos_z_closures', values: posZClosureRow({ id: 'z-x', session_id: 'sess-2', closure_number: 9, prev_z_sha256: null }), expected: NOT_NULL },
   { label: 'raison sociale chiffrée absente', table: 'fiscal_partners', values: partnerRow({ id: 'partner-x', legal_name_enc: null }), expected: NOT_NULL },
 ];
 
@@ -79,6 +112,10 @@ const GOOD_ROWS: readonly (readonly [string, RowValues])[] = [
   ['invoices', invoiceRow({ sequential_number: 'FA-2026-0001' })],
   ['invoice_delivery_links', { invoice_id: 'inv-1', delivery_note_id: 'bl-1' }],
   ['invoice_lines', invoiceLineRow()],
+  ['pos_sessions', posSessionRow()],
+  ['pos_sessions', posSessionRow({ id: 'sess-2' })],
+  ['pos_tickets', posTicketRow()],
+  ['pos_z_closures', posZClosureRow()],
 ];
 
 let client: Client;
@@ -130,7 +167,7 @@ afterAll(async () => {
   expect(remaining.rowCount).toBe(0);
 });
 
-describe('DDL PostgreSQL 16 de la migration tenant v1', () => {
+describe('DDL PostgreSQL 16 des migrations tenant v1 et v2', () => {
   it('la traduction est déterministe, sans CAST d\'entier ni type INTEGER 32 bits', () => {
     for (const migration of TENANT_MIGRATIONS) {
       const statements = tenantMigrationPostgresStatements(migration);
@@ -173,6 +210,40 @@ describe('DDL PostgreSQL 16 de la migration tenant v1', () => {
   it('aucune colonne numeric, real ou double precision ; seulement text et bigint', async () => {
     const result = await client.query('SELECT DISTINCT data_type FROM information_schema.columns WHERE table_schema = $1 ORDER BY data_type', [SCHEMA]);
     expect(result.rows.map((row: { data_type: string }) => row.data_type)).toEqual(['bigint', 'text']);
+  });
+});
+
+describe('caisse POS : aucun trigger défini par Doc_06 § 04, donc aucun créé, sur les deux moteurs', () => {
+  it('PostgreSQL ne porte aucun trigger utilisateur dans le schéma temporaire', async () => {
+    const result = await client.query(
+      'SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = $1 AND NOT t.tgisinternal',
+      [SCHEMA],
+    );
+    expect(result.rowCount).toBe(0);
+    expect(all(sqlite, `SELECT name FROM sqlite_master WHERE type = 'trigger'`)).toEqual([]);
+  });
+
+  it('les trois tables POS existent sur PostgreSQL avec les mêmes statuts de session acceptés que sur SQLite', async () => {
+    for (const status of ['SESSION_OUVERTE_ACTIVE', 'COMPTAGE_AVEUGLE_PRE_Z', 'CLOTURE_TICKET_Z_SCELLEE']) {
+      const values = posSessionRow({ id: `sess-${status}`, status });
+      const lite = insertSqlite('pos_sessions', values);
+      const pg = insertPostgres('pos_sessions', values);
+      sqlite.prepare(lite.sql).run(...lite.params);
+      await client.query(pg.sql, pg.params);
+    }
+    const pgCount = await client.query(`SELECT COUNT(*)::int AS n FROM pos_sessions WHERE id LIKE 'sess-%\\_%'`);
+    expect(pgCount.rows[0]?.n).toBe(3);
+  });
+
+  it('un ticket chaîné est relu à l\'identique, hash précédent compris, sur les deux moteurs', async () => {
+    const columns = 'id, terminal_seq_number, prev_ticket_sha256, ticket_sha256, ecdsa_signature_b64, total_ttc_cents, b2b_conversion_state';
+    const lite = all(sqlite, `SELECT ${columns} FROM pos_tickets`).map((row) => ({ ...row }));
+    const pg = await client.query(`SELECT ${columns} FROM pos_tickets`);
+    const normalized = pg.rows.map((row: Record<string, string | number>) =>
+      Object.fromEntries(Object.entries(row).map(([key, value]) => [key, typeof value === 'string' && /^\d+$/.test(value) && value.length < 16 ? Number(value) : value])),
+    );
+    expect(normalized).toEqual(lite);
+    expect(lite[0]?.['prev_ticket_sha256']).toBe(SHA_A);
   });
 });
 
