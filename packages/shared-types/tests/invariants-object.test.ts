@@ -103,8 +103,6 @@ describe('constat 4a : SQL Sage = une seule instruction SELECT en lecture seule'
     'CALL purge()',
     'SELECT 1; SELECT 2',
     'SELECT 1; DROP TABLE F_ECRITUREC',
-    'SELECT 1 -- DROP',
-    'SELECT /* x */ 1',
     'SELECT 1 /* x',
     'SELECT 1;;',
     "SELECT 'a",
@@ -112,15 +110,27 @@ describe('constat 4a : SQL Sage = une seule instruction SELECT en lecture seule'
     '   ',
     'WITH x AS (SELECT 1) DELETE FROM F_ECRITUREC',
     'SELECT 1\nEXEC sp_who',
-    'SELECT * FROM F_ECRITUREC',
-    'SELECT a.x FROM A a WITH (NOLOCK) JOIN B b ON a.id = b.id',
-    'SELECT 1',
     'REPLACE INTO F_ECRITUREC SELECT * FROM F_ECRITUREC WITH (NOLOCK)',
     'SELECT * FROM OPENROWSET(\'SQLNCLI\', \'x\', \'y\')',
   ];
   for (const sql of adverse) {
     it(`refuse ${JSON.stringify(sql)}`, () => {
       expect(messageOf(() => FISCA_ADR_INVARIANTS.assertReadOnlySageSql(sql))).toMatch(/^ADR_11_SAGE100_CORRUPTION_GUARD/);
+    });
+  }
+
+  // Décision du propriétaire (S0) : commentaires supprimés avant analyse, NOLOCK exigé table par table ; ces refus
+  // gardent leur sévérité mais portent désormais le code précis MISSING_NOLOCK ou EMPTY_TABLE_SOURCE.
+  const refinedRefusals: readonly (readonly [string, RegExp])[] = [
+    ['SELECT 1 -- DROP', /^ADR_11_SAGE100_EMPTY_TABLE_SOURCE/],
+    ['SELECT /* x */ 1', /^ADR_11_SAGE100_EMPTY_TABLE_SOURCE/],
+    ['SELECT 1', /^ADR_11_SAGE100_EMPTY_TABLE_SOURCE/],
+    ['SELECT * FROM F_ECRITUREC', /^ADR_11_SAGE100_MISSING_NOLOCK.*F_ECRITUREC/],
+    ['SELECT a.x FROM A a WITH (NOLOCK) JOIN B b ON a.id = b.id', /^ADR_11_SAGE100_MISSING_NOLOCK.*: B\./],
+  ];
+  for (const [sql, pattern] of refinedRefusals) {
+    it(`refuse ${JSON.stringify(sql)} avec le code précis`, () => {
+      expect(messageOf(() => FISCA_ADR_INVARIANTS.assertReadOnlySageSql(sql))).toMatch(pattern);
     });
   }
 
