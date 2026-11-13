@@ -185,8 +185,8 @@
     "retry_count": 0,
     "tests_green": "true",
     "verify_cmd": "pnpm verify:fast",
-    "review_notes": "",
+    "review_notes": "Corrections du pilote appliquées le 2026-11-13 : conservation décennale = clôture + 10 ans + 1 jour en arithmétique entière, échec fermé sans date (f8cba26) ; adéquation CNDP = 27 États UE + MA, NON RECOUPÉ avec la Délibération 236-2015 (f8cba26) ; routes password/reset (CTR-API-41) et google/link/confirm (CTR-API-42), refresh sans Turnstile (f4a75f9). Tête S1A : voir PR n° 5.",
     "updated_at": "2026-11-13",
-    "commit_url": "https://github.com/anasse84/fisca/commit/9930b8c"
+    "commit_url": "https://github.com/anasse84/fisca/commit/f4a75f9"
   }
 ]
