@@ -3,10 +3,79 @@
   "article": "Loi 09-08 art. 9 ; CGI art. 211 et 145-I",
   "date": "2026-11-13",
   "etat": "NON RECOUPÉ",
-  "note": "Valeurs recalculées à partir du code de référence de Doc_11 § 11 : fin de conservation = 31 décembre de (année de clôture + 10), crypto-shredding le 1er janvier suivant. Non recoupé avec le texte officiel de l'Art. 211 CGI ; le commentaire du code de référence parle de « clôture + 10 ans + 1 jour » alors que le code retient la fin de l'année civile (identiques pour une clôture au 31 décembre).",
+  "note": "CORRECTION D'UNE RÈGLE FAUSSE tranchée par le pilote (ticket T-S1A-10, corrections b et c) : Doc_11 § 06 dit « Clôture d'exercice + 10 ans + 1 jour ». L'ancienne règle (31 décembre de l'année de clôture + 10 ans) était fausse pour un exercice décalé ; les valeurs attendues sont remplacées, aucun cas retiré. Règle : retentionEnd = date de clôture + 10 ans (dernier jour de conservation, inclus) ; shred = retentionEnd + 1 jour (premier jour où la destruction est autorisée). Clôture le 29 février : l'année cible n'étant jamais bissextile (10 ans ≡ 2 mod 4), l'anniversaire est le 28 février, shred le 1er mars. Date de clôture absente ou invalide : échec fermé, restriction sans échéance (retentionEnd et shred null). Arithmétique entière année/mois/jour, sans Date JS. État NON RECOUPÉ avec le texte officiel de l'Art. 211 CGI.",
   "vectors": [
-    { "id": "DSAR-01", "closed": "2020-12-31", "now": "2030-12-31", "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY", "retentionEnd": "2030-12-31", "shred": "2031-01-01" },
-    { "id": "DSAR-02", "closed": "2020-12-31", "now": "2031-01-01", "expected": "IMMEDIATE_HARD_DELETE", "retentionEnd": null, "shred": null },
-    { "id": "DSAR-03", "closed": "2020-06-30", "now": "2026-11-13", "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY", "retentionEnd": "2030-12-31", "shred": "2031-01-01" }
+    {
+      "id": "DSAR-01",
+      "closed": "2020-12-31",
+      "now": "2030-12-31",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": "2030-12-31",
+      "shred": "2031-01-01"
+    },
+    {
+      "id": "DSAR-02",
+      "closed": "2020-12-31",
+      "now": "2031-01-01",
+      "expected": "IMMEDIATE_HARD_DELETE",
+      "retentionEnd": null,
+      "shred": null
+    },
+    {
+      "id": "DSAR-03",
+      "closed": "2020-06-30",
+      "now": "2026-11-13",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": "2030-06-30",
+      "shred": "2030-07-01"
+    },
+    {
+      "id": "DSAR-04",
+      "closed": "2020-06-30",
+      "now": "2030-06-30",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": "2030-06-30",
+      "shred": "2030-07-01"
+    },
+    {
+      "id": "DSAR-05",
+      "closed": "2020-06-30",
+      "now": "2030-07-01",
+      "expected": "IMMEDIATE_HARD_DELETE",
+      "retentionEnd": null,
+      "shred": null
+    },
+    {
+      "id": "DSAR-06",
+      "closed": "2020-02-29",
+      "now": "2030-02-28",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": "2030-02-28",
+      "shred": "2030-03-01"
+    },
+    {
+      "id": "DSAR-07",
+      "closed": "2020-02-29",
+      "now": "2030-03-01",
+      "expected": "IMMEDIATE_HARD_DELETE",
+      "retentionEnd": null,
+      "shred": null
+    },
+    {
+      "id": "DSAR-08",
+      "closed": null,
+      "now": "2099-12-31",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": null,
+      "shred": null
+    },
+    {
+      "id": "DSAR-09",
+      "closed": "2021-02-30",
+      "now": "2099-12-31",
+      "expected": "RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY",
+      "retentionEnd": null,
+      "shred": null
+    }
   ]
 }

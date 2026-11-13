@@ -12,6 +12,11 @@ import {
 import goldenVectors from './golden/dsar-art211.vectors.json';
 import type { OutboundServiceTarget, SubjectRecordDescriptor } from '../src/index.ts';
 
+const EU_MEMBER_STATES_ISO2 = [
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
+  'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+] as const;
+
 const STRICT = 'STRICT_DGSSI_LAW_05_20_MOROCCO' as const;
 const STANDARD = 'STANDARD_CNDP_EU_ADEQUACY' as const;
 
@@ -33,6 +38,46 @@ function catchError(run: () => void): unknown {
   }
   return null;
 }
+
+describe('CNDP_ADEQUATE_ISO2 : 27 États membres de l’UE + Maroc (Doc_11 § 03)', () => {
+  it('contient exactement les 27 États membres et MA', () => {
+    expect(EU_MEMBER_STATES_ISO2).toHaveLength(27);
+    expect(new Set(EU_MEMBER_STATES_ISO2).size).toBe(27);
+    expect(CNDP_ADEQUATE_ISO2.size).toBe(28);
+    for (const iso2 of EU_MEMBER_STATES_ISO2) {
+      expect(CNDP_ADEQUATE_ISO2.has(iso2)).toBe(true);
+    }
+    expect(CNDP_ADEQUATE_ISO2.has('MA')).toBe(true);
+  });
+
+  it.each(['PL', 'GR', 'RO'])('%s (absent de l’ancienne liste de 14) est admis en mode standard sans F118', (iso2) => {
+    expect(() => assertSovereignEgressAllowed(STANDARD, target({ destinationCountryIso2: iso2 }))).not.toThrow();
+  });
+
+  it.each(['US', 'CN', 'RU'])('%s est refusé sans autorisation F118, admis avec', (iso2) => {
+    const error = catchError(() => assertSovereignEgressAllowed(STANDARD, target({ destinationCountryIso2: iso2 })));
+    expect(error).toBeInstanceOf(SovereignEgressError);
+    expect((error as SovereignEgressError).code).toBe('CNDP_ART_43_44_TRANSFER_BLOCKED');
+    expect(() =>
+      assertSovereignEgressAllowed(STANDARD, target({ destinationCountryIso2: iso2, hasCndpF118Authorization: true })),
+    ).not.toThrow();
+  });
+
+  it('échec fermé : code inconnu, minuscule, espacé ou mal formé refusé sans F118', () => {
+    for (const iso2 of ['XX', 'ZZ', 'fr', 'Fr', ' FR', 'FR ', 'FRA', 'F', '', 'EL', 'UK']) {
+      const error = catchError(() => assertSovereignEgressAllowed(STANDARD, target({ destinationCountryIso2: iso2 })));
+      expect(error).toBeInstanceOf(SovereignEgressError);
+      expect((error as SovereignEgressError).code).toBe('CNDP_ART_43_44_TRANSFER_BLOCKED');
+    }
+  });
+
+  it('le mode souverain n’admet toujours que MA, y compris pour les nouveaux États adéquats', () => {
+    for (const iso2 of ['PL', 'GR', 'RO', 'FR', 'US']) {
+      expect(() => assertSovereignEgressAllowed(STRICT, target({ destinationCountryIso2: iso2 }))).toThrow(SovereignEgressError);
+    }
+    expect(() => assertSovereignEgressAllowed(STRICT, target({ destinationCountryIso2: 'MA' }))).not.toThrow();
+  });
+});
 
 describe('assertSovereignEgressAllowed : mode souverain Loi 05-20 (zéro egress)', () => {
   it('accepte le Maroc, même sans donnée personnelle', () => {
@@ -153,7 +198,7 @@ describe('evaluateCndpErasureAgainstCgiArt211 : arbitre DSAR Loi 09-08 / Art. 21
     },
   );
 
-  it('cas limite : le jour exact de fin de conservation reste restreint, le lendemain est effaçable', () => {
+  it('cas limite : le jour du dixième anniversaire de la clôture reste restreint, le lendemain est effaçable', () => {
     const dernierJour = evaluateCndpErasureAgainstCgiArt211(record(), '2030-12-31');
     expect(dernierJour.action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
     const lendemain = evaluateCndpErasureAgainstCgiArt211(record(), '2031-01-01');
@@ -170,22 +215,74 @@ describe('evaluateCndpErasureAgainstCgiArt211 : arbitre DSAR Loi 09-08 / Art. 21
     expect(evaluateCndpErasureAgainstCgiArt211(record(), '2026-01-01')).toEqual(a);
   });
 
-  it('exercice clos en cours d’année : conservation jusqu’à la fin de l’année civile + 10 ans (référence Doc_11)', () => {
-    const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: '2020-06-30' }), '2026-11-13');
-    expect(decision.retentionEndDateIso).toBe('2030-12-31');
-    expect(decision.scheduledCryptoShredDateIso).toBe('2031-01-01');
+  it('exercice clos le 30 juin : échéance = clôture + 10 ans (30 juin), destruction dès le 1er juillet suivant', () => {
+    const closed = record({ fiscalYearClosedDateIso: '2020-06-30' });
+    const decision = evaluateCndpErasureAgainstCgiArt211(closed, '2026-11-13');
+    expect(decision.retentionEndDateIso).toBe('2030-06-30');
+    expect(decision.scheduledCryptoShredDateIso).toBe('2030-07-01');
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-06-30').action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-07-01').action).toBe('IMMEDIATE_HARD_DELETE');
+    // L'ancienne règle (fin d'année civile) maintenait la restriction jusqu'au 31 décembre 2030 : fausse.
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-12-31').action).toBe('IMMEDIATE_HARD_DELETE');
   });
 
-  it('sans date de clôture, l’année de l’horloge sert de base', () => {
-    const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: undefined }), '2026-11-13');
-    expect(decision.retentionEndDateIso).toBe('2036-12-31');
-    expect(decision.scheduledCryptoShredDateIso).toBe('2037-01-01');
+  it('exercice clos le 31 décembre : veille restreinte, 31 décembre restreint, 1er janvier de l’année +11 effaçable', () => {
+    const closed = record({ fiscalYearClosedDateIso: '2019-12-31' });
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2029-12-30').action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+    const anniversaire = evaluateCndpErasureAgainstCgiArt211(closed, '2029-12-31');
+    expect(anniversaire.action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+    expect(anniversaire.retentionEndDateIso).toBe('2029-12-31');
+    expect(anniversaire.scheduledCryptoShredDateIso).toBe('2030-01-01');
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-01-01').action).toBe('IMMEDIATE_HARD_DELETE');
   });
 
-  it('refuse une date malformée ou impossible (DsarInputError), sans deviner', () => {
+  it('exercice clos le 29 février : règle déterministe, 28 février de l’année cible puis +1 jour', () => {
+    const closed = record({ fiscalYearClosedDateIso: '2020-02-29' });
+    const decision = evaluateCndpErasureAgainstCgiArt211(closed, '2026-11-13');
+    expect(decision.retentionEndDateIso).toBe('2030-02-28');
+    expect(decision.scheduledCryptoShredDateIso).toBe('2030-03-01');
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-02-28').action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+    expect(evaluateCndpErasureAgainstCgiArt211(closed, '2030-03-01').action).toBe('IMMEDIATE_HARD_DELETE');
+    const autre = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: '2096-02-29' }), '2100-01-01');
+    expect(autre.retentionEndDateIso).toBe('2106-02-28');
+    expect(autre.scheduledCryptoShredDateIso).toBe('2106-03-01');
+  });
+
+  it('clôture le 28 février d’une année non bissextile : pas de débordement, +1 jour = 1er mars', () => {
+    const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: '2021-02-28' }), '2026-11-13');
+    expect(decision.retentionEndDateIso).toBe('2031-02-28');
+    expect(decision.scheduledCryptoShredDateIso).toBe('2031-03-01');
+  });
+
+  it('échéance du 29 février : clôture le 28 février d’une année bissextile cible (+1 jour = 29 février)', () => {
+    const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: '2018-02-28' }), '2026-11-13');
+    expect(decision.retentionEndDateIso).toBe('2028-02-28');
+    expect(decision.scheduledCryptoShredDateIso).toBe('2028-02-29');
+  });
+
+  it('échec fermé : sans date de clôture, restriction sans échéance, jamais de suppression', () => {
+    for (const now of ['2026-11-13', '2099-12-31']) {
+      const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: undefined }), now);
+      expect(decision.action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+      expect(decision.piiRestrictedFlag).toBe(1);
+      expect(decision.retentionEndDateIso).toBeUndefined();
+      expect(decision.scheduledCryptoShredDateIso).toBeUndefined();
+    }
+  });
+
+  it('échec fermé : date de clôture invalide ou impossible, restriction sans échéance', () => {
+    for (const bad of ['2026-13-01', '2026-02-30', '2021-02-29', '13/11/2026', '', '2026-1-1', '2020-12-31T00:00:00Z', '0000-01-01', '9999-12-31']) {
+      const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: bad }), '2099-12-31');
+      expect(decision.action).toBe('RESTRICT_AND_SEAL_UNTIL_ART211_EXPIRY');
+      expect(decision.piiRestrictedFlag).toBe(1);
+      expect(decision.retentionEndDateIso).toBeUndefined();
+      expect(decision.scheduledCryptoShredDateIso).toBeUndefined();
+    }
+  });
+
+  it('refuse une horloge malformée ou impossible (DsarInputError), sans deviner', () => {
     for (const bad of ['2026-13-01', '2026-02-30', '13/11/2026', '', '2026-1-1']) {
       expect(() => evaluateCndpErasureAgainstCgiArt211(record(), bad)).toThrow(DsarInputError);
-      expect(() => evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: bad }), '2026-11-13')).toThrow(DsarInputError);
     }
   });
 
@@ -211,6 +308,13 @@ describe('evaluateCndpErasureRequest : demande d’effacement partielle', () => 
     expect(result.nextCryptoShredDateIso).toBe('2031-01-01');
   });
 
+  it('une clôture manquante rend l’enregistrement restreint sans date de shredding dans la demande', () => {
+    const result = evaluateCndpErasureRequest([record({ recordId: 'x', fiscalYearClosedDateIso: undefined })], '2099-01-01');
+    expect(result.outcome).toBe('FULL_RESTRICTION');
+    expect(result.restrictedRecordIds).toEqual(['x']);
+    expect(result.nextCryptoShredDateIso).toBeNull();
+  });
+
   it('effacement total, restriction totale et demande vide', () => {
     expect(evaluateCndpErasureRequest([record({ category: 'UNNUMBERED_DRAFT' })], '2026-11-13').outcome).toBe('FULL_ERASURE');
     const restricted = evaluateCndpErasureRequest([record(), record({ recordId: 'r2', fiscalYearClosedDateIso: '2022-12-31' })], '2026-11-13');
@@ -227,7 +331,7 @@ describe('vecteurs d’or DSAR (tests/golden/dsar-art211.vectors.json)', () => {
     const { vectors } = goldenVectors;
     expect(vectors.length).toBeGreaterThanOrEqual(3);
     for (const vector of vectors) {
-      const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: vector.closed }), vector.now);
+      const decision = evaluateCndpErasureAgainstCgiArt211(record({ fiscalYearClosedDateIso: vector.closed ?? undefined }), vector.now);
       expect(decision.action).toBe(vector.expected);
       expect(decision.retentionEndDateIso ?? null).toBe(vector.retentionEnd);
       expect(decision.scheduledCryptoShredDateIso ?? null).toBe(vector.shred);
