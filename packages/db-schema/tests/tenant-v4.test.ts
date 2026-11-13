@@ -220,9 +220,20 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
     ] as const;
     // La v8 (corrections G1) remplace deux triggers de v3 et v4 sous le même nom et en crée trois nouveaux.
     const V8_NEW_TRIGGERS = ['prevent_post_in_closed_fiscal_year', 'prevent_entry_fiscal_year_change', 'prevent_posted_account_renumbering'] as const;
-    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS])].sort());
+    // La v9 crée six triggers nouveaux (dont deux contrôles du solde de caisse 5161, réservés à SQLite : PostgreSQL porte un CHECK nommé).
+    const V9_NEW_TRIGGERS = [
+      'enforce_cash_5161_posted_balance_insert',
+      'enforce_cash_5161_posted_balance_update',
+      'prevent_entry_update_in_closed_fiscal_year',
+      'prevent_entry_delete_in_closed_fiscal_year',
+      'enforce_reversal_target_posted_insert',
+      'enforce_reversal_target_posted_update',
+    ] as const;
+    const V9_SQLITE_ONLY = ['enforce_cash_5161_posted_balance_insert', 'enforce_cash_5161_posted_balance_update'] as const;
+    const ALL_SQLITE_ONLY = [...(SQLITE_ONLY_TRIGGERS as readonly string[]), ...V9_SQLITE_ONLY];
+    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS])].sort());
     expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual(
-      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
+      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS])].filter((n) => !ALL_SQLITE_ONLY.includes(n)).sort(),
     );
   });
 

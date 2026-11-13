@@ -408,6 +408,21 @@ export const CGNC_VAT_REGIME_ROLES = [
 export const LEDGER_REVIEW_CYCLES = ['TRESORERIE', 'ACHATS', 'VENTES', 'PAIE_SOCIAL', 'FISCAL', 'GENERAL'] as const;
 /** Statuts persistés d'une pièce (ERRATA D-03 : CONTRE_PASSEE n'existe pas, la contre-passation est une nouvelle écriture). */
 export const LEDGER_STATUSES = ['IA_PROPOSITION', 'DRAFT', 'REVISEE_CYCLE', 'POSTED'] as const;
+/**
+ * Liste des types de pièce source figée de la v3 : elle ENTRE dans le DDL immuable de la v3 (empreinte SHA-256 figée), elle ne
+ * change donc jamais. La v9 l'étend (`LEDGER_SOURCE_DOCUMENT_TYPES`).
+ */
+export const LEDGER_SOURCE_DOCUMENT_TYPES_V3 = [
+  'INVOICE',
+  'CREDIT_NOTE',
+  'POS_Z_CLOSURE',
+  'B2C_TO_B2B_REVERSAL',
+  'PAYMENT',
+  'VAT_CLEARING',
+  'CUTOFF_OD',
+  'REVERSAL',
+] as const;
+/** Types de pièce source admis par le CHECK de `journal_entries` depuis la v9 (les huit de la v3 conservés, trois ajoutés). */
 export const LEDGER_SOURCE_DOCUMENT_TYPES = [
   'INVOICE',
   'CREDIT_NOTE',
@@ -417,6 +432,9 @@ export const LEDGER_SOURCE_DOCUMENT_TYPES = [
   'VAT_CLEARING',
   'CUTOFF_OD',
   'REVERSAL',
+  'OPENING_BALANCE',
+  'VAT_DECLARATION_CENTRALIZATION',
+  'FX_REVALUATION',
 ] as const;
 export const BANK_RECONCILIATION_STATES = ['UNMATCHED', 'SUSPENS_AMBIGU_3497_4497', 'MATCHED_PARTIAL', 'MATCHED_FULL'] as const;
 
@@ -467,7 +485,9 @@ const CREATE_CGNC_ACCOUNTS = `CREATE TABLE cgnc_accounts (
     vat_regime_role TEXT NOT NULL DEFAULT 'NONE' CHECK (vat_regime_role IN (${quoteList(CGNC_VAT_REGIME_ROLES)}))
 )`;
 
-const CREATE_JOURNAL_ENTRIES = `CREATE TABLE journal_entries (
+/** DDL de `journal_entries` pour une liste de types de pièce source (v3 : liste figée ; v9 : liste étendue, table reconstruite). */
+function createJournalEntriesSql(sourceTypes: readonly string[]): string {
+  return `CREATE TABLE journal_entries (
     id TEXT PRIMARY KEY,
     fiscal_year_id TEXT NOT NULL REFERENCES fiscal_years(id),
     journal_id TEXT NOT NULL REFERENCES journals(id),
@@ -477,7 +497,7 @@ const CREATE_JOURNAL_ENTRIES = `CREATE TABLE journal_entries (
     validated_at TEXT,
     review_cycle TEXT NOT NULL DEFAULT 'GENERAL' CHECK (review_cycle IN (${quoteList(LEDGER_REVIEW_CYCLES)})),
     status TEXT NOT NULL DEFAULT 'IA_PROPOSITION' CHECK (status IN (${quoteList(LEDGER_STATUSES)})),
-    source_document_type TEXT NOT NULL CHECK (source_document_type IN (${quoteList(LEDGER_SOURCE_DOCUMENT_TYPES)})),
+    source_document_type TEXT NOT NULL CHECK (source_document_type IN (${quoteList(sourceTypes)})),
     invoice_id TEXT REFERENCES invoices(id),
     dgi_clearance_uuid TEXT,
     partner_id TEXT REFERENCES fiscal_partners(id),
@@ -491,6 +511,9 @@ const CREATE_JOURNAL_ENTRIES = `CREATE TABLE journal_entries (
     CHECK (reversal_of_entry_id IS NULL OR reversal_of_entry_id <> id),
     UNIQUE(journal_id, fiscal_year_id, sequence_number)
 )`;
+}
+
+const CREATE_JOURNAL_ENTRIES = createJournalEntriesSql(LEDGER_SOURCE_DOCUMENT_TYPES_V3);
 
 const CREATE_JOURNAL_ENTRY_LINES = `CREATE TABLE journal_entry_lines (
     id TEXT PRIMARY KEY,
@@ -1728,6 +1751,349 @@ const MIGRATION_8_INDEX_NAMES: readonly string[] = ['uq_journal_entries_reversal
 
 const MIGRATION_8_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_8_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
 
+// ---------------------------------------------------------------------------
+// Migration v9 (T-S1B-04, arbitrages du propriétaire sur le grand livre)
+//
+// Les migrations v1 à v8 sont IMMUABLES (empreintes figées par test) : tout passe ici. Une instruction PostgreSQL par instruction
+// SQLite, même rang, dans `postgresOverrides` ; une instruction qui n'a pas d'objet côté PostgreSQL y devient `SELECT 1`.
+// a. Ligne : `prevent_posted_lines_mutation_update` (remplacé) refuse en plus TOUT changement d'`entry_id`, quelle que soit la pièce
+//    (jamais de déplacement de ligne) ; un déplacement qui implique une pièce POSTED garde le texte « ligne POSTED » de la v3,
+//    un déplacement entre brouillons porte `CGNC_LINE_ENTRY_IMMUTABLE`. `prevent_direct_posted_insert` (v3) est conservé et
+//    testé de nouveau. PASSAGE À POSTED : le moteur fait DRAFT, REVISEE_CYCLE puis POSTED (`UPDATE ... AND status = 'REVISEE_CYCLE'`),
+//    mais le trigger de scellement accepte encore le passage depuis DRAFT ou IA_PROPOSITION, et tous les jeux de test du dépôt
+//    (POST_ENTRY_SQL, v3 à v8) scellent depuis DRAFT : l'imposer en base casserait ces tests, donc la restriction reste portée par
+//    le moteur (écart documenté et épinglé par un test).
+// b. Exercice CLOSED étanche : `prevent_entry_update_in_closed_fiscal_year` (UPDATE de toute pièce non POSTED dont l'exercice est
+//    CLOSED, exercice inchangé) et `prevent_entry_delete_in_closed_fiscal_year` (DELETE), même texte que le refus d'INSERT de la
+//    v4 (conservé). Le changement d'`fiscal_year_id` reste refusé par `prevent_entry_fiscal_year_change` (v8, ancien ou nouvel
+//    exercice CLOSED compris : une pièce non POSTED ne change jamais d'exercice) ; une pièce POSTED est déjà refusée par
+//    `prevent_posted_entry_update`. Ces conditions sont DISJOINTES pour que le texte du refus ne dépende pas de l'ordre
+//    d'exécution des triggers (SQLite : l'ordre de création ; PostgreSQL : l'ordre alphabétique). La montée monotone
+//    `pii_restricted_flag` 0 vers 1 (DSAR, v4 et v6) reste admise sur une pièce POSTED d'un exercice CLOSED : choix documenté.
+//    `prevent_closed_fiscal_year_update` (v4) refuse déjà tout UPDATE d'un exercice CLOSED (donc toute réouverture).
+// c. Caisse 5161 : colonne `cgnc_accounts.posted_balance_cents` (somme débit moins crédit des lignes des pièces POSTED, sens
+//    unique quel que soit `normal_balance`, comme le solde de caisse de la v3 : `SUM(debit_cents - credit_cents)`), CHECK
+//    `account_number NOT LIKE '5161%' OR posted_balance_cents >= 0`. SQLite ne peut pas ajouter un CHECK multi-colonnes à une
+//    table existante sans la reconstruire : la colonne est ajoutée (CHECK d'entier strict en ligne), le CHECK 5161 est porté par
+//    deux triggers qui lèvent le texte PostgreSQL d'une contrainte nommée (même choix que la v4). Reconstruire `cgnc_accounts`
+//    (référencée par les lignes) coûterait plus et n'apporterait rien. PostgreSQL : ADD CONSTRAINT NOT VALID puis VALIDATE avant le
+//    backfill. Le scellement met à jour le solde par `SET posted_balance_cents = posted_balance_cents + delta` : sous PostgreSQL
+//    en READ COMMITTED, la fonction verrouille d'abord la ligne du compte (`SELECT ... FOR UPDATE`, ordre d'`id` croissant : pas
+//    d'interblocage), relit donc le solde VALIDÉ du scellement concurrent, refuse avec `CGNC_NEGATIVE_CASH_5161` si le solde d'un
+//    compte 5161x deviendrait négatif, puis incrémente. Le verrou consultatif de la v8 est CONSERVÉ, pris avant les verrous de
+//    ligne : il sérialise aussi le contrôle du total des comptes 5161, que le verrou de ligne d'un seul compte ne couvre pas, et le
+//    test à deux connexions de la v8 reste valable ; coût nul (même transaction, libération au COMMIT). Le backfill pose, pour
+//    les pièces déjà POSTED, le solde par compte ; une base v8 dont un compte 5161x est déjà négatif (le trigger v8 ne contrôlait
+//    que le total des comptes 5161) fait échouer la mise à niveau : anomalie à traiter avant, comme le doublon de contre-passation de la v8.
+// d. Contre-passation : `enforce_reversal_target_posted_insert` et `enforce_reversal_target_posted_update` exigent que la pièce visée
+//    par `reversal_of_entry_id` existe et soit POSTED (texte commun aux deux moteurs, au lieu de la clé étrangère propre à chaque
+//    moteur) ; l'auto-référence reste refusée par le CHECK d'origine. L'index UNIQUE partiel de la v8 est recréé à l'identique.
+// e. Types de pièce source : le CHECK de `journal_entries` accepte OPENING_BALANCE, VAT_DECLARATION_CENTRALIZATION et FX_REVALUATION
+//    en plus des huit valeurs d'origine. PostgreSQL : DROP puis ADD de la contrainte nommée `journal_entries_source_document_type_check`.
+//    SQLite ne modifie pas un CHECK : RECONSTRUCTION de `journal_entries` (copie de sauvegarde, DROP, CREATE, INSERT SELECT,
+//    DROP de la sauvegarde) dans le lot atomique du migrateur. Pourquoi elle est sûre : `PRAGMA defer_foreign_keys = ON` (seul
+//    PRAGMA de clés étrangères admis dans une transaction D1) diffère le contrôle des clés étrangères jusqu'au COMMIT ; la table
+//    est recréée sous son nom définitif (aucun RENAME : le RENAME est refusé par SQLite tant qu'une vue ou un trigger fait
+//    référence à la table absente, et il ré-écrirait des clés étrangères entrantes) et ses lignes réinsérées AVANT le COMMIT, ce
+//    qui lève les violations différées (les lignes enfants retrouvent leur parent). La vue de balance et les triggers qui
+//    référencent `journal_entries` (lignes, compte) sont supprimés puis recréés ; les triggers de `journal_entries` disparaissent
+//    avec la table et sont recréés dans le même ordre relatif, après la copie (sinon `prevent_direct_posted_insert` refuserait les
+//    pièces POSTED copiées). Leur texte est celui de la dernière version qui les a créés (aucune retouche). Les index sont recréés
+//    à l'identique ; ils ne figurent donc pas dans `indexNames` (aucun nouvel index). PostgreSQL n'a pas besoin de reconstruction.
+// ---------------------------------------------------------------------------
+export const TENANT_V9_TRIGGER_MESSAGES = {
+  lineEntryImmutable: 'CGNC_LINE_ENTRY_IMMUTABLE: Une ligne ne change jamais de pièce.',
+  reversalTarget: 'CGNC_REVERSAL_TARGET_INVALID: La pièce contre-passée doit exister et être POSTED.',
+  cashPostedBalanceCheck: 'new row for relation "cgnc_accounts" violates check constraint "cgnc_accounts_cash_5161_nonnegative_check"',
+} as const;
+
+const MESSAGES_V9 = TENANT_V9_TRIGGER_MESSAGES;
+
+const CASH_5161_CHECK_CONSTRAINT = 'cgnc_accounts_cash_5161_nonnegative_check';
+const SOURCE_TYPES_CHECK_CONSTRAINT = 'journal_entries_source_document_type_check';
+
+/** Colonnes de `journal_entries` dans l'ordre du DDL (copie explicite : la reconstruction ne dépend d'aucun `SELECT *`). */
+const JOURNAL_ENTRIES_COLUMNS = [
+  'id',
+  'fiscal_year_id',
+  'journal_id',
+  'sequence_number',
+  'entry_reference',
+  'entry_date',
+  'validated_at',
+  'review_cycle',
+  'status',
+  'source_document_type',
+  'invoice_id',
+  'dgi_clearance_uuid',
+  'partner_id',
+  'reversal_of_entry_id',
+  'total_debit_cents',
+  'total_credit_cents',
+  'previous_entry_hash',
+  'entry_hash',
+  'pii_restricted_flag',
+].join(', ');
+
+const NOOP_PG = 'SELECT 1';
+
+/** Texte SQLite du trigger tel que sa dernière version (v8, v6, v4, puis v3) le crée. */
+function latestSqliteTrigger(name: string): string {
+  const found =
+    [...MIGRATION_8_ITEMS, ...MIGRATION_6_TRIGGERS, ...MIGRATION_4_ITEMS].find((item) => item.trigger === name)?.sqlite ??
+    MIGRATION_3_TRIGGERS.find((trigger) => trigger.name === name)?.sqlite;
+  if (found === undefined) {
+    throw new Error(`trigger SQLite introuvable dans les migrations v3 à v8 : ${name}`);
+  }
+  return found;
+}
+
+/** Recréation SQLite seule d'un trigger inchangé (la table ou la vue qui le portait a été supprimée) : rien à faire sous PostgreSQL. */
+function recreateSqliteTrigger(name: string): MigrationStatement {
+  return { sqlite: latestSqliteTrigger(name), postgres: NOOP_PG };
+}
+
+const LINE_PARENT_CHANGED_SQLITE = 'NEW.entry_id IS NOT OLD.entry_id';
+const LINE_PARENT_CHANGED_POSTGRES = 'NEW.entry_id IS DISTINCT FROM OLD.entry_id';
+const LINE_POSTED_REJECTION_SQLITE = `(${POSTED_ENTRY_OF('OLD.entry_id')} AND ${notMonotoneFlagRiseSqlite(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}) OR (${LINE_PARENT_CHANGED_SQLITE} AND ${POSTED_ENTRY_OF('NEW.entry_id')})`;
+const LINE_POSTED_REJECTION_POSTGRES = `(${POSTED_ENTRY_OF('OLD.entry_id')} AND ${notMonotoneFlagRisePostgres(JOURNAL_ENTRY_LINE_COLUMNS_EXCEPT_FLAG)}) OR (${LINE_PARENT_CHANGED_POSTGRES} AND ${POSTED_ENTRY_OF('NEW.entry_id')})`;
+
+/** a. Ligne : POSTED (ancienne ou nouvelle pièce) d'abord, sinon tout changement d'`entry_id`. */
+const LINES_UPDATE_TRIGGER_V9: MigrationStatement = {
+  trigger: 'prevent_posted_lines_mutation_update',
+  sqlite: `CREATE TRIGGER prevent_posted_lines_mutation_update
+BEFORE UPDATE ON journal_entry_lines
+FOR EACH ROW WHEN (${LINE_POSTED_REJECTION_SQLITE}) OR ${LINE_PARENT_CHANGED_SQLITE}
+BEGIN
+    SELECT CASE
+        WHEN ${LINE_POSTED_REJECTION_SQLITE} THEN RAISE(ABORT, '${MESSAGES.lineUpdate}')
+        ELSE RAISE(ABORT, '${MESSAGES_V9.lineEntryImmutable}')
+    END;
+END`,
+  postgres: postgresTrigger(
+    'prevent_posted_lines_mutation_update',
+    'UPDATE',
+    'journal_entry_lines',
+    null,
+    `    IF ${LINE_POSTED_REJECTION_POSTGRES} THEN
+${raisePg(MESSAGES.lineUpdate)}
+    ELSIF ${LINE_PARENT_CHANGED_POSTGRES} THEN
+${raisePg(MESSAGES_V9.lineEntryImmutable)}
+    END IF;
+    RETURN NEW;`,
+    '',
+    true,
+  ),
+};
+
+/** Delta d'une pièce sur un compte : débit moins crédit de ses lignes (définition du solde de caisse de la v3). */
+const ENTRY_DELTA_ON_ACCOUNT_SQLITE = (account: string): string =>
+  `(SELECT SUM(l.debit_cents - l.credit_cents) FROM journal_entry_lines l WHERE l.entry_id = NEW.id AND l.account_id = ${account})`;
+
+/** c. Scellement SQLite : corps de la v3 (équilibre, empreintes, total 5161), contrôle par compte, puis mise à jour atomique des soldes. */
+const CASH_TRIGGER_SQLITE_V9 = `CREATE TRIGGER enforce_balance_and_positive_cash_on_post
+BEFORE UPDATE ON journal_entries
+FOR EACH ROW WHEN OLD.status != 'POSTED' AND NEW.status = 'POSTED'
+BEGIN
+    SELECT CASE
+        WHEN (SELECT COALESCE(SUM(debit_cents), 0) FROM journal_entry_lines WHERE entry_id = NEW.id) != NEW.total_debit_cents
+          OR (SELECT COALESCE(SUM(credit_cents), 0) FROM journal_entry_lines WHERE entry_id = NEW.id) != NEW.total_credit_cents
+        THEN RAISE(ABORT, '${MESSAGES.unbalanced}')
+        WHEN NEW.entry_hash IS NULL OR NEW.previous_entry_hash IS NULL
+        THEN RAISE(ABORT, '${MESSAGES.missingHash}')
+        WHEN EXISTS (
+            SELECT 1 FROM journal_entry_lines jel
+            JOIN cgnc_accounts ca ON ca.id = jel.account_id
+            WHERE jel.entry_id = NEW.id AND ca.account_number LIKE '5161%' AND jel.credit_cents > 0
+        ) AND (
+            (SELECT COALESCE(SUM(jel2.debit_cents - jel2.credit_cents), 0)
+             FROM journal_entry_lines jel2
+             JOIN journal_entries je2 ON je2.id = jel2.entry_id
+             JOIN cgnc_accounts ca2 ON ca2.id = jel2.account_id
+             WHERE (je2.status = 'POSTED' OR je2.id = NEW.id) AND ca2.account_number LIKE '5161%') < 0
+        )
+        THEN RAISE(ABORT, '${MESSAGES.negativeCash}')
+        WHEN EXISTS (
+            SELECT 1 FROM cgnc_accounts ca3
+            WHERE ca3.account_number LIKE '5161%'
+              AND EXISTS (SELECT 1 FROM journal_entry_lines l3 WHERE l3.entry_id = NEW.id AND l3.account_id = ca3.id)
+              AND ca3.posted_balance_cents + ${ENTRY_DELTA_ON_ACCOUNT_SQLITE('ca3.id')} < 0
+        )
+        THEN RAISE(ABORT, '${MESSAGES.negativeCash}')
+    END;
+    UPDATE cgnc_accounts
+       SET posted_balance_cents = posted_balance_cents + ${ENTRY_DELTA_ON_ACCOUNT_SQLITE('cgnc_accounts.id')}
+     WHERE id IN (SELECT account_id FROM journal_entry_lines WHERE entry_id = NEW.id);
+END`;
+
+/** c. Scellement PostgreSQL : verrou consultatif (v8), puis verrou de ligne et incrément atomique par compte, comptes triés par `id`. */
+const CASH_TRIGGER_POSTGRES_V9 = postgresTrigger(
+  'enforce_balance_and_positive_cash_on_post',
+  'UPDATE',
+  'journal_entries',
+  `OLD.status <> 'POSTED' AND NEW.status = 'POSTED'`,
+  `    SELECT COALESCE(SUM(debit_cents), 0), COALESCE(SUM(credit_cents), 0) INTO lines_debit, lines_credit
+    FROM journal_entry_lines WHERE entry_id = NEW.id;
+    IF lines_debit <> NEW.total_debit_cents OR lines_credit <> NEW.total_credit_cents THEN
+${raisePg(MESSAGES.unbalanced)}
+    END IF;
+    IF NEW.entry_hash IS NULL OR NEW.previous_entry_hash IS NULL THEN
+${raisePg(MESSAGES.missingHash)}
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM journal_entry_lines jel
+        JOIN cgnc_accounts ca ON ca.id = jel.account_id
+        WHERE jel.entry_id = NEW.id AND ca.account_number LIKE '5161%' AND jel.credit_cents > 0
+    ) THEN
+        PERFORM pg_advisory_xact_lock(${CASH_5161_ADVISORY_LOCK});
+        SELECT COALESCE(SUM(jel2.debit_cents - jel2.credit_cents), 0) INTO cash_balance
+        FROM journal_entry_lines jel2
+        JOIN journal_entries je2 ON je2.id = jel2.entry_id
+        JOIN cgnc_accounts ca2 ON ca2.id = jel2.account_id
+        WHERE (je2.status = 'POSTED' OR je2.id = NEW.id) AND ca2.account_number LIKE '5161%';
+        IF cash_balance < 0 THEN
+${raisePg(MESSAGES.negativeCash)}
+        END IF;
+    END IF;
+    FOR account_delta IN
+        SELECT jel3.account_id AS account_id, ca3.account_number AS account_number, (SUM(jel3.debit_cents - jel3.credit_cents))::BIGINT AS delta
+        FROM journal_entry_lines jel3
+        JOIN cgnc_accounts ca3 ON ca3.id = jel3.account_id
+        WHERE jel3.entry_id = NEW.id
+        GROUP BY jel3.account_id, ca3.account_number
+        ORDER BY jel3.account_id
+    LOOP
+        SELECT posted_balance_cents INTO current_balance FROM cgnc_accounts WHERE id = account_delta.account_id FOR UPDATE;
+        IF account_delta.account_number LIKE '5161%' AND current_balance + account_delta.delta < 0 THEN
+${raisePg(MESSAGES.negativeCash)}
+        END IF;
+        UPDATE cgnc_accounts SET posted_balance_cents = posted_balance_cents + account_delta.delta WHERE id = account_delta.account_id;
+    END LOOP;
+    RETURN NEW;`,
+  `DECLARE
+    lines_debit BIGINT;
+    lines_credit BIGINT;
+    cash_balance BIGINT;
+    current_balance BIGINT;
+    account_delta RECORD;
+`,
+  true,
+);
+
+const CLOSED_FISCAL_YEAR_OF = (reference: string): string => `(SELECT status FROM fiscal_years WHERE id = ${reference}) = 'CLOSED'`;
+
+const REVERSAL_TARGET_REJECTED_SQLITE =
+  `NEW.reversal_of_entry_id IS NOT NULL AND NEW.reversal_of_entry_id IS NOT NEW.id AND (SELECT status FROM journal_entries WHERE id = NEW.reversal_of_entry_id) IS NOT 'POSTED'`;
+const REVERSAL_TARGET_REJECTED_POSTGRES =
+  `NEW.reversal_of_entry_id IS NOT NULL AND NEW.reversal_of_entry_id IS DISTINCT FROM NEW.id AND (SELECT status FROM journal_entries WHERE id = NEW.reversal_of_entry_id) IS DISTINCT FROM 'POSTED'`;
+
+const MIGRATION_9_ITEMS: readonly MigrationStatement[] = [
+  // c. Colonne, CHECK 5161 (triggers SQLite, contrainte nommée PostgreSQL) et backfill.
+  {
+    sqlite: `ALTER TABLE cgnc_accounts ADD COLUMN posted_balance_cents INTEGER NOT NULL DEFAULT 0 ${integerCheck('posted_balance_cents')}`,
+    postgres: 'ALTER TABLE cgnc_accounts ADD COLUMN posted_balance_cents BIGINT NOT NULL DEFAULT 0',
+  },
+  {
+    trigger: 'enforce_cash_5161_posted_balance_insert',
+    sqlite: `CREATE TRIGGER enforce_cash_5161_posted_balance_insert
+BEFORE INSERT ON cgnc_accounts
+FOR EACH ROW WHEN NEW.account_number LIKE '5161%' AND NEW.posted_balance_cents < 0
+BEGIN
+    ${raiseSqlite(MESSAGES_V9.cashPostedBalanceCheck)}
+END`,
+    postgres: `ALTER TABLE cgnc_accounts ADD CONSTRAINT ${CASH_5161_CHECK_CONSTRAINT} CHECK (account_number NOT LIKE '5161%' OR posted_balance_cents >= 0) NOT VALID`,
+  },
+  {
+    trigger: 'enforce_cash_5161_posted_balance_update',
+    sqlite: `CREATE TRIGGER enforce_cash_5161_posted_balance_update
+BEFORE UPDATE OF posted_balance_cents, account_number ON cgnc_accounts
+FOR EACH ROW WHEN NEW.account_number LIKE '5161%' AND NEW.posted_balance_cents < 0
+BEGIN
+    ${raiseSqlite(MESSAGES_V9.cashPostedBalanceCheck)}
+END`,
+    postgres: `ALTER TABLE cgnc_accounts VALIDATE CONSTRAINT ${CASH_5161_CHECK_CONSTRAINT}`,
+  },
+  {
+    sqlite: `UPDATE cgnc_accounts SET posted_balance_cents = COALESCE((SELECT SUM(jel.debit_cents - jel.credit_cents) FROM journal_entry_lines jel JOIN journal_entries je ON je.id = jel.entry_id WHERE jel.account_id = cgnc_accounts.id AND je.status = 'POSTED'), 0)`,
+    postgres: `UPDATE cgnc_accounts SET posted_balance_cents = COALESCE((SELECT (SUM(jel.debit_cents - jel.credit_cents))::BIGINT FROM journal_entry_lines jel JOIN journal_entries je ON je.id = jel.entry_id WHERE jel.account_id = cgnc_accounts.id AND je.status = 'POSTED'), 0)`,
+  },
+  // e. Reconstruction SQLite de journal_entries (clés étrangères différées, objets dépendants supprimés puis recréés).
+  { sqlite: 'PRAGMA defer_foreign_keys = ON', postgres: NOOP_PG },
+  { sqlite: `DROP VIEW ${TRIAL_BALANCE_VIEW_NAME}`, postgres: NOOP_PG },
+  { sqlite: 'DROP TRIGGER prevent_posted_lines_mutation_insert', postgres: NOOP_PG },
+  dropTrigger('prevent_posted_lines_mutation_update', 'journal_entry_lines'),
+  { sqlite: 'DROP TRIGGER prevent_posted_lines_mutation_delete', postgres: NOOP_PG },
+  { sqlite: 'DROP TRIGGER prevent_posted_account_renumbering', postgres: NOOP_PG },
+  { sqlite: 'CREATE TABLE journal_entries_backup AS SELECT * FROM journal_entries', postgres: NOOP_PG },
+  { sqlite: 'DROP TABLE journal_entries', postgres: `ALTER TABLE journal_entries DROP CONSTRAINT ${SOURCE_TYPES_CHECK_CONSTRAINT}` },
+  {
+    sqlite: createJournalEntriesSql(LEDGER_SOURCE_DOCUMENT_TYPES),
+    postgres: `ALTER TABLE journal_entries ADD CONSTRAINT ${SOURCE_TYPES_CHECK_CONSTRAINT} CHECK (source_document_type IN (${quoteList(LEDGER_SOURCE_DOCUMENT_TYPES)}))`,
+  },
+  {
+    sqlite: `INSERT INTO journal_entries (${JOURNAL_ENTRIES_COLUMNS}) SELECT ${JOURNAL_ENTRIES_COLUMNS} FROM journal_entries_backup`,
+    postgres: NOOP_PG,
+  },
+  { sqlite: 'DROP TABLE journal_entries_backup', postgres: NOOP_PG },
+  ...MIGRATION_3_INDEXES.filter(([name]) => name === 'idx_je_fy_status_seq').map(([, sql]): MigrationStatement => ({ sqlite: sql, postgres: NOOP_PG })),
+  { sqlite: 'CREATE UNIQUE INDEX uq_journal_entries_reversal_of ON journal_entries (reversal_of_entry_id) WHERE reversal_of_entry_id IS NOT NULL', postgres: NOOP_PG },
+  // Triggers de journal_entries recréés (ordre relatif de l'existant), inchangés sauf le scellement.
+  recreateSqliteTrigger('prevent_posted_entry_delete'),
+  recreateSqliteTrigger('prevent_direct_posted_insert'),
+  recreateSqliteTrigger('prevent_posted_entry_update'),
+  recreateSqliteTrigger('prevent_entry_insert_in_closed_fiscal_year'),
+  recreateSqliteTrigger('prevent_pii_flag_downgrade_journal_entries'),
+  { trigger: 'enforce_balance_and_positive_cash_on_post', sqlite: CASH_TRIGGER_SQLITE_V9, postgres: `DROP TRIGGER enforce_balance_and_positive_cash_on_post ON journal_entries;\n${CASH_TRIGGER_POSTGRES_V9}` },
+  recreateSqliteTrigger('prevent_post_in_closed_fiscal_year'),
+  recreateSqliteTrigger('prevent_entry_fiscal_year_change'),
+  // b. Exercice CLOSED étanche : UPDATE et DELETE d'une pièce non POSTED.
+  createGuardedTrigger(
+    'prevent_entry_update_in_closed_fiscal_year',
+    'UPDATE',
+    'journal_entries',
+    `OLD.status != 'POSTED' AND NEW.fiscal_year_id IS OLD.fiscal_year_id AND ${CLOSED_FISCAL_YEAR_OF('OLD.fiscal_year_id')}`,
+    `OLD.status <> 'POSTED' AND NEW.fiscal_year_id IS NOT DISTINCT FROM OLD.fiscal_year_id AND ${CLOSED_FISCAL_YEAR_OF('OLD.fiscal_year_id')}`,
+    MESSAGES_V4.closedFiscalYearEntryInsert,
+  ),
+  createGuardedTrigger(
+    'prevent_entry_delete_in_closed_fiscal_year',
+    'DELETE',
+    'journal_entries',
+    `OLD.status != 'POSTED' AND ${CLOSED_FISCAL_YEAR_OF('OLD.fiscal_year_id')}`,
+    `OLD.status <> 'POSTED' AND ${CLOSED_FISCAL_YEAR_OF('OLD.fiscal_year_id')}`,
+    MESSAGES_V4.closedFiscalYearEntryInsert,
+  ),
+  // d. Contre-passation : la pièce visée existe et est POSTED.
+  createGuardedTrigger(
+    'enforce_reversal_target_posted_insert',
+    'INSERT',
+    'journal_entries',
+    REVERSAL_TARGET_REJECTED_SQLITE,
+    REVERSAL_TARGET_REJECTED_POSTGRES,
+    MESSAGES_V9.reversalTarget,
+  ),
+  createGuardedTrigger(
+    'enforce_reversal_target_posted_update',
+    'UPDATE OF reversal_of_entry_id',
+    'journal_entries',
+    `NEW.reversal_of_entry_id IS NOT OLD.reversal_of_entry_id AND ${REVERSAL_TARGET_REJECTED_SQLITE}`,
+    `NEW.reversal_of_entry_id IS DISTINCT FROM OLD.reversal_of_entry_id AND ${REVERSAL_TARGET_REJECTED_POSTGRES}`,
+    MESSAGES_V9.reversalTarget,
+  ),
+  // Lignes, compte et vue recréés (a : le trigger d'UPDATE de ligne est remplacé).
+  recreateSqliteTrigger('prevent_posted_lines_mutation_delete'),
+  recreateSqliteTrigger('prevent_posted_lines_mutation_insert'),
+  LINES_UPDATE_TRIGGER_V9,
+  recreateSqliteTrigger('prevent_posted_account_renumbering'),
+  { sqlite: CREATE_TRIAL_BALANCE_VIEW, postgres: NOOP_PG },
+];
+
+const MIGRATION_9_STATEMENTS: readonly string[] = MIGRATION_9_ITEMS.map((item) => item.sqlite);
+
+const MIGRATION_9_TRIGGER_NAMES: readonly string[] = MIGRATION_9_ITEMS.flatMap((item) => (item.trigger === undefined ? [] : [item.trigger]));
+
+const MIGRATION_9_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_9_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
@@ -1735,7 +2101,9 @@ const MIGRATION_8_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
  * la v6 (drapeau pii_restricted_flag monotone sur les 5 tables porteuses) est AJOUTÉE sans toucher aux versions 1 à 5 ;
  * la v7 (Idempotency-Key 72 h, table `idempotency_keys`) est AJOUTÉE sans toucher aux versions 1 à 6 ;
  * la v8 (corrections G1 du grand livre : injection de ligne, exercice CLOSED, verrou de caisse, contre-passation unique, compte
- * porté par une pièce POSTED) est AJOUTÉE sans toucher aux versions 1 à 7.
+ * porté par une pièce POSTED) est AJOUTÉE sans toucher aux versions 1 à 7 ;
+ * la v9 (arbitrages du propriétaire : ligne immobile, exercice CLOSED étanche, solde de caisse 5161 en colonne, cible de
+ * contre-passation POSTED, types de pièce source étendus) est AJOUTÉE sans toucher aux versions 1 à 8.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -1814,6 +2182,18 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     indexNames: MIGRATION_8_INDEX_NAMES,
     triggerNames: MIGRATION_8_TRIGGER_NAMES,
     postgresOverrides: MIGRATION_8_POSTGRES_OVERRIDES,
+  },
+  {
+    version: 9,
+    name: 'tenant_part9_ledger_cash_balance_closed_year_source_types',
+    upSqlStatements: MIGRATION_9_STATEMENTS,
+    expectedSha256Hex: 'aadf6f86982f2068a02885f4c8ab05b230823b7979f00b7222dfff4107d3148f',
+    tableNames: [],
+    indexNames: [],
+    triggerNames: MIGRATION_9_TRIGGER_NAMES,
+    sqliteOnlyTriggerNames: ['enforce_cash_5161_posted_balance_insert', 'enforce_cash_5161_posted_balance_update'],
+    postgresConstraintNames: [CASH_5161_CHECK_CONSTRAINT],
+    postgresOverrides: MIGRATION_9_POSTGRES_OVERRIDES,
   },
 ];
 

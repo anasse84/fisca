@@ -15,7 +15,8 @@
  * Points non fixés par les spécifications, laissés en paramètres explicites et NON devinés :
  * 1. octets hachés pour `entry_hash` et `closing_hash` (`LedgerHasher`) ; Doc_02 et Doc_06 fixent seulement le chaînage par
  *    journal depuis GENESIS_HASH et le format SHA-256 hexadécimal ;
- * 2. `source_document_type` d'une écriture d'à-nouveaux : aucune valeur du CHECK ne la désigne (`generateOpeningJournal`).
+ * 2. `source_document_type` d'une écriture d'à-nouveaux : depuis la migration tenant v9, OPENING_BALANCE la désigne et c'est la
+ *    valeur par défaut de `generateOpeningJournal` (le paramètre reste admis pour une reprise explicite, hors REVERSAL).
  */
 import {
   JOURNAL_ENTRY_FSM,
@@ -284,8 +285,8 @@ export interface GenerateOpeningJournalInput {
   /** Journal de type OPENING (AN). */
   readonly journalId: string;
   readonly entryDate: string;
-  /** Aucune valeur du CHECK ne désigne un à-nouveau : paramètre explicite, voir l'en-tête du fichier. */
-  readonly sourceDocumentType: LedgerSourceDocumentType;
+  /** Type source de l'à-nouveau ; OPENING_BALANCE par défaut (CHECK étendu par la migration tenant v9), REVERSAL refusé. */
+  readonly sourceDocumentType?: LedgerSourceDocumentType;
 }
 
 export interface OpeningJournalGenerated {
@@ -727,8 +728,9 @@ export class ImmutableCgncLedgerEngine {
     assertIsoDate(next.startDate, 'nextFiscalYear.startDate');
     assertIsoDate(next.endDate, 'nextFiscalYear.endDate');
     assertIsoDate(input.entryDate, 'entryDate');
-    if (!includes(LEDGER_SOURCE_DOCUMENT_TYPES, input.sourceDocumentType) || input.sourceDocumentType === 'REVERSAL') {
-      throw invalid(`sourceDocumentType invalide pour un à-nouveau : ${String(input.sourceDocumentType)}.`);
+    const openingSourceType: LedgerSourceDocumentType = input.sourceDocumentType ?? 'OPENING_BALANCE';
+    if (!includes(LEDGER_SOURCE_DOCUMENT_TYPES, openingSourceType) || openingSourceType === 'REVERSAL') {
+      throw invalid(`sourceDocumentType invalide pour un à-nouveau : ${String(openingSourceType)}.`);
     }
     if (next.startDate > next.endDate || input.entryDate < next.startDate || input.entryDate > next.endDate) {
       throw invalid("l'écriture d'à-nouveaux doit être datée dans le nouvel exercice.");
@@ -786,7 +788,7 @@ export class ImmutableCgncLedgerEngine {
       fiscalYear: nextYear,
       entryDate: input.entryDate,
       reviewCycle: 'GENERAL',
-      sourceDocumentType: input.sourceDocumentType,
+      sourceDocumentType: openingSourceType,
       status: 'DRAFT',
       lines: prepared,
       invoiceId: null,

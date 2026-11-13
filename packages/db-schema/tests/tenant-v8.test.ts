@@ -156,7 +156,7 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
   const v8 = TENANT_MIGRATIONS[7];
 
   it('est la huitième migration ; les empreintes de v1 à v7 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(v8?.name).toBe('tenant_part8_g1_corrections_ledger_integrity');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -176,8 +176,9 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
     expect(v8?.tableNames).toEqual([]);
     expect(v8?.viewNames ?? []).toEqual([]);
     expect(v8?.sqliteOnlyTriggerNames ?? []).toEqual([]);
-    expect(TENANT_TRIGGER_NAMES.slice(-3)).toEqual(V8_TRIGGERS.slice(2));
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-3)).toEqual(V8_TRIGGERS.slice(2));
+    // La v9 ajoute ensuite 6 triggers au registre SQLite (4 sous PostgreSQL) : les trois nouveaux de la v8 les précèdent.
+    expect(TENANT_TRIGGER_NAMES.slice(-9, -6)).toEqual(V8_TRIGGERS.slice(2));
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-7, -4)).toEqual(V8_TRIGGERS.slice(2));
     expect(TENANT_INDEX_NAMES.at(-1)).toBe(REVERSAL_INDEX);
   });
 
@@ -256,9 +257,9 @@ describe('1. injection dans une pièce POSTED par UPDATE de journal_entry_lines.
     await expectEqualRows(`SELECT entry_id FROM journal_entry_lines WHERE id = 'je-posted-l1'`, [{ entry_id: 'je-posted' }]);
   });
 
-  it('déplacer une ligne de brouillon vers un autre brouillon reste accepté', async () => {
-    await runBoth(`UPDATE journal_entry_lines SET entry_id = 'je-draft2', line_number = 9 WHERE id = 'je-draft-l1'`);
-    await expectEqualRows(`SELECT entry_id, line_number FROM journal_entry_lines WHERE id = 'je-draft-l1'`, [{ entry_id: 'je-draft2', line_number: '9' }]);
+  it('déplacer une ligne de brouillon vers un autre brouillon : accepté par la v8, REFUSÉ depuis la v9 (arbitrage du propriétaire : jamais de déplacement de ligne, tests dans tenant-v9.test.ts)', async () => {
+    await failBoth(`UPDATE journal_entry_lines SET entry_id = 'je-draft2', line_number = 9 WHERE id = 'je-draft-l1'`, 'CGNC_LINE_ENTRY_IMMUTABLE: Une ligne ne change jamais de pièce.');
+    await expectEqualRows(`SELECT entry_id, line_number FROM journal_entry_lines WHERE id = 'je-draft-l1'`, [{ entry_id: 'je-draft', line_number: '1' }]);
   });
 
   it('flux légitime inchangé : modification libre d\'une ligne de brouillon, montée 0 vers 1 du drapeau sur POSTED, scellement ensuite', async () => {

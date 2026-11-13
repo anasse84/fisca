@@ -205,7 +205,7 @@ describe('migration v3 : grand livre CGNC (Doc_06 § 05) ajoutée sans toucher a
         }
       }
     }
-    expect(counted).toBe(24);
+    expect(counted).toBe(25);
   });
 
   it("aucune colonne de taux de TVA ni de prorata en pourcentage dans le grand livre ; fiscal_years garde les bps (D-04, D-10)", () => {
@@ -367,8 +367,11 @@ describe('journal_entries : statuts, contre-passation et contraintes de Doc_06 �
       insertRow(db, 'journal_entries', entryRow({ id: `je-c${index}`, sequence_number: index + 1, entry_reference: `C-${index}`, review_cycle: cycle }));
     }
     reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 50, entry_reference: 'X-50', review_cycle: 'RH' }), CHECK_FAILED);
+    // Depuis la v9, la pièce visée par une contre-passation existe et est POSTED.
+    insertRows(db, simpleEntry('je-orig', 200, 'jrn-vte', 'acc-3421', 'acc-7111', 100));
+    post(db, 'je-orig');
     for (const [index, kind] of LEDGER_SOURCE_DOCUMENT_TYPES.entries()) {
-      const reversal = kind === 'REVERSAL' ? { reversal_of_entry_id: 'je-c0' } : {};
+      const reversal = kind === 'REVERSAL' ? { reversal_of_entry_id: 'je-orig' } : {};
       insertRow(db, 'journal_entries', entryRow({ id: `je-t${index}`, sequence_number: 100 + index, entry_reference: `T-${index}`, source_document_type: kind, ...reversal }));
     }
     reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 99, entry_reference: 'X-99', source_document_type: 'MANUAL' }), CHECK_FAILED);
@@ -392,7 +395,7 @@ describe('journal_entries : statuts, contre-passation et contraintes de Doc_06 �
     reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 2, entry_reference: 'X', journal_id: 'ghost' }), FK_FAILED);
     reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 2, entry_reference: 'X', invoice_id: 'ghost' }), FK_FAILED);
     reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 2, entry_reference: 'X', partner_id: 'ghost' }), FK_FAILED);
-    reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 2, entry_reference: 'X', source_document_type: 'REVERSAL', reversal_of_entry_id: 'ghost' }), FK_FAILED);
+    reject(db, 'journal_entries', entryRow({ id: 'je-x', sequence_number: 2, entry_reference: 'X', source_document_type: 'REVERSAL', reversal_of_entry_id: 'ghost' }), /CGNC_REVERSAL_TARGET_INVALID/);
   });
 
   it('l\'empreinte entry_hash, quand elle existe, est un SHA-256 hexadécimal minuscule de 64 caractères', () => {

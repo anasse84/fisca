@@ -162,7 +162,7 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
   const v6 = TENANT_MIGRATIONS[5];
 
   it('est la sixième migration ; les empreintes de v1 à v5 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(v6?.name).toBe('tenant_part6_pii_flag_monotone_all_tables');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -182,8 +182,9 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
     expect(v6?.indexNames).toEqual([]);
     expect(v6?.viewNames ?? []).toEqual([]);
     expect(v6?.sqliteOnlyTriggerNames ?? []).toEqual([]);
-    expect(TENANT_TRIGGER_NAMES.slice(-8, -3)).toEqual([...V6_TRIGGERS]);
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-8, -3)).toEqual([...V6_TRIGGERS]);
+    // La v9 ajoute 6 triggers au registre SQLite (4 sous PostgreSQL) après les trois nouveaux de la v8.
+    expect(TENANT_TRIGGER_NAMES.slice(-14, -9)).toEqual([...V6_TRIGGERS]);
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-12, -7)).toEqual([...V6_TRIGGERS]);
     expect(TENANT_TABLE_NAMES).toHaveLength(26);
     expect(TENANT_INDEX_NAMES).toHaveLength(9);
   });

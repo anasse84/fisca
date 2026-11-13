@@ -699,7 +699,7 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
     it('journal d\'à-nouveaux : écriture équilibrée dans le NOUVEL exercice, classes 1 à 5 seulement, scellable par le circuit normal', async () => {
       const w = await setup();
       await ledgerOf2026(w);
-      const opening = { closedFiscalYearId: FY_2026.id, nextFiscalYear: { id: FY_2027.id, code: FY_2027.code, startDate: FY_2027.start, endDate: FY_2027.end }, journalId: 'jr-an', entryDate: '2027-01-01', sourceDocumentType: 'CUTOFF_OD' as const };
+      const opening = { closedFiscalYearId: FY_2026.id, nextFiscalYear: { id: FY_2027.id, code: FY_2027.code, startDate: FY_2027.start, endDate: FY_2027.end }, journalId: 'jr-an', entryDate: '2027-01-01' };
 
       expect((await failure(() => w.engine.generateOpeningJournal(w.aide, opening))).denialCode).toBe('RBAC_FORBIDDEN_FOR_AIDE_COMPTABLE');
       expect((await failure(() => w.engine.generateOpeningJournal(fresh(w, w.oec), opening))).code).toBe('LEDGER_FISCAL_YEAR_NOT_CLOSED');
@@ -719,7 +719,7 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
       await w.engine.beginFiscalYearClosing(w.chef, { fiscalYearId: FY_2026.id, idempotencyKey: w.key() });
       await w.engine.closeFiscalYear(fresh(w, w.oec), { fiscalYearId: FY_2026.id, idempotencyKey: w.key() });
 
-      const opening = { closedFiscalYearId: FY_2026.id, nextFiscalYear: { id: FY_2027.id, code: FY_2027.code, startDate: FY_2027.start, endDate: FY_2027.end }, journalId: 'jr-an', entryDate: '2027-01-01', sourceDocumentType: 'CUTOFF_OD' as const };
+      const opening = { closedFiscalYearId: FY_2026.id, nextFiscalYear: { id: FY_2027.id, code: FY_2027.code, startDate: FY_2027.start, endDate: FY_2027.end }, journalId: 'jr-an', entryDate: '2027-01-01' };
       const generated = await w.engine.generateOpeningJournal(fresh(w, w.oec), opening);
       expect(generated).toMatchObject({ fiscalYearId: FY_2027.id, totalDebitCents: 1120000, lineCount: 6 });
 
@@ -741,8 +741,12 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
       const debit = lines.reduce((sum, l) => sum + BigInt(l.debit_cents), 0n);
       const credit = lines.reduce((sum, l) => sum + BigInt(l.credit_cents), 0n);
       expect(debit).toBe(credit);
-      const [entry] = await w.rows<{ status: string; fiscal_year_id: string; journal_id: string }>('SELECT status, fiscal_year_id, journal_id FROM journal_entries WHERE id = ?', [generated.entryId]);
-      expect(entry).toEqual({ status: 'DRAFT', fiscal_year_id: FY_2027.id, journal_id: 'jr-an' });
+      const [entry] = await w.rows<{ status: string; fiscal_year_id: string; journal_id: string; source_document_type: string }>(
+        'SELECT status, fiscal_year_id, journal_id, source_document_type FROM journal_entries WHERE id = ?',
+        [generated.entryId],
+      );
+      // v9 : le type source par défaut d'un à-nouveau est OPENING_BALANCE (plus de paramètre obligatoire détourné vers CUTOFF_OD).
+      expect(entry).toEqual({ status: 'DRAFT', fiscal_year_id: FY_2027.id, journal_id: 'jr-an', source_document_type: 'OPENING_BALANCE' });
 
       await w.engine.visaCycle(w.chef, { entryId: generated.entryId, idempotencyKey: w.key() });
       await w.engine.sealEntry(fresh(w, w.oec), { entryId: generated.entryId, idempotencyKey: w.key() });
@@ -754,6 +758,33 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
       expect(Number(balance[0]?.opening_credit_cents)).toBe(1120000);
 
       expect((await failure(() => w.engine.generateOpeningJournal(fresh(w, w.oec), opening))).code).toBe('LEDGER_OPENING_ALREADY_GENERATED');
+    });
+
+    it('journal d\'à-nouveaux : le type source reste paramétrable (CUTOFF_OD conservé), REVERSAL et une valeur inconnue sont refusés avant toute écriture', async () => {
+      const w = await setup();
+      await ledgerOf2026(w);
+      await postEntry(w, draftInput({ journalId: 'jr-od', sourceDocumentType: 'CUTOFF_OD', initialState: 'DRAFT', lines: [L('71110000', 100000, 0), L('11910000', 0, 100000)] }));
+      await w.engine.beginFiscalYearClosing(w.chef, { fiscalYearId: FY_2026.id, idempotencyKey: w.key() });
+      await w.engine.closeFiscalYear(fresh(w, w.oec), { fiscalYearId: FY_2026.id, idempotencyKey: w.key() });
+      const base = { closedFiscalYearId: FY_2026.id, nextFiscalYear: { id: FY_2027.id, code: FY_2027.code, startDate: FY_2027.start, endDate: FY_2027.end }, journalId: 'jr-an', entryDate: '2027-01-01' };
+      expect((await failure(() => w.engine.generateOpeningJournal(fresh(w, w.oec), { ...base, sourceDocumentType: 'REVERSAL' }))).code).toBe('LEDGER_INVALID_INPUT');
+      // Valeur volontairement hors de la liste, liée en paramètre pour prouver le refus à l'exécution.
+      const unknownType = 'MANUAL' as unknown as 'REVERSAL';
+      expect((await failure(() => w.engine.generateOpeningJournal(fresh(w, w.oec), { ...base, sourceDocumentType: unknownType }))).code).toBe('LEDGER_INVALID_INPUT');
+      const [none] = await w.rows<{ n: number }>(`SELECT COUNT(*) AS n FROM fiscal_years WHERE id = ?`, [FY_2027.id]);
+      expect(Number(none?.n)).toBe(0);
+      const generated = await w.engine.generateOpeningJournal(fresh(w, w.oec), { ...base, sourceDocumentType: 'CUTOFF_OD' });
+      const [entry] = await w.rows<{ source_document_type: string }>('SELECT source_document_type FROM journal_entries WHERE id = ?', [generated.entryId]);
+      expect(entry?.source_document_type).toBe('CUTOFF_OD');
+    });
+
+    it('createDraft accepte VAT_DECLARATION_CENTRALIZATION, FX_REVALUATION et OPENING_BALANCE (CHECK étendu par la v9), sur SQLite comme sur PostgreSQL', async () => {
+      const w = await setup();
+      for (const sourceDocumentType of ['VAT_DECLARATION_CENTRALIZATION', 'FX_REVALUATION', 'OPENING_BALANCE'] as const) {
+        const created = await w.engine.createDraft(w.aide, draftInput({ journalId: 'jr-od', sourceDocumentType }));
+        const [row] = await w.rows<{ source_document_type: string }>('SELECT source_document_type FROM journal_entries WHERE id = ?', [created.entryId]);
+        expect(row?.source_document_type).toBe(sourceDocumentType);
+      }
     });
   });
 });

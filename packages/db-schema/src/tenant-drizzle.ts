@@ -294,6 +294,8 @@ export const cgncAccounts = sqliteTable('cgnc_accounts', {
   normalBalance: text('normal_balance', { enum: CGNC_NORMAL_BALANCES }).notNull(),
   isReconcilable: integer('is_reconcilable').notNull().default(0),
   vatRegimeRole: text('vat_regime_role', { enum: CGNC_VAT_REGIME_ROLES }).notNull().default('NONE'),
+  /** Solde des pièces POSTED (débit moins crédit), v9 : tenu par le trigger de scellement, CHECK >= 0 sur les comptes 5161. */
+  postedBalanceCents: integer('posted_balance_cents').notNull().default(0),
 });
 
 export const journalEntries = sqliteTable(
