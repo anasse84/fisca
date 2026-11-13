@@ -18,8 +18,10 @@ import {
   T0_MS,
   USER_1,
   USER_2,
+  createFakeMandates,
   createFakeMemberships,
   createFakeTenants,
+  grantMandate,
   createTestJwt,
   grant,
   type TestJwt,
@@ -38,12 +40,14 @@ beforeAll(async () => {
 interface Harness {
   readonly app: Hono<PipelineEnv>;
   readonly memberships: ReturnType<typeof createFakeMemberships>;
+  readonly mandates: ReturnType<typeof createFakeMandates>;
   readonly tenants: ReturnType<typeof createFakeTenants>;
   readonly seen: { tenant: TenantContext | undefined };
 }
 
-function harness(boundCompanyId: string | null = null, policyFor: (path: string) => RoutePolicy = () => HUMAN): Harness {
+function harness(boundCompanyId: string | null = null, policyFor: (path: string) => RoutePolicy = () => HUMAN, withMandates = true): Harness {
   const memberships = createFakeMemberships();
+  const mandates = createFakeMandates();
   grant(memberships, USER_1, COMPANY_A, 'CHEF_MISSION');
   const tenants = createFakeTenants([COMPANY_A, COMPANY_B]);
   const authenticator = createAccessTokenAuthenticator({ verify: (token) => jwt.verify(token, NOW_SEC) });
@@ -58,13 +62,13 @@ function harness(boundCompanyId: string | null = null, policyFor: (path: string)
       },
     },
   }));
-  app.use('*', createTenantRouter({ routePolicy: (request) => policyFor(request.path), memberships, tenants }));
+  app.use('*', createTenantRouter({ routePolicy: (request) => policyFor(request.path), memberships, ...(withMandates ? { mandates } : {}), tenants }));
   app.all('/api/x', (c) => {
     seen.tenant = c.get('tenant');
     return c.json({ ok: true });
   });
   app.all('/api/free', (c) => c.json({ tenant: c.get('tenant') === undefined }));
-  return { app, memberships, tenants, seen };
+  return { app, memberships, mandates, tenants, seen };
 }
 
 async function bearer(userId: string = USER_1): Promise<Record<string, string>> {
@@ -129,7 +133,7 @@ describe('TenantRouter : sélection et résolution du dossier', () => {
     const { app, tenants } = harness();
     const headers = await bearer();
     const forbidden = await app.request('/api/x', { headers: { ...headers, [COMPANY_ID_HEADER]: COMPANY_B } });
-    const unknown = await app.request('/api/x', { headers: { ...headers, [COMPANY_ID_HEADER]: 'soc-inexistante' } });
+    const unknown = await app.request('/api/x', { headers: { ...headers, [COMPANY_ID_HEADER]: '018f3b5e-7c2a-7d3e-8a1b-0000000000ff' } });
     expect(forbidden.status).toBe(403);
     expect(unknown.status).toBe(403);
     const a = await forbidden.json();
@@ -206,15 +210,60 @@ describe('TenantRouter : sélection et résolution du dossier', () => {
     expect(memberships.calls).toHaveLength(0);
   });
 
-  it("honore un mandat actif et refuse un mandat révoqué (résolveur d'appartenances et de mandats)", async () => {
-    const { app, memberships, seen } = harness();
-    grant(memberships, USER_2, COMPANY_B, 'EXPERT_COMPTABLE_OEC', { accessKind: 'MANDATE', organizationId: 'org-client' });
+  it("honore un mandat actif et refuse un mandat révoqué (port MandateResolver)", async () => {
+    const { app, mandates, seen } = harness();
+    grantMandate(mandates, USER_2, COMPANY_B, 'EXPERT_COMPTABLE_OEC', { organizationId: 'org-client' });
     const ok = await app.request('/api/x', { headers: { ...(await bearer(USER_2)), [COMPANY_ID_HEADER]: COMPANY_B } });
     expect(ok.status).toBe(200);
-    expect(seen.tenant).toMatchObject({ accessKind: 'MANDATE', organizationId: 'org-client' });
-    memberships.grants.delete(`${USER_2}|${COMPANY_B}`);
+    expect(seen.tenant).toMatchObject({ accessKind: 'MANDATE', organizationId: 'org-client', role: 'EXPERT_COMPTABLE_OEC' });
+    mandates.mandates.delete(`${USER_2}|${COMPANY_B}`);
     const revoked = await app.request('/api/x', { headers: { ...(await bearer(USER_2)), [COMPANY_ID_HEADER]: COMPANY_B } });
     expect(revoked.status).toBe(403);
+  });
+
+  it('échec fermé : sans résolveur de mandat, un accès cabinet est refusé (403 identique à un dossier inconnu)', async () => {
+    const { app, mandates, tenants } = harness(null, () => HUMAN, false);
+    grantMandate(mandates, USER_2, COMPANY_B);
+    const response = await app.request('/api/x', { headers: { ...(await bearer(USER_2)), [COMPANY_ID_HEADER]: COMPANY_B } });
+    expect(response.status).toBe(403);
+    expect((await problemOf(response)).errorCode).toBe('ABAC_TENANT_OUT_OF_SCOPE');
+    expect(tenants.requested).toHaveLength(0);
+  });
+
+  it('le résolveur d\'appartenances ne peut pas conférer un mandat : accessKind MANDATE est ignoré', async () => {
+    const { app, memberships, mandates } = harness();
+    grant(memberships, USER_2, COMPANY_B, 'EXPERT_COMPTABLE_OEC', { accessKind: 'MANDATE' });
+    const response = await app.request('/api/x', { headers: { ...(await bearer(USER_2)), [COMPANY_ID_HEADER]: COMPANY_B } });
+    expect(response.status).toBe(403);
+    expect(mandates.calls).toEqual([{ userId: USER_2, companyId: COMPANY_B }]);
+  });
+
+  it("l'appartenance directe prévaut : le résolveur de mandat n'est pas interrogé", async () => {
+    const { app, mandates, seen } = harness();
+    const response = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: COMPANY_A } });
+    expect(response.status).toBe(200);
+    expect(seen.tenant?.accessKind).toBe('MEMBERSHIP');
+    expect(mandates.calls).toHaveLength(0);
+  });
+
+  it('résolveur de mandat en panne : 503 sans détail', async () => {
+    const { app, mandates } = harness();
+    mandates.failing = true;
+    const response = await app.request('/api/x', { headers: { ...(await bearer(USER_2)), [COMPANY_ID_HEADER]: COMPANY_B } });
+    const text = await response.text();
+    expect(response.status).toBe(503);
+    expect(text).not.toContain('tenant_key_grants');
+  });
+
+  it("refuse à la frontière HTTP un X-Fisca-Company-Id qui n'est pas un UUIDv7 (400, base jamais ouverte)", async () => {
+    const { app, tenants, memberships } = harness();
+    for (const bad of ['soc-alpha', '018f3b5e-7c2a-4d3e-8a1b-00000000a001', '018f3b5e7c2a7d3e8a1b00000000a001']) {
+      const response = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: bad } });
+      expect(response.status).toBe(400);
+      expect((await problemOf(response)).errorCode).toBe('COMPANY_ID_INVALID');
+    }
+    expect(tenants.requested).toHaveLength(0);
+    expect(memberships.calls).toHaveLength(0);
   });
 });
 

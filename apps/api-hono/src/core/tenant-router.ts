@@ -10,6 +10,7 @@
 import { createMiddleware } from 'hono/factory';
 import { SessionJwtError, type AccessTokenClaims, type RoleCode } from '@fisca/auth-rbac';
 import { InfrastructureError, assertValidCompanyId, type TenantSqlDriver } from '@fisca/shared-types';
+import type { MandateResolver } from './mandate-resolver.ts';
 import {
   AUTH_REQUIRED_PROBLEM,
   TENANT_OUT_OF_SCOPE_PROBLEM,
@@ -20,6 +21,8 @@ import {
 } from './problem-details.ts';
 
 export const COMPANY_ID_HEADER = 'X-Fisca-Company-Id' as const;
+/** Doc_07 § 01 : `X-Fisca-Company-Id` est l'UUIDv7 du dossier, validé à la frontière HTTP (shared-types garde son format large en interne). */
+const COMPANY_ID_UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const BEARER_PATTERN = /^Bearer\s+(\S+)$/i;
 /** Préfixe des mfa_challenge_token (packages/auth-rbac/src/auth-2fa.ts) : jamais une session. */
 const MFA_CHALLENGE_PREFIX = 'fmc1';
@@ -35,6 +38,8 @@ export interface AuthenticatedActor {
   readonly sessionId: string | null;
   /** Dossier auquel le jeton est lié (jeton MCP / agent) ; null pour une session humaine. */
   readonly boundCompanyId: string | null;
+  /** Claim `mfa_verified_at` du jeton (Step-Up 300 s) ; absent ou null si aucun second facteur n'a été validé. */
+  readonly mfaVerifiedAtEpochSec?: number | null;
 }
 
 /** Port d'authentification : renvoie null pour toute authentification absente, invalide, expirée ou non-session. */
@@ -58,8 +63,9 @@ export interface MembershipAccess {
 }
 
 /**
- * Appartenances (`organization_memberships`) et mandats actifs (révoqués exclus) de l'utilisateur. Renvoie null si l'utilisateur
- * n'a aucun accès à ce dossier, qu'il existe ou non : le routeur ne doit jamais distinguer les deux cas.
+ * Appartenances DIRECTES (`organization_memberships`) de l'utilisateur. Les mandats OEC passent par `MandateResolver`
+ * (décision du pilote, T-S1B-12) : une réponse `accessKind: 'MANDATE'` de ce port est ignorée. Renvoie null si l'utilisateur
+ * n'a aucune appartenance à ce dossier, qu'il existe ou non : le routeur ne doit jamais distinguer les deux cas.
  */
 export interface MembershipResolver {
   resolveAccess(query: { readonly userId: string; readonly companyId: string }): Promise<MembershipAccess | null>;
@@ -124,7 +130,7 @@ export function createAccessTokenAuthenticator(verifier: AccessTokenVerifier): S
       }
       try {
         const claims = await verifier.verify(token);
-        return { userId: claims.sub, sessionId: claims.sid, boundCompanyId: null };
+        return { userId: claims.sub, sessionId: claims.sid, boundCompanyId: null, mfaVerifiedAtEpochSec: claims.mfaVerifiedAtEpochSec };
       } catch (error) {
         if (error instanceof SessionJwtError) {
           return null;
@@ -250,6 +256,8 @@ async function selectorViolation(request: { readonly method: string; readonly ur
 export interface TenantRouterDeps {
   readonly routePolicy: RoutePolicyResolver;
   readonly memberships: MembershipResolver;
+  /** Absent : échec fermé, tout accès cabinet (mandat) est refusé. */
+  readonly mandates?: MandateResolver;
   readonly tenants: TenantDatabaseProvider;
 }
 
@@ -298,6 +306,9 @@ export function createTenantRouter(deps: TenantRouterDeps) {
       companyId = header;
     }
     try {
+      if (policy.audience !== 'AI_MCP' && !COMPANY_ID_UUID_V7.test(companyId)) {
+        return respondProblem(c, COMPANY_ID_INVALID);
+      }
       assertValidCompanyId(companyId);
     } catch {
       return respondProblem(c, policy.audience === 'AI_MCP' ? TENANT_OUT_OF_SCOPE_PROBLEM : COMPANY_ID_INVALID);
@@ -305,7 +316,12 @@ export function createTenantRouter(deps: TenantRouterDeps) {
 
     let access: MembershipAccess | null;
     try {
-      access = await deps.memberships.resolveAccess({ userId: actor.userId, companyId });
+      const direct = await deps.memberships.resolveAccess({ userId: actor.userId, companyId });
+      access = direct !== null && direct.accessKind === 'MEMBERSHIP' ? direct : null;
+      if (access === null && deps.mandates !== undefined) {
+        const mandate = await deps.mandates.resolveMandate({ userId: actor.userId, companyId });
+        access = mandate === null ? null : { ...mandate, accessKind: 'MANDATE' };
+      }
     } catch {
       return respondProblem(c, TENANT_UNAVAILABLE_PROBLEM);
     }

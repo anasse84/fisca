@@ -121,6 +121,11 @@ export async function openSqliteBackend(): Promise<LedgerBackend> {
   return { name: 'sqlite', driver };
 }
 
+/** Base SQLite vide (aucune migration) : sert au plan de contrôle des tests, migré par l'appelant. */
+export function openBareSqliteDriver(tenantId: string): TenantSqlDriver {
+  return createD1TenantDriver(tenantId, new LiteD1(new DatabaseSync(':memory:')));
+}
+
 /** PostgreSQL 16 réel : un schéma temporaire par instance, supprimé par `close`. Un pool permet de vraies connexions concurrentes. */
 export class PostgresHarness {
   readonly schema = `fisca_led_${randomBytes(6).toString('hex')}`;

@@ -16,6 +16,7 @@ import {
   type InternalErrorReport,
   type TraceContext,
 } from './problem-details.ts';
+import type { MandateResolver } from './mandate-resolver.ts';
 import {
   createAuthenticationMiddleware,
   createTenantRouter,
@@ -30,6 +31,8 @@ export interface RequestPipelineDeps {
   readonly authenticator: SessionAuthenticator;
   readonly routePolicy: RoutePolicyResolver;
   readonly memberships: MembershipResolver;
+  /** Absent : échec fermé, aucun accès cabinet (mandat OEC). */
+  readonly mandates?: MandateResolver;
   readonly tenants: TenantDatabaseProvider;
   readonly entitlements: { readonly source: EntitlementSource; readonly kv: FastKv; readonly cacheTtlSec: number };
   readonly idempotencyStore: IdempotencyStore;
@@ -67,7 +70,12 @@ export function createRequestPipeline(deps: RequestPipelineDeps): RequestPipelin
     { name: 'authentication', handler: createAuthenticationMiddleware({ authenticator: deps.authenticator }) },
     {
       name: 'tenant-router',
-      handler: createTenantRouter({ routePolicy: deps.routePolicy, memberships: deps.memberships, tenants: deps.tenants }),
+      handler: createTenantRouter({
+        routePolicy: deps.routePolicy,
+        memberships: deps.memberships,
+        ...(deps.mandates === undefined ? {} : { mandates: deps.mandates }),
+        tenants: deps.tenants,
+      }),
     },
     {
       name: 'entitlement-guard',

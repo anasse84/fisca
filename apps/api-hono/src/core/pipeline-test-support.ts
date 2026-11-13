@@ -12,10 +12,13 @@ import {
 } from '@fisca/auth-rbac';
 import type { BatchResult, TenantSqlDriver } from '@fisca/shared-types';
 import type { EntitlementRows, EntitlementSource, FastKv } from './entitlement-guard.ts';
+import type { MandateAccess, MandateResolver } from './mandate-resolver.ts';
 import type { MembershipAccess, MembershipResolver, TenantDatabaseProvider } from './tenant-router.ts';
 
-export const COMPANY_A = 'soc-alpha';
-export const COMPANY_B = 'soc-beta';
+/** Doc_07 § 01 : `X-Fisca-Company-Id` est un UUIDv7 (validé à la frontière HTTP). */
+export const COMPANY_A = '018f3b5e-7c2a-7d3e-8a1b-00000000a001';
+export const COMPANY_B = '018f3b5e-7c2a-7d3e-8a1b-00000000b002';
+export const COMPANY_C = '018f3b5e-7c2a-7d3e-8a1b-00000000c003';
 export const ORG_1 = 'org-1';
 export const USER_1 = 'user-1';
 export const USER_2 = 'user-2';
@@ -126,6 +129,38 @@ export function grant(
     planCode: 'PLAN_TEST',
     ...overrides,
   });
+}
+
+/**
+ * Pilote SIMULÉ du port `MandateResolver` (tests uniquement) : mandats actifs en mémoire, révocation par suppression.
+ * Jamais câblé en production, où l'absence de résolveur refuse tout accès cabinet.
+ */
+export interface FakeMandates extends MandateResolver {
+  readonly mandates: Map<string, MandateAccess>;
+  readonly calls: { userId: string; companyId: string }[];
+  failing: boolean;
+}
+
+export function createFakeMandates(): FakeMandates {
+  const mandates = new Map<string, MandateAccess>();
+  const calls: { userId: string; companyId: string }[] = [];
+  const resolver: FakeMandates = {
+    mandates,
+    calls,
+    failing: false,
+    resolveMandate: async (query) => {
+      calls.push({ userId: query.userId, companyId: query.companyId });
+      if (resolver.failing) {
+        throw new Error('tenant_key_grants injoignable (select * from tenant_key_grants)');
+      }
+      return mandates.get(membershipKey(query.userId, query.companyId)) ?? null;
+    },
+  };
+  return resolver;
+}
+
+export function grantMandate(mandates: FakeMandates, userId: string, companyId: string, role: RoleCode = 'EXPERT_COMPTABLE_OEC', overrides: Partial<MandateAccess> = {}): void {
+  mandates.mandates.set(membershipKey(userId, companyId), { organizationId: 'org-client', role, planCode: 'PLAN_TEST', ...overrides });
 }
 
 export interface FakeTenants extends TenantDatabaseProvider {
