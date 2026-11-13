@@ -47,13 +47,15 @@ Ce fil est piloté : tu n'y programmes aucun rappel et tu n'ouvres aucun autre f
 ## 4. Le tick
 
 ```bash
-# 1. Backlog : appelle GetTable (mode full) sur fisca_master_backlog et enregistre le résultat tel quel
-#    dans /agent/workspace/backlog.json (si le résultat a été écrit dans un fichier, donne ce chemin).
+# 1. Backlog : appelle GetTable (mode full) sur fisca_master_backlog. Le résultat, volumineux, est écrit
+#    automatiquement dans un fichier : BACKLOG=$(ls -t /agent/large_tool_results/GetTable-* | head -1)
+#    S'il t'est rendu directement, écris avec Write un tableau JSON des 132 lignes réduites aux champs
+#    task_id, session_id, assigned_agent, status, depends_on dans /agent/workspace/backlog.json.
 # 2. Branches réellement fusionnées (la vérité vient de git, pas des statuts) :
 git fetch --prune origin   # par le skill fisca-github-repo-access
 MERGED=$(git branch -r --merged origin/main | sed 's# *origin/##' | grep '^feat/' | paste -sd, -)
 # 3. Plan :
-node docs/orchestration/reference/pilot-status.mjs --backlog /agent/workspace/backlog.json \
+node docs/orchestration/reference/pilot-status.mjs --backlog "$BACKLOG" \
   --scopes .meta/session-scopes.json --merged-branches "$MERGED" \
   --running "<sessions dont la voie travaille encore>" --completed "<sessions dont la voie vient de finir un tour>" \
   --state /agent/workspace/.fisca-pilot-state.json   # ajoute --s5 seulement si le lancement dit RELEASE S5 : OUI
