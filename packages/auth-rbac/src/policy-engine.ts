@@ -100,6 +100,17 @@ const LEDGER_WRITE_ACTIONS: ReadonlySet<PermissionAction> = new Set<PermissionAc
   'LEDGER_POST_IMMUTABLE',
 ]);
 
+/**
+ * Actions que la matrice RBAC accorde à un rôle (hors contrôles ABAC/SoD).
+ * Renvoie une copie fraîche à chaque appel : la matrice interne reste immuable.
+ */
+export function permissionsOfRole(role: RoleCode): ReadonlySet<PermissionAction> {
+  if (!Object.hasOwn(ROLE_PERMISSIONS, role)) {
+    return new Set<PermissionAction>();
+  }
+  return new Set<PermissionAction>(ROLE_PERMISSIONS[role]);
+}
+
 export type OrgPlanSegment = 'DIRECT_PME' | 'FIDUCIAIRE' | 'ENTERPRISE';
 export type SupplierRibStatus = 'VERIFIED' | 'ALERTE_RIB_DAF';
 
