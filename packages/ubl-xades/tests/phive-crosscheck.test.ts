@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { generateUblInvoiceXml, KNOWN_PHIVE_DEVIATION_RULE_IDS, type UblInvoiceInput } from '../src/index.ts';
+import { generateUblInvoiceXml, KNOWN_PHIVE_DEVIATION_RULE_IDS, signUblXades, type UblInvoiceInput } from '../src/index.ts';
+import { createTestIdentity, createTestTimestampProvider } from './support/test-pki.ts';
 import { buildFullInput, buildInput, PREVIOUS_HASH_HEX, retentionRule, stampDutyRule, TYPE_CODES } from './support/fixtures.ts';
 import { findFiscalJavaJar, phiveAvailability, type PhiveReport, type PhiveServer, startPhiveServer } from './support/phive.ts';
 
@@ -36,6 +37,12 @@ if (required && !availability.available) {
  *  - UBL-CR-024 : avoir 381, cbc:UUID xHub dans BillingReference (obligatoire sur l’avoir, Doc_07).
  */
 const TOLERATED_WARNINGS = ['UBL-CR-024', 'UBL-CR-111', 'UBL-CR-652'] as const;
+
+/**
+ * Avertissement propre à la présence d'UBLExtensions, constaté avec PHIVE (jamais une erreur) : UBL-CR-001 « un document UBL ne devrait pas
+ * contenir d'extensions ». Il est inhérent au choix de Doc_07 § 07 (XAdES injecté dans UBLExtensions) ; toute autre règle nouvelle fait échouer.
+ */
+const SIGNED_DOCUMENT_EXTRA_WARNINGS: string[] = ['UBL-CR-001'];
 
 function errorRules(report: PhiveReport): string[] {
   return [...new Set(report.issues.filter((issue) => issue.severity === 'ERROR').map((issue) => issue.rule))].sort();
@@ -154,6 +161,31 @@ describe.runIf(enabled)('contrôle croisé PHIVE (EN 16931) du mode de secours T
       expect(rules).toContain('BR-O-11');
       expect(rules).toContain('BR-O-12');
     });
+  });
+
+  /**
+   * Document SIGNÉ (T-P2A-04) : la signature XAdES-Baseline-T injectée dans UBLExtensions ne doit introduire AUCUNE règle EN 16931
+   * nouvelle : mêmes erreurs que le document non signé (KNOWN_PHIVE_DEVIATIONS inchangée). Les avertissements du document signé
+   * sont comparés à ceux du non signé ; tout avertissement supplémentaire est listé ici explicitement.
+   */
+  describe('document signé (XAdES-Baseline-T dans UBLExtensions) : écarts connus inchangés', () => {
+    it.each(TYPE_CODES)('type %s : mêmes règles en erreur que le document non signé, aucune règle nouvelle', async (code) => {
+      const identity = await createTestIdentity('ecdsa-p256');
+      const unsigned = generateUblInvoiceXml(standardInput(code));
+      const signed = await signUblXades(unsigned, {
+        certificateDer: identity.certificateDer,
+        signer: identity.signer,
+        timestampProvider: await createTestTimestampProvider(),
+        signingTime: new Date(Date.UTC(2026, 10, 13, 12, 0, 0)),
+      });
+      const before = await server.validate(unsigned);
+      const after = await server.validate(signed.xml);
+      expect(errorRules(after)).toEqual([...KNOWN_PHIVE_DEVIATION_RULE_IDS]);
+      expect(errorRules(after)).toEqual(errorRules(before));
+      expect(errorRules(after)).not.toContain('UBL-XSD');
+      const newWarnings = warningRules(after).filter((rule) => !warningRules(before).includes(rule));
+      expect(newWarnings).toEqual(SIGNED_DOCUMENT_EXTRA_WARNINGS);
+    }, 60_000);
   });
 
   it('couvre les cinq types', () => {
