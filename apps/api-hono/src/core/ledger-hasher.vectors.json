@@ -1,0 +1,207 @@
+{
+  "_doc": "Vecteurs d'or de l'empreinte du grand livre (H1 tranché par le propriétaire). Empreinte = SHA-256 hexadécimal minuscule de l'UTF-8 de JSON.stringify(tuple) sans espace.",
+  "entry_hash_V1": {
+    "etat": "RECOUPÉ",
+    "source": "propriétaire/pilote 2026-11-13",
+    "tuple": [
+      "FISCA_GL_ENTRY_V1",
+      "FY-2026",
+      "VTE",
+      1,
+      "VTE-2026-000001",
+      "2026-11-13",
+      "2026-11-13T16:00:00.000Z",
+      "INVOICE",
+      "INV-01",
+      "XHUB-UUID-01",
+      null,
+      120000,
+      120000,
+      "GENESIS_HASH_00000000000000000000000000000000",
+      [
+        [
+          1,
+          "34210000",
+          "CLI0001",
+          120000,
+          0,
+          true,
+          null
+        ],
+        [
+          2,
+          "71110000",
+          null,
+          0,
+          100000,
+          true,
+          null
+        ],
+        [
+          3,
+          "44558000",
+          null,
+          0,
+          20000,
+          true,
+          null
+        ]
+      ]
+    ],
+    "sha256": "821ebcb40a0d4574e3c5ade8d72032d93b73f41bb99041d19fc29322f0c580c5"
+  },
+  "closing_hash_V1": {
+    "etat": "RECOUPÉ",
+    "source": "propriétaire/pilote 2026-11-13",
+    "tuple": [
+      "FISCA_GL_CLOSE_V1",
+      "FY-2026",
+      "EX-2026",
+      "2026-01-01",
+      "2026-12-31",
+      "2027-03-15T18:00:00.000Z",
+      120000,
+      120000,
+      [
+        [
+          "ACH",
+          0,
+          "GENESIS_HASH_00000000000000000000000000000000"
+        ],
+        [
+          "AN",
+          0,
+          "GENESIS_HASH_00000000000000000000000000000000"
+        ],
+        [
+          "BNQ",
+          0,
+          "GENESIS_HASH_00000000000000000000000000000000"
+        ],
+        [
+          "CAI",
+          0,
+          "GENESIS_HASH_00000000000000000000000000000000"
+        ],
+        [
+          "OD",
+          0,
+          "GENESIS_HASH_00000000000000000000000000000000"
+        ],
+        [
+          "VTE",
+          1,
+          "821ebcb40a0d4574e3c5ade8d72032d93b73f41bb99041d19fc29322f0c580c5"
+        ]
+      ]
+    ],
+    "sha256": "f56ff02f6bf27dec48de03b6e692e2510226381832b024924f63b2543e27b1ca"
+  },
+  "pour_P2A_non_implemente": {
+    "_doc": "Documentation pour P2-A : formats NON implémentés dans ce module, seule la sérialisation canonique est validée ici.",
+    "pih_facture": {
+      "etat": "RECOUPÉ",
+      "source": "propriétaire/pilote 2026-11-13",
+      "format": [
+        "FISCA_INV_PIH_V1",
+        "emitterIce15",
+        "sequentialNumber",
+        "icvCounter",
+        "ublTypeCode",
+        "issueDate",
+        "buyerIdentifier",
+        "currencyCode",
+        "totalHtCents",
+        "totalVatCents",
+        "stampDutyCents",
+        "totalTtcCents",
+        "previousPiHash"
+      ],
+      "numero": "{FAC|AVO|NDB|ACO|AUT}-{YYYY}-{SEQ6}",
+      "tuple": [
+        "FISCA_INV_PIH_V1",
+        "001534290000057",
+        "FAC-2026-000001",
+        1,
+        "380",
+        "2026-11-13",
+        "003042032000080",
+        "MAD",
+        100000,
+        20000,
+        0,
+        120000,
+        "GENESIS_HASH_00000000000000000000000000000000"
+      ],
+      "sha256": "0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797"
+    },
+    "ticket_pos": {
+      "etat": "RECOUPÉ",
+      "source": "propriétaire/pilote 2026-11-13",
+      "format": [
+        "FISCA_POS_TKT_V1",
+        "terminalId",
+        "terminalSeqNumber",
+        "issuedAtIso",
+        "ticketKind",
+        "ht20Cents",
+        "vat20Cents",
+        "ht10Cents",
+        "vat10Cents",
+        "ht0Cents",
+        "stampDutyCents",
+        "totalTtcCents",
+        "prevTicketSha256"
+      ],
+      "tuple": [
+        "FISCA_POS_TKT_V1",
+        "POS-M01-C01",
+        1,
+        "2026-11-13T10:15:00.000Z",
+        "SALE",
+        10000,
+        2000,
+        0,
+        0,
+        0,
+        30,
+        12030,
+        "GENESIS_HASH_00000000000000000000000000000000"
+      ],
+      "sha256": "78ae3cdac0f54daa0c8d72dd417d1a972c1b3c90024248d8a59950021bcf75ee"
+    },
+    "cloture_z_pos": {
+      "etat": "RECOUPÉ",
+      "source": "propriétaire/pilote 2026-11-13",
+      "format": [
+        "FISCA_POS_Z_V1",
+        "terminalId",
+        "closureNumber",
+        "businessDate",
+        "netB2cHt20Cents",
+        "netB2cVat20Cents",
+        "netB2cHt10Cents",
+        "netB2cVat10Cents",
+        "netB2cHt0Cents",
+        "totalStampDutyCents",
+        "tpeGrossCents",
+        "prevZSha256"
+      ],
+      "tuple": [
+        "FISCA_POS_Z_V1",
+        "POS-M01-C01",
+        1,
+        "2026-11-13",
+        10000,
+        2000,
+        0,
+        0,
+        0,
+        30,
+        0,
+        "GENESIS_HASH_00000000000000000000000000000000"
+      ],
+      "sha256": "3721227a052b7f5ffce0a10702ed9a49d582a10cf3b1010c56e196cf2f3d7a97"
+    }
+  }
+}
