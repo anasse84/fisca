@@ -84,7 +84,7 @@ report ERR_UNSAFE_ANY_TYPE "type any interdit." "$HITS"
 
 # 4. Flottants monétaires (heuristique ; la règle ESLint no-float-money reste la défense principale)
 HITS="$(grep -rnE 'parseFloat\(|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*/\s*[A-Za-z0-9_(]|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*[:=]\s*-?[0-9]+\.[0-9]+' \
-  "${EXCLUDES[@]}" --include=*.ts --include=*.tsx --exclude=FiscalPrimitives.tsx "${EXISTING[@]}" \
+  "${EXCLUDES[@]}" --include=*.ts --include=*.tsx --exclude=FiscalPrimitives.tsx --exclude=eslint-rule-no-float-money.test.ts "${EXISTING[@]}" \
   | grep -vE '^\S+:[0-9]+:\s*(//|\*)' || true)"
 report ERR_ADR03_FLOAT "arithmétique flottante sur centimes/bps interdite : utiliser divRoundHalfUpBigInt." "$HITS"
 

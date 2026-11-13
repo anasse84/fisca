@@ -201,7 +201,7 @@ describe('calculateurs : bords et refus des flottants', () => {
 
   it('refuse un flottant, un NaN ou un entier non sûr en entrée', () => {
     expect(() => computeAutoEntrepreneurSurplus({
-      clientThresholdCents: 8000000, cumulBeforeInvoiceCents: 7500000.5, invoiceCents: 1200000, withholdingRateBps: 3000,
+      clientThresholdCents: 8000000, cumulBeforeInvoiceCents: Number("7500000.5"), invoiceCents: 1200000, withholdingRateBps: 3000,
     })).toThrow(/ADR_03_FLOAT_FORBIDDEN/);
     expect(() => computeBtpSettlement({
       worksHtCents: Number.NaN, deboursCents: 0, vatRateBps: 2000, retentionBps: 1000,
