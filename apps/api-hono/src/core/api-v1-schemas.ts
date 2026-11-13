@@ -128,6 +128,19 @@ export const SubmitEntryResponseSchema = z.strictObject({
 });
 export type SubmitEntryResponse = z.infer<typeof SubmitEntryResponseSchema>;
 
+// ---------------------------------------------------------------- POST /api/v1/ledger/entries/:id/visa (CTR-API-48)
+
+/** Aucun champ : visa PIÈCE PAR PIÈCE (`engine.visaCycle`) ; ni code de cycle ni acteur dans le corps. */
+export const VisaEntryRequestSchema = z.strictObject({});
+
+export const VisaEntryResponseSchema = z.strictObject({
+  entryId: z.string(),
+  fromState: JournalEntryStateSchema,
+  toState: JournalEntryStateSchema,
+  replayed: z.boolean(),
+});
+export type VisaEntryResponse = z.infer<typeof VisaEntryResponseSchema>;
+
 // ---------------------------------------------------------------- GET /api/v1/ledger/verify-chain (CTR-API-47)
 
 export const VerifyChainQuerySchema = z.strictObject({ journalId: z.string().min(1).max(64) });

@@ -7,8 +7,10 @@
  * - GET /api/v1/health/deep (CTR-API-13, logique dans src/core/health-deep.ts, route publique montée avant le pipeline) ;
  * - POST /api/v1/ledger/entries (CTR-API-45 : brouillon, `engine.createDraft`) ;
  * - POST /api/v1/ledger/entries/:id/submit (CTR-API-46 : IA_PROPOSITION → DRAFT, `engine.submitDraft`) ;
- * - GET /api/v1/ledger/verify-chain?journalId= (CTR-API-47 : `engine.verifyJournalChain`, lecture).
- * Pas de route de visa par cycle : le moteur ne vise que pièce par pièce (`visaCycle(entryId)`), aucune méthode par code de cycle.
+ * - GET /api/v1/ledger/verify-chain?journalId= (CTR-API-47 : `engine.verifyJournalChain`, lecture réservée par le repli
+ *   `LEDGER_READ_PROOF_FALLBACK_ACTIONS` de src/core/ledger-read-proof.ts : plus ouverte à tout membre) ;
+ * - POST /api/v1/ledger/entries/:id/visa (CTR-API-48 : `engine.visaCycle`, DRAFT → REVISEE_CYCLE, LEDGER_VISA_CYCLE, une pièce à la fois).
+ * Pas de route de visa par cycle (`/ledger/cycles/:cycleCode/visa`) : le moteur ne vise que pièce par pièce (`visaCycle(entryId)`), aucune méthode par code de cycle.
  * Le pipeline (authentification, TenantRouter, EntitlementGuard, Idempotency, RFC 9457) s'applique à `/api/v1/*`.
  */
 import { Hono } from 'hono';
@@ -27,6 +29,8 @@ import {
   SubmitEntryResponseSchema,
   VerifyChainQuerySchema,
   VerifyChainResponseSchema,
+  VisaEntryRequestSchema,
+  VisaEntryResponseSchema,
 } from '../../core/api-v1-schemas.ts';
 import type { CompanyDirectory } from '../../core/company-directory.ts';
 import { createHealthDeepRoute, type HealthDeepDeps } from '../../core/health-deep.ts';
@@ -64,6 +68,7 @@ export function createLedgerRoutes(deps: LedgerRoutesDeps): Hono<PipelineEnv> {
   const createDraftPath = contractOf('CTR-API-45').path;
   const submitPath = contractOf('CTR-API-46').path;
   const verifyChainPath = contractOf('CTR-API-47').path;
+  const visaPath = contractOf('CTR-API-48').path;
 
   function callOf(c: { get(key: 'tenant'): LedgerCall['tenant'] | undefined; get(key: 'auth'): LedgerCall['auth'] | undefined; get(key: 'entitlements'): { readonly readOnly: boolean } | undefined }): LedgerCall {
     const tenant = c.get('tenant');
@@ -116,6 +121,15 @@ export function createLedgerRoutes(deps: LedgerRoutesDeps): Hono<PipelineEnv> {
     parseWithSchema(SubmitEntryRequestSchema, (await readJsonBody(() => c.req.text())) ?? {});
     const result = SubmitEntryResponseSchema.parse(
       await deps.ledger.submitDraft(callOf(c), { entryId: params.id, idempotencyKey: idempotencyKeyOf(c.req.header(IDEMPOTENCY_KEY_HEADER)) }),
+    );
+    return c.json(result, 200);
+  });
+
+  app.post(visaPath, async (c) => {
+    const params = parseWithSchema(LedgerEntryParamSchema, c.req.param());
+    parseWithSchema(VisaEntryRequestSchema, (await readJsonBody(() => c.req.text())) ?? {});
+    const result = VisaEntryResponseSchema.parse(
+      await deps.ledger.visaEntry(callOf(c), { entryId: params.id, idempotencyKey: idempotencyKeyOf(c.req.header(IDEMPOTENCY_KEY_HEADER)) }),
     );
     return c.json(result, 200);
   });

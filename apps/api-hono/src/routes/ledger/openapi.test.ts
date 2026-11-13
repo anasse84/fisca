@@ -32,7 +32,7 @@ function asDoc(value: unknown): OpenApiDoc {
 describe('document OpenAPI généré à partir des schémas Zod', () => {
   const doc = asDoc(buildOpenApiDocument());
 
-  it('contient exactement les sept routes du registre (CTR-API-10 à 13, 45 à 47), avec leur méthode', () => {
+  it('contient exactement les huit routes du registre (CTR-API-10 à 13, 45 à 48), avec leur méthode', () => {
     expect(doc.openapi).toBe('3.1.0');
     expect(Object.keys(doc.paths).sort()).toEqual([
       '/api/v1/banking/reconcile',
@@ -41,10 +41,14 @@ describe('document OpenAPI généré à partir des schémas Zod', () => {
       '/api/v1/ledger/entries',
       '/api/v1/ledger/entries/{id}/post',
       '/api/v1/ledger/entries/{id}/submit',
+      '/api/v1/ledger/entries/{id}/visa',
       '/api/v1/ledger/verify-chain',
     ]);
     expect(Object.keys(doc.paths['/api/v1/ledger/entries'] ?? {})).toEqual(['post']);
     expect(Object.keys(doc.paths['/api/v1/ledger/entries/{id}/submit'] ?? {})).toEqual(['post']);
+    expect(Object.keys(doc.paths['/api/v1/ledger/entries/{id}/visa'] ?? {})).toEqual(['post']);
+    const visa = doc.paths['/api/v1/ledger/entries/{id}/visa']?.['post'];
+    expect((visa?.parameters ?? []).map((p) => `${p.in}:${p.name}`)).toEqual(expect.arrayContaining(['path:id', 'header:X-Fisca-Company-Id', 'header:Idempotency-Key']));
     expect(Object.keys(doc.paths['/api/v1/ledger/verify-chain'] ?? {})).toEqual(['get']);
     const verify = doc.paths['/api/v1/ledger/verify-chain']?.['get'];
     expect((verify?.parameters ?? []).map((p) => `${p.in}:${p.name}`)).toEqual(expect.arrayContaining(['query:journalId', 'header:X-Fisca-Company-Id']));
@@ -67,7 +71,8 @@ describe('document OpenAPI généré à partir des schémas Zod', () => {
   });
 
   it('chaque contrat porte son identifiant de registre', () => {
-    expect(API_V1_ROUTE_CONTRACTS.map((c) => c.registryId).sort()).toEqual(['CTR-API-10', 'CTR-API-11', 'CTR-API-12', 'CTR-API-13', 'CTR-API-45', 'CTR-API-46', 'CTR-API-47']);
+    expect(API_V1_ROUTE_CONTRACTS.map((c) => c.registryId).sort()).toEqual(['CTR-API-10', 'CTR-API-11', 'CTR-API-12', 'CTR-API-13', 'CTR-API-45', 'CTR-API-46', 'CTR-API-47', 'CTR-API-48']);
+    expect(Object.keys(doc.paths).some((path) => path.includes('/cycles/'))).toBe(false);
     expect(openApiPathOf('/api/v1/ledger/entries/:id/post')).toBe('/api/v1/ledger/entries/{id}/post');
   });
 

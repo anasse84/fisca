@@ -18,6 +18,8 @@ import {
   type LedgerActor,
 } from '../../core/immutable-cgnc-ledger-engine.ts';
 import { createLedgerApi } from '../../core/ledger-api.ts';
+import { createPipelineDeps } from '../../core/pipeline-composition.ts';
+import type { OrgPlanSegment } from '@fisca/auth-rbac';
 import { createAccessTokenAuthenticator, COMPANY_ID_HEADER, type PipelineEnv } from '../../core/tenant-router.ts';
 import {
   COMPANY_A,
@@ -104,7 +106,18 @@ export async function closeKitPostgres(): Promise<void> {
   await kitPostgres.close();
 }
 
-export async function buildKit(options: { withMandates?: boolean; backend?: 'sqlite' | 'postgres' } = {}): Promise<Kit> {
+/**
+ * `presence` : adaptateur de présence d'un mandat cabinet. `sql` (défaut) = celui de la composition de production
+ * (`createPipelineDeps`, plan de contrôle du kit) ; `failing` = plan de contrôle en panne ; `absent` = port non fourni.
+ */
+export interface KitOptions {
+  readonly withMandates?: boolean;
+  readonly backend?: 'sqlite' | 'postgres';
+  readonly orgPlanSegment?: OrgPlanSegment;
+  readonly presence?: 'sql' | 'failing' | 'absent';
+}
+
+export async function buildKit(options: KitOptions = {}): Promise<Kit> {
   const withMandates = options.withMandates ?? true;
   const backend = options.backend === 'postgres' ? await kitPostgres.fresh() : await openSqliteBackend();
   await seedLedger(backend.driver);
@@ -143,20 +156,34 @@ export async function buildKit(options: { withMandates?: boolean; backend?: 'sql
     preCloseControls: preClose,
   });
 
-  const app = createLedgerRoutes({
-    pipeline: {
-      authenticator: createAccessTokenAuthenticator({ verify: (token) => jwt.verify(token, clock.currentEpochSec()) }),
-      memberships,
-      ...(withMandates ? { mandates } : {}),
-      tenants: { getTenantDbUpToDate: async (companyId) => {
-        if (companyId === COMPANY_A) return backend.driver;
-        throw new Error('base inconnue');
-      } },
-      entitlements: { source: createFakeEntitlements(activeRows([])), kv: createFakeKv(testClock), cacheTtlSec: 120 },
-      idempotencyStore: createSqlIdempotencyStore(backend.driver),
-      nowMs: testClock.nowMs,
-      reportInternalError: (report) => reports.push(report),
+  const failingControlPlane: TenantSqlDriver = {
+    tenantId: 'control-plane',
+    query: async () => {
+      throw new Error('control-plane injoignable (password=hunter2)');
     },
+    executeBatchAtomically: async () => {
+      throw new Error('control-plane injoignable (password=hunter2)');
+    },
+  };
+  const composed = createPipelineDeps({
+    controlPlane: options.presence === 'failing' ? failingControlPlane : controlDb,
+    authenticator: createAccessTokenAuthenticator({ verify: (token) => jwt.verify(token, clock.currentEpochSec()) }),
+    memberships,
+    ...(withMandates ? { mandates } : {}),
+    tenants: { getTenantDbUpToDate: async (companyId) => {
+      if (companyId === COMPANY_A) return backend.driver;
+      throw new Error('base inconnue');
+    } },
+    entitlements: { source: createFakeEntitlements(activeRows([])), kv: createFakeKv(testClock), cacheTtlSec: 120 },
+    idempotencyStore: createSqlIdempotencyStore(backend.driver),
+    nowMs: testClock.nowMs,
+    reportInternalError: (report) => reports.push(report),
+  });
+  const { cpaMandatePresence: wiredPresence, ...withoutPresence } = composed;
+  const pipelineDeps = options.presence === 'absent' || wiredPresence === undefined ? withoutPresence : composed;
+
+  const app = createLedgerRoutes({
+    pipeline: pipelineDeps,
     directory: createSqlCompanyDirectory(controlDb),
     ledger: createLedgerApi({
       clock,
@@ -164,7 +191,7 @@ export async function buildKit(options: { withMandates?: boolean; backend?: 'sql
       hasher: testOnlyHasher,
       cipher: testCipher,
       preCloseControls: preClose,
-      actorProfiles: { resolve: async () => ({ orgPlanSegment: 'FIDUCIAIRE', activeHumanMembersCount: 5, canAccessPayrollPii: false }) },
+      actorProfiles: { resolve: async () => ({ orgPlanSegment: options.orgPlanSegment ?? 'FIDUCIAIRE', activeHumanMembersCount: 5, canAccessPayrollPii: false }) },
     }),
     health: {
       probes: createHealthDeepProbeSet({

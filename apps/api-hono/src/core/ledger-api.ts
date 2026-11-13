@@ -6,6 +6,7 @@
  * claim `mfa_verified_at` du jeton. L'état « lecture seule » vient de l'EntitlementGuard (échec fermé s'il manque).
  */
 import { evaluateAccessPolicy, type AuthorizationContext, type OrgPlanSegment, type PermissionAction } from '@fisca/auth-rbac';
+import { assertCanReadLedgerProof } from './ledger-read-proof.ts';
 import { assertPermissionWithinMandateCeiling } from './mandate-permission-ceiling.ts';
 import {
   ImmutableCgncLedgerEngine,
@@ -27,6 +28,7 @@ import type {
   ReconcileResponse,
   SubmitEntryResponse,
   VerifyChainResponse,
+  VisaEntryResponse,
 } from './api-v1-schemas.ts';
 import type { AuthenticatedActor, TenantContext } from './tenant-router.ts';
 
@@ -73,7 +75,9 @@ export interface LedgerApi {
   createDraft(call: LedgerCall, body: CreateDraftRequest): Promise<CreateDraftResponse>;
   /** `engine.submitDraft` (IA_PROPOSITION → DRAFT). */
   submitDraft(call: LedgerCall, input: { readonly entryId: string; readonly idempotencyKey: string }): Promise<SubmitEntryResponse>;
-  /** `engine.verifyJournalChain` : lecture ; le moteur n'évalue aucune permission pour elle. */
+  /** `engine.visaCycle` (DRAFT → REVISEE_CYCLE, LEDGER_VISA_CYCLE), une pièce à la fois. */
+  visaEntry(call: LedgerCall, input: { readonly entryId: string; readonly idempotencyKey: string }): Promise<VisaEntryResponse>;
+  /** `engine.verifyJournalChain` : lecture ; le moteur n'évalue aucune permission pour elle, la colle applique le repli `assertCanReadLedgerProof`. */
   verifyChain(call: LedgerCall, input: { readonly journalId: string }): Promise<VerifyChainResponse>;
 }
 
@@ -187,8 +191,14 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
       const result = await engine.submitDraft(actor, { entryId: input.entryId, idempotencyKey: input.idempotencyKey });
       return { entryId: result.entryId, fromState: result.fromState, toState: result.toState, replayed: result.replayed };
     },
+    visaEntry: async (call, input) => {
+      const { engine, actor } = await prepare(call);
+      const result = await engine.visaCycle(actor, { entryId: input.entryId, idempotencyKey: input.idempotencyKey });
+      return { entryId: result.entryId, fromState: result.fromState, toState: result.toState, replayed: result.replayed };
+    },
     verifyChain: async (call, input) => {
-      const { engine } = await prepare(call);
+      const { engine, actor } = await prepare(call);
+      assertCanReadLedgerProof(actor);
       const verdict = await engine.verifyJournalChain(input.journalId);
       return {
         journalId: input.journalId,

@@ -1,6 +1,6 @@
 /**
  * Contrats des routes REST v1 du socle (ticket T-S1B-12) : source unique de la colle des routes ET du document OpenAPI.
- * Les noms de route sont EXACTEMENT ceux de `fisca_contracts_registry` (CTR-API-10 à 13, puis 45 à 47 : lignes à inscrire par le propriétaire) ; aucune autre route n'est créée.
+ * Les noms de route sont EXACTEMENT ceux de `fisca_contracts_registry` (CTR-API-10 à 13, puis 45 à 48 : lignes à inscrire par le propriétaire) ; aucune autre route n'est créée.
  */
 import type { z } from 'zod';
 import {
@@ -18,6 +18,8 @@ import {
   SubmitEntryResponseSchema,
   VerifyChainQuerySchema,
   VerifyChainResponseSchema,
+  VisaEntryRequestSchema,
+  VisaEntryResponseSchema,
 } from './api-v1-schemas.ts';
 
 export type ApiMethod = 'get' | 'post';
@@ -29,7 +31,7 @@ export interface ApiResponseContract {
 }
 
 export interface ApiRouteContract {
-  readonly registryId: 'CTR-API-10' | 'CTR-API-11' | 'CTR-API-12' | 'CTR-API-13' | 'CTR-API-45' | 'CTR-API-46' | 'CTR-API-47';
+  readonly registryId: 'CTR-API-10' | 'CTR-API-11' | 'CTR-API-12' | 'CTR-API-13' | 'CTR-API-45' | 'CTR-API-46' | 'CTR-API-47' | 'CTR-API-48';
   readonly method: ApiMethod;
   /** Syntaxe Hono (`:param`). */
   readonly path: string;
@@ -151,6 +153,20 @@ export const API_V1_ROUTE_CONTRACTS: readonly ApiRouteContract[] = [
     query: VerifyChainQuerySchema,
     success: [{ status: 200, description: 'Verdict de la chaîne.', schema: VerifyChainResponseSchema }],
     errorStatuses: [400, 401, 403, 404, 503],
+  },
+  {
+    registryId: 'CTR-API-48',
+    method: 'post',
+    path: '/api/v1/ledger/entries/:id/visa',
+    summary: "Visa de cycle d'UNE pièce par le chef de mission ou l'expert-comptable (DRAFT → REVISEE_CYCLE), pièce par pièce.",
+    tag: 'Grand Livre',
+    auth: 'BEARER',
+    companyHeader: true,
+    idempotencyKey: true,
+    params: LedgerEntryParamSchema,
+    body: VisaEntryRequestSchema,
+    success: [{ status: 200, description: 'Pièce passée en REVISEE_CYCLE.', schema: VisaEntryResponseSchema }],
+    errorStatuses: [400, 401, 403, 404, 409, 422, 503],
   },
 ];
 

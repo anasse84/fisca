@@ -259,7 +259,7 @@ describe('GET /api/v1/ledger/verify-chain (moteur : verifyJournalChain)', () => 
     expect((await problem(await kit.call('GET', VERIFY('?journalId=jr-inconnu')), 404)).errorCode).toBe('LEDGER_UNKNOWN_JOURNAL');
   });
 
-  it('pipeline : sans jeton 401, dossier étranger 403, en-tête de dossier absent 400 ; tout membre du dossier lit (aucune action RBAC de lecture dans auth-rbac)', async () => {
+  it('pipeline : sans jeton 401, dossier étranger 403, en-tête de dossier absent 400 ; un rôle portant une action LEDGER_* ou REVERSIBILITY_EXPORT_10Y lit (repli, voir ledger-verify-chain-rbac.test.ts)', async () => {
     const kit = await buildKit();
     expect((await problem(await kit.call('GET', VERIFY('?journalId=jr-cai'), { user: null }), 401)).errorCode).toBe('AUTH_REQUIRED');
     expect((await problem(await kit.call('GET', VERIFY('?journalId=jr-cai'), { company: COMPANY_B }), 403)).errorCode).toBe('ABAC_TENANT_OUT_OF_SCOPE');
