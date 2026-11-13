@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ToolFrame from '../../../components/tools/ToolFrame.astro';
+import IceTool from '../../../components/tools/IceTool.astro';
+import LoiTool from '../../../components/tools/LoiTool.astro';
+import RasTool from '../../../components/tools/RasTool.astro';
+import { localeFromPrefix } from '../../../i18n/locales.ts';
+import { buildToolView, toolIdFromSlug } from '../../../tools/registry.ts';
+
+const locale = localeFromPrefix(Astro.params.locale);
+const id = toolIdFromSlug(Astro.params.tool ?? '');
+if (locale === null || id === null) {
+  return new Response(null, { status: 404 });
+}
+const view = buildToolView(locale, id);
+---
+<BaseLayout
+  locale={locale}
+  slug={view.slug}
+  title={view.title}
+  description={view.description}
+  faqs={view.faqs}
+  howTo={{ name: view.labels.howToName, steps: view.steps }}
+  {...(view.legislation === null ? {} : { legislation: view.legislation })}
+>
+  <ToolFrame view={view}>
+    {id === 'ice' && <IceTool locale={view.copyLocale} />}
+    {id === 'loi' && <LoiTool locale={view.copyLocale} />}
+    {id === 'ras' && <RasTool locale={view.copyLocale} />}
+  </ToolFrame>
+</BaseLayout>

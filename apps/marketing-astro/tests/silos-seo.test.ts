@@ -65,7 +65,8 @@ describe('seuil de qualité Doc_18 S10 : noindex et sitemap', () => {
     const xml = await handleSitemapXml().text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     const indexableRoutes = SILO_ROUTES.filter((r) => buildSiloViewBySlug('fr', r.slug)?.quality.indexable === true).length;
-    expect(locs).toHaveLength(6 * (3 + 4 + indexableRoutes));
+    // 3 pages du socle + 4 hubs de silo + 4 pages d'outils (hub + 3 outils, T-P2C-06) + les routes de silos indexables.
+    expect(locs).toHaveLength(6 * (3 + 4 + 4 + indexableRoutes));
     for (const route of SILO_ROUTES.filter((r) => buildSiloViewBySlug('fr', r.slug)?.quality.indexable !== true)) expect(xml).not.toContain(`/${route.slug}`);
     expect(new Set(locs).size).toBe(locs.length);
     const siloPage = xml.split('<url>').find((b) => b.includes(`<loc>${buildCanonicalUrl('en', INDEXABLE[0] ?? '')}</loc>`)) ?? '';

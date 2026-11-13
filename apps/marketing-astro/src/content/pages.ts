@@ -4,6 +4,7 @@ import { buildPricingView, pricingMarkdownSections } from './pricing-view.ts';
 import { buildPrivacyView, privacyMarkdownSections } from './privacy-view.ts';
 import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
 import { SILO_PAGES } from './silos/registry.ts';
+import { TOOL_PAGES } from '../tools/registry.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES, localeFromPrefix } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { buildCanonicalUrl } from '../i18n/hreflang.ts';
@@ -117,8 +118,11 @@ export const EDITORIAL_PAGES: readonly EditorialPage[] = [
   ...MARKETING_LOCALES.map(privacyPage),
 ];
 
-/** T-P2C-04 : socle + 4 hubs de silo + 78 routes de silos, chacun en 6 langues (18 + 24 + 468 = 510 pages). */
-export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES];
+/**
+ * T-P2C-04 : socle + 4 hubs de silo + 78 routes de silos, chacun en 6 langues (18 + 24 + 468 = 510 pages).
+ * T-P2C-06 : + hub des outils et 3 outils publics, 6 langues (24 pages) : 534 pages.
+ */
+export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES, ...TOOL_PAGES];
 
 const PAGE_INDEX: ReadonlyMap<string, EditorialPage> = new Map(ALL_EDITORIAL_PAGES.map((p) => [`${p.locale}|${p.slug}`, p]));
 

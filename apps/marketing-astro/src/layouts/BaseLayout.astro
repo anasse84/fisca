@@ -11,6 +11,7 @@ import { LOCALE_URL_PREFIX } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { FALLBACK_NOTICE, getSiteCopy } from '../i18n/site-copy.ts';
 import { SILOS } from '../content/silos/registry.ts';
+import { COMMON, TOOLS_HUB_SLUG } from '../tools/copy/common.ts';
 import { UI } from '../content/silos/ui-copy.ts';
 import { copyLocaleOf } from '../i18n/copy-locale.ts';
 import { buildFiscaJsonLdGraph } from '../seo/jsonld.ts';
@@ -51,6 +52,7 @@ const current = slug.replace(/^\/+|\/+$/g, '');
 const navItems = [
   { href: `/${prefix}/`, label: site.navHome, active: current === '' },
   { href: `/${prefix}/${PRICING_SLUG}`, label: site.navPricing, active: current === PRICING_SLUG },
+  { href: `/${prefix}/${TOOLS_HUB_SLUG}`, label: COMMON.toolsLabel[copyLocale], active: current === TOOLS_HUB_SLUG || current.startsWith(`${TOOLS_HUB_SLUG}/`) },
   { href: `/${prefix}/${PRIVACY_SLUG}`, label: site.navPrivacy, active: current === PRIVACY_SLUG },
 ];
 ---

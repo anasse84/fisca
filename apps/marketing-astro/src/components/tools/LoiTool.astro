@@ -1,0 +1,68 @@
+---
+import { fill } from '../../i18n/copy-locale.ts';
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { LOI_UI } from '../../tools/copy/loi.ts';
+import { formatBpsAsPercentInput } from '../../tools/amounts.ts';
+import { paramView, rulesPayload } from '../../tools/registry.ts';
+import { LATE_PARAM_KEYS } from '../../tools/rule-params.ts';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const { locale } = Astro.props;
+const ui = LOI_UI[locale];
+const rules = rulesPayload(LATE_PARAM_KEYS, locale);
+const base = paramView('late_base_bps', locale);
+const increment = paramView('late_increment_bps', locale);
+const delays = [paramView('late_legal_days', locale), paramView('late_contractual_days', locale), paramView('late_sector_days', locale)];
+const directorHint = fill(ui.directorHint, { value: base.display, date: base.as_of, state: `${base.state} : ${base.stateLabel}` });
+---
+<div class="tool" data-tool="loi" data-copy={JSON.stringify(ui)} data-rules={JSON.stringify(rules)}>
+  <form novalidate class="tool-form" aria-describedby="loi-error">
+    <div class="tool-grid">
+      <div class="field">
+        <label for="loi-amount">{ui.amountLabel}</label>
+        <input id="loi-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" placeholder={ui.amountHint} />
+      </div>
+      <div class="field">
+        <label for="loi-delivery">{ui.deliveryLabel}</label>
+        <input id="loi-delivery" name="delivery" type="date" dir="ltr" class="fisca-tabular-num" />
+      </div>
+      <div class="field">
+        <label for="loi-delay">{ui.delayLabel}</label>
+        <select id="loi-delay" name="delay">
+          {delays.map((d, index) => <option value={String(d.value)} data-key={d.key} selected={index === 0}>{fill(ui.delayOption, { n: d.display })}</option>)}
+        </select>
+      </div>
+      <div class="field">
+        <label for="loi-payment">{ui.paymentLabel}</label>
+        <input id="loi-payment" name="payment" type="date" dir="ltr" class="fisca-tabular-num" aria-describedby="loi-payment-hint" />
+        <p class="field-hint" id="loi-payment-hint">{ui.paymentHint}</p>
+      </div>
+      <div class="field">
+        <label for="loi-director">{ui.directorLabel}</label>
+        <input id="loi-director" name="director" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" value={formatBpsAsPercentInput(base.value)} aria-describedby="loi-director-hint" />
+        <p class="field-hint" id="loi-director-hint">{directorHint}</p>
+      </div>
+      <div class="field">
+        <label for="loi-increment">{ui.incrementLabel}</label>
+        <input id="loi-increment" name="increment" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" value={formatBpsAsPercentInput(increment.value)} />
+        <p class="field-hint">{increment.display} · {increment.as_of} · {increment.state}</p>
+      </div>
+    </div>
+    <p class="tool-error" id="loi-error" role="alert" data-role="error" hidden></p>
+    <p><button type="submit" class="button">{ui.submit}</button></p>
+  </form>
+  <div class="tool-results" data-role="results" aria-live="polite" hidden>
+    <h3>{ui.resultHeading}</h3>
+    <dl class="result-list" data-role="list"></dl>
+    <div class="rules-used" data-role="rules"></div>
+  </div>
+</div>
+
+<script>
+  import { mountLoiTool } from '../../tools/ui/loi-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="loi"]')) mountLoiTool(root);
+</script>

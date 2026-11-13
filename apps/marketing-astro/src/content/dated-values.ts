@@ -54,6 +54,7 @@ export const DATED_VALUES: readonly DatedValue[] = [
   dv('foreign_service_ras_is_bps', 'bps', 1000, 'NON RECOUPÉ', 'Doc_01 S05'),
   dv('mowakaba_coverage_low_bps', 'bps', 8000, 'NON RECOUPÉ', 'Doc_03 S06'),
   dv('mowakaba_coverage_high_bps', 'bps', 9000, 'NON RECOUPÉ', 'Doc_03 S06'),
+  dv('ice_key_modulus', 'count', 97, 'NON RECOUPÉ', 'ERRATA E (clé de contrôle de l’ICE) ; Doc_18 S06 et S11'),
   dv('late_legal_days', 'count', 60, 'NON RECOUPÉ', 'Doc_07 S08'),
   dv('late_contractual_days', 'count', 120, 'NON RECOUPÉ', 'Doc_07 S08'),
   dv('late_sector_days', 'count', 180, 'NON RECOUPÉ', 'Doc_07 S08'),

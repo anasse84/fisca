@@ -47,9 +47,9 @@ describe('registre des silos : 78 routes canoniques, 468 URL', () => {
     }
   });
 
-  it('le socle T-P2C-03 reste à 18 pages ; le registre complet ajoute 24 hubs et 468 pages', () => {
+  it('le socle T-P2C-03 reste à 18 pages ; le registre complet ajoute 24 hubs, 468 pages de silos et 24 pages d’outils (T-P2C-06)', () => {
     expect(EDITORIAL_PAGES).toHaveLength(18);
-    expect(ALL_EDITORIAL_PAGES).toHaveLength(18 + 24 + 468);
+    expect(ALL_EDITORIAL_PAGES).toHaveLength(18 + 24 + 468 + 24);
   });
 
   it('chemins HTML et miroirs .md imbriqués', () => {
