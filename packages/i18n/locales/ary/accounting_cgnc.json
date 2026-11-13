@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "الجورنال",
+    "entry": "قيد محاسبي"
+  },
+  "ledger": {
+    "generalLedger": "الكراند ليفر",
+    "trialBalance": "ميزان المراجعة",
+    "balanceSheet": "البيلان",
+    "incomeStatement": "كونط ديال المداخيل والمصاريف"
+  },
+  "account": {
+    "number": "نمرة الحساب",
+    "label": "سمية الحساب"
+  },
+  "entry": {
+    "debit": "مدين",
+    "credit": "دائن",
+    "balance": "الرصيد",
+    "reversal": "قيد عكسي",
+    "posted": "مسجّل",
+    "immutable": "القيد اللي تسجّل ما كيتبدّلش، كيتعكس."
+  },
+  "period": {
+    "fiscalYear": "السنة المحاسبية",
+    "close": "سدّان الفترة"
+  },
+  "bank": {
+    "reconcile": "التطابق البنكي",
+    "cash": "الكايس"
+  }
+}

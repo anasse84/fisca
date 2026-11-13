@@ -1,0 +1,50 @@
+{
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "export": "Exporter",
+    "import": "Importer",
+    "print": "Imprimer",
+    "send": "Envoyer",
+    "retry": "Réessayer"
+  },
+  "states": {
+    "loading": "Chargement en cours…",
+    "empty": "Aucun élément à afficher",
+    "error": "Une erreur est survenue",
+    "success": "Opération réussie",
+    "draft": "Brouillon",
+    "pending": "En attente",
+    "cleared": "Validation simulée",
+    "rejected": "Rejeté",
+    "archived": "Archivé",
+    "offline": "Hors ligne"
+  },
+  "notice": {
+    "simulated": "Mode pilote simulé : aucune validation officielle de la DGI n'est affichée."
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "language": "Langue",
+    "logout": "Se déconnecter"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "Montant",
+    "date": "Date",
+    "currency": "Devise",
+    "required": "Champ obligatoire"
+  }
+}

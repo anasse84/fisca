@@ -1,0 +1,33 @@
+{
+  "company": {
+    "switch": "Beddel taɣzut",
+    "group": "Agraw n tɣuzutin"
+  },
+  "consolidation": {
+    "title": "Asemday"
+  },
+  "approvals": {
+    "title": "Abrid n uqbal",
+    "approve": "Qbel",
+    "reject": "Agi"
+  },
+  "audit": {
+    "trail": "Aḍar n usenqed",
+    "export": "Suffeɣ aḍar n usenqed"
+  },
+  "roles": {
+    "title": "Timlilin d yirurmen",
+    "segregation": "Beṭṭu n tmahilin"
+  },
+  "users": {
+    "title": "Iseqdacen",
+    "invite": "Ɛreḍ aseqdac"
+  },
+  "reports": {
+    "title": "Ineqqisen",
+    "dossier": "Afaylu n umsaɣ"
+  },
+  "portal": {
+    "languages": "Tameɣra-agi llan-as taglizit, taɛrabt d tefransist."
+  }
+}

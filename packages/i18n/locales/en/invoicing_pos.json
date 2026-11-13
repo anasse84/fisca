@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "Invoice",
+    "quote": "Quote",
+    "creditNote": "Credit note",
+    "number": "Invoice no.",
+    "customer": "Customer",
+    "dueDate": "Due date",
+    "new": "New invoice"
+  },
+  "lines": {
+    "description": "Description",
+    "quantity": "Quantity",
+    "unitPrice": "Unit price"
+  },
+  "totals": {
+    "excludingVat": "Total excl. VAT",
+    "vat": "VAT",
+    "includingVat": "Total incl. VAT"
+  },
+  "payment": {
+    "method": "Payment method",
+    "cash": "Cash",
+    "card": "Bank card",
+    "transfer": "Bank transfer"
+  },
+  "pos": {
+    "newSale": "New sale",
+    "openRegister": "Open register",
+    "closeRegister": "Close register",
+    "ticketZ": "Z report",
+    "syncPending": "Sync pending",
+    "signedReceipt": "Signed receipt"
+  }
+}

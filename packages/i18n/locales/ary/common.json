@@ -1,0 +1,50 @@
+{
+  "actions": {
+    "save": "سجّل",
+    "cancel": "لغي",
+    "confirm": "أكّد",
+    "delete": "مسح",
+    "edit": "بدّل",
+    "create": "صاوب",
+    "search": "قلّب",
+    "close": "سدّ",
+    "back": "رجع",
+    "next": "اللي موراه",
+    "previous": "اللي قبل",
+    "export": "صدّر",
+    "import": "جيب",
+    "print": "طبع",
+    "send": "صيفط",
+    "retry": "عاود جرّب"
+  },
+  "states": {
+    "loading": "كيتحمّل…",
+    "empty": "ما كاين والو",
+    "error": "وقع شي مشكل",
+    "success": "تدارت العملية مزيان",
+    "draft": "مسودة",
+    "pending": "كيتسنا",
+    "cleared": "تحقق بالمحاكاة",
+    "rejected": "مرفوض",
+    "archived": "مرشّف",
+    "offline": "بلا إنترنت"
+  },
+  "notice": {
+    "simulated": "وضع تجريبي بالمحاكاة: ما كاينش تحقق رسمي من المديرية العامة للضرائب."
+  },
+  "nav": {
+    "dashboard": "لوحة القيادة",
+    "settings": "الإعدادات",
+    "language": "اللغة",
+    "logout": "خرج"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "currency": "العملة",
+    "required": "خانة ضرورية"
+  }
+}

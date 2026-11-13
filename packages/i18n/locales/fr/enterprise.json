@@ -1,0 +1,33 @@
+{
+  "company": {
+    "switch": "Changer de société",
+    "group": "Groupe de sociétés"
+  },
+  "consolidation": {
+    "title": "Consolidation"
+  },
+  "approvals": {
+    "title": "Circuit d'approbation",
+    "approve": "Approuver",
+    "reject": "Refuser"
+  },
+  "audit": {
+    "trail": "Piste d'audit",
+    "export": "Exporter la piste d'audit"
+  },
+  "roles": {
+    "title": "Rôles et droits",
+    "segregation": "Séparation des tâches"
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "invite": "Inviter un utilisateur"
+  },
+  "reports": {
+    "title": "Rapports",
+    "dossier": "Dossier client"
+  },
+  "portal": {
+    "languages": "Ce portail est disponible en français, arabe et anglais."
+  }
+}

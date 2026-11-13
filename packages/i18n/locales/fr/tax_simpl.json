@@ -1,0 +1,28 @@
+{
+  "vat": {
+    "title": "Déclaration de TVA",
+    "rate": "Taux de TVA",
+    "deductible": "TVA déductible",
+    "collected": "TVA collectée"
+  },
+  "declaration": {
+    "period": "Période déclarative",
+    "deadline": "Date limite de dépôt",
+    "draft": "Brouillon de déclaration",
+    "submit": "Préparer pour télédéclaration"
+  },
+  "withholding": {
+    "title": "Retenue à la source"
+  },
+  "invoice": {
+    "clearance": "Validation simulée",
+    "clearanceNotice": "Le pilote de simulation n'émet aucun visa officiel de la DGI."
+  },
+  "rules": {
+    "source": "Taux et plafonds issus des tables fiscales datées"
+  },
+  "status": {
+    "accepted": "Accepté par la simulation",
+    "refused": "Refusé par la simulation"
+  }
+}

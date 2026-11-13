@@ -1,0 +1,50 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "send": "Send",
+    "retry": "Retry"
+  },
+  "states": {
+    "loading": "Loading…",
+    "empty": "Nothing to display",
+    "error": "An error occurred",
+    "success": "Operation successful",
+    "draft": "Draft",
+    "pending": "Pending",
+    "cleared": "Simulated validation",
+    "rejected": "Rejected",
+    "archived": "Archived",
+    "offline": "Offline"
+  },
+  "notice": {
+    "simulated": "Simulated pilot mode: no official DGI validation is shown."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "language": "Language",
+    "logout": "Sign out"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "Amount",
+    "date": "Date",
+    "currency": "Currency",
+    "required": "Required field"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "actions": {
+    "save": "ⵃⴼⴹ",
+    "cancel": "ⵙⴼⵙⵅ",
+    "confirm": "ⵙⵏⵜⵎ",
+    "delete": "ⴽⴽⵙ",
+    "edit": "ⵥⵔⴳ",
+    "create": "ⵙⵏⵓⵍⴼⵓ",
+    "search": "ⵏⴰⴷⵉ",
+    "close": "ⵎⴷⵍ",
+    "back": "ⵓⵖⴰⵍ",
+    "next": "ⵡⴰⵢⵢⴰⴹ",
+    "previous": "ⵓⵣⵡⵉⵔ",
+    "export": "ⵙⵓⴼⴼⵖ",
+    "import": "ⵙⴽⵛⵎ",
+    "print": "ⵙⵉⴳⴳⵣ",
+    "send": "ⴰⵣⵏ",
+    "retry": "ⵄⵉⵡⴷ"
+  },
+  "states": {
+    "loading": "ⴰⵙⴰⵍⵉ ⵢⵜⵜⴽⵎⵎⵉⵍ…",
+    "empty": "ⵓⵍⴰⵛ ⴰⵛⵓ ⴰⵔⴰ ⴷ-ⵢⵜⵜⵡⴰⵙⴽⴰⵏ",
+    "error": "ⵢⴷⵔⴰ-ⴷ ⵡⴰⴹⵔⵓ",
+    "success": "ⵜⵎⵎⴷ ⵜⴰⵎⴰⵀⵉⵍⵜ",
+    "draft": "ⴰⵔⵡⵡⴰⵇ",
+    "pending": "ⵉⵜⵜⵔⴰⵊⵓ",
+    "cleared": "ⴰⵙⵏⵜⵎ ⵏ ⵓⵙⴳⵣⵉ",
+    "rejected": "ⵢⵜⵜⵡⴰⴳⵉ",
+    "archived": "ⵢⵜⵜⵡⴰⵔⵃⵍ",
+    "offline": "ⵓⵔ ⵢⵜⵜⵡⴰⵇⵇⵏ ⴰⵔⴰ"
+  },
+  "notice": {
+    "simulated": "ⴰⵙⴽⴰⵔ ⵏ ⵓⵙⴳⵣⵉ: ⵓⵍⴰⵛ ⴰⵙⵏⵜⵎ ⵓⵏⵚⵉⴱ ⵙⴳ DGI."
+  },
+  "nav": {
+    "dashboard": "ⵜⴰⴼⵍⵡⵉⵜ ⵏ ⵓⵙⵏⵇⴷ",
+    "settings": "ⵉⵖⵡⵡⴰⵔⵏ",
+    "language": "ⵜⵓⵜⵍⴰⵢⵜ",
+    "logout": "ⴼⴼⵖ"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "ⴰⵎⴹⴰⵏ",
+    "date": "ⴰⵣⵎⵣ",
+    "currency": "ⴰⴷⵔⵉⵎ",
+    "required": "ⵓⵔⵜⵉ ⵢⵜⵜⵡⴰⵙⵔⴰ"
+  }
+}

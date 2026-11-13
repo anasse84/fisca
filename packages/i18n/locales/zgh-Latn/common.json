@@ -1,0 +1,50 @@
+{
+  "actions": {
+    "save": "Ḥfeḍ",
+    "cancel": "Sefsex",
+    "confirm": "Sentem",
+    "delete": "Kkes",
+    "edit": "Ẓreg",
+    "create": "Snulfu",
+    "search": "Nadi",
+    "close": "Mdel",
+    "back": "Uɣal",
+    "next": "Wayyaḍ",
+    "previous": "Uzwir",
+    "export": "Suffeɣ",
+    "import": "Sekcem",
+    "print": "Siggez",
+    "send": "Azen",
+    "retry": "Ɛiwed"
+  },
+  "states": {
+    "loading": "Asali yettkemmil…",
+    "empty": "Ulac acu ara d-yettwaskan",
+    "error": "Yedra-d waḍru",
+    "success": "Temmed tamahilt",
+    "draft": "Arewwaq",
+    "pending": "Ittraju",
+    "cleared": "Asentem n usegzi",
+    "rejected": "Yettwagi",
+    "archived": "Yettwarḥel",
+    "offline": "Ur yettwaqqen ara"
+  },
+  "notice": {
+    "simulated": "Askar n usegzi: ulac asentem unṣib seg DGI."
+  },
+  "nav": {
+    "dashboard": "Tafelwit n usenqed",
+    "settings": "Iɣewwaren",
+    "language": "Tutlayt",
+    "logout": "Ffeɣ"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "Amḍan",
+    "date": "Azemz",
+    "currency": "Adrim",
+    "required": "Urti yettwasra"
+  }
+}

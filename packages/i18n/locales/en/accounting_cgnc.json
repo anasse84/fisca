@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "Journal",
+    "entry": "Journal entry"
+  },
+  "ledger": {
+    "generalLedger": "General ledger",
+    "trialBalance": "Trial balance",
+    "balanceSheet": "Balance sheet",
+    "incomeStatement": "Income statement"
+  },
+  "account": {
+    "number": "Account no.",
+    "label": "Account name"
+  },
+  "entry": {
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Balance",
+    "reversal": "Reversal entry",
+    "posted": "Posted",
+    "immutable": "A posted entry is never edited: it is reversed."
+  },
+  "period": {
+    "fiscalYear": "Fiscal year",
+    "close": "Period closing"
+  },
+  "bank": {
+    "reconcile": "Bank reconciliation",
+    "cash": "Cash on hand"
+  }
+}

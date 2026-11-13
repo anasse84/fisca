@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "Tafaturt",
+    "quote": "Asenfar n ttaman",
+    "creditNote": "Tamagit n uɣal",
+    "number": "Uṭṭun n tfaturt",
+    "customer": "Amsaɣ",
+    "dueDate": "Azemz n tmagit",
+    "new": "Tafaturt tamaynut"
+  },
+  "lines": {
+    "description": "Aglam",
+    "quantity": "Tiket",
+    "unitPrice": "Aẓṭa n uzwil"
+  },
+  "totals": {
+    "excludingVat": "Anemmud war TVA",
+    "vat": "TVA",
+    "includingVat": "Anemmud s TVA"
+  },
+  "payment": {
+    "method": "Tarrayt n uxelleṣ",
+    "cash": "Ddrahem",
+    "card": "Takarṭt n lbanka",
+    "transfer": "Asuddem"
+  },
+  "pos": {
+    "newSale": "Zenz amaynut",
+    "openRegister": "Ldi tacaisset",
+    "closeRegister": "Mdel tacaisset",
+    "ticketZ": "Tikit Z",
+    "syncPending": "Amsasa ittraju",
+    "signedReceipt": "Tikit yettwazrag"
+  }
+}
