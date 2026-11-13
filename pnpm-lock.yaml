@@ -119,7 +119,36 @@ importers:
 
   apps/standby-vps: {}
 
-  apps/web-saas: {}
+  apps/web-saas:
+    dependencies:
+      '@fisca/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@fisca/ui-mercury':
+        specifier: workspace:*
+        version: link:../../packages/ui-mercury
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
+      react-dom:
+        specifier: 19.3.1
+        version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@testing-library/dom':
+        specifier: ^10.4.2
+        version: 10.4.2
+      '@testing-library/react':
+        specifier: 16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      jsdom:
+        specifier: 31.0.1
+        version: 31.0.1
 
   packages/ai-agents: {}
 

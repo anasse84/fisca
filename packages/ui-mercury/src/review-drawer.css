@@ -21,6 +21,7 @@
 
 .fisca-drawer__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-block: 8px;
@@ -29,7 +30,9 @@
 }
 
 .fisca-drawer__title {
-  flex: 1 1 auto;
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: 16px;
   font-weight: 600;
@@ -45,8 +48,9 @@
 }
 
 .fisca-drawer__badge--ai {
-  color: white;
-  background: var(--brand-indigo);
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 2px solid var(--brand-indigo);
 }
 
 .fisca-drawer__badge--review {
@@ -56,6 +60,7 @@
 }
 
 .fisca-drawer__close {
+  flex-shrink: 0;
   min-block-size: 44px;
   min-inline-size: 44px;
   padding-inline: 12px;
@@ -67,6 +72,7 @@
   cursor: pointer;
 }
 
+.fisca-drawer__pane:focus-visible,
 .fisca-drawer__close:focus-visible,
 .fisca-drawer__approve:focus-visible,
 .fisca-drawer__reject:focus-visible {
@@ -88,6 +94,10 @@
   padding: 16px;
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.fisca-drawer__pane:focus-visible {
+  outline-offset: -2px;
 }
 
 .fisca-drawer__pane + .fisca-drawer__pane {
@@ -129,7 +139,7 @@
 }
 
 .fisca-drawer__approve {
-  color: white;
+  color: var(--bg-canvas);
   background: var(--brand-emerald);
   border: 0;
 }

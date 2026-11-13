@@ -8,5 +8,18 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@fisca/i18n": "workspace:*",
+    "@fisca/ui-mercury": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@testing-library/dom": "^10.4.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "31.0.1"
   }
 }

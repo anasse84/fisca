@@ -17,6 +17,8 @@ export interface SplitScreenReviewDrawerLabels {
   readonly reject: string;
   readonly humanApprovalNotice: string;
   readonly illegibleAmountNotice: string;
+  /** Nom accessible de la jauge de confiance IA. */
+  readonly confidence: string;
 }
 
 export interface ReviewAiProposal {
@@ -133,7 +135,7 @@ export function SplitScreenReviewDrawer({
           <>
             <span className="fisca-drawer__badge fisca-drawer__badge--ai">{labels.aiBadge}</span>
             <span className="fisca-drawer__badge fisca-drawer__badge--review">{labels.reviewBadge}</span>
-            <AiCrafterConfidence confidenceBps={aiProposal.confidenceBps} />
+            <AiCrafterConfidence confidenceBps={aiProposal.confidenceBps} labels={{ meter: labels.confidence }} />
           </>
         )}
         <button type="button" className="fisca-drawer__close" onClick={onClose}>

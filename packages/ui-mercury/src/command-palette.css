@@ -58,6 +58,7 @@
   cursor: pointer;
 }
 
+.fisca-palette__list:focus-visible,
 .fisca-palette__input:focus-visible,
 .fisca-palette__close:focus-visible {
   outline: 2px solid var(--brand-indigo);

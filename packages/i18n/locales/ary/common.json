@@ -46,5 +46,30 @@
     "date": "التاريخ",
     "currency": "العملة",
     "required": "خانة ضرورية"
+  },
+  "ui": {
+    "palette": {
+      "title": "لوحة الأوامر",
+      "placeholder": "أمر ولا ملف ولا ICE…",
+      "results": "{count} نتيجة"
+    },
+    "review": {
+      "title": "مراجعة الوثيقة",
+      "sourcePane": "الوثيقة الأصلية",
+      "entryPane": "القيد المقترح",
+      "aiBadge": "ذكاء اصطناعي",
+      "reviewBadge": "خاص تتراجع",
+      "approve": "أكّد (موافقة بشرية)",
+      "reject": "رفض",
+      "humanApprovalNotice": "ما كيتسجّل حتى قيد بلا موافقتك الصريحة.",
+      "illegibleAmountNotice": "المبلغ ما مقروءش: خاص إنسان يدخّلو."
+    },
+    "ai": {
+      "confidence": "ثقة الذكاء الاصطناعي",
+      "illegibleAmountGroup": "المبلغ ما مقروءش",
+      "illegibleAmountText": "المبلغ ما مقروءش — خاص إنسان يكتبو",
+      "validatedByHuman": "أكّد عليه إنسان",
+      "rejectedByHuman": "رفضو إنسان"
+    }
   }
 }

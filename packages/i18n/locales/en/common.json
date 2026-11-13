@@ -46,5 +46,30 @@
     "date": "Date",
     "currency": "Currency",
     "required": "Required field"
+  },
+  "ui": {
+    "palette": {
+      "title": "Command palette",
+      "placeholder": "Command, file or ICE…",
+      "results": "{count} result(s)"
+    },
+    "review": {
+      "title": "Document review",
+      "sourcePane": "Source document",
+      "entryPane": "Proposed entry",
+      "aiBadge": "AI",
+      "reviewBadge": "To review",
+      "approve": "Approve (human approval)",
+      "reject": "Reject",
+      "humanApprovalNotice": "No entry is posted without your explicit approval.",
+      "illegibleAmountNotice": "Illegible amount: human entry required."
+    },
+    "ai": {
+      "confidence": "AI confidence",
+      "illegibleAmountGroup": "Illegible amount",
+      "illegibleAmountText": "Illegible amount — to be entered by a person",
+      "validatedByHuman": "Validated by a human",
+      "rejectedByHuman": "Rejected by a human"
+    }
   }
 }

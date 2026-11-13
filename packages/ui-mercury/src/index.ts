@@ -14,7 +14,15 @@ export { formatCentimesMad } from './format-centimes.ts';
 export { FiscalAmount, FiscalStatusBadge, FiscalTerm } from './FiscalPrimitives.tsx';
 export type { FiscaLocale, FiscalAmountProps, FiscalStatus, FiscalStatusBadgeProps, FiscalTermProps } from './FiscalPrimitives.tsx';
 export { AiCrafterAmountField, AiCrafterCard, AiCrafterConfidence } from './AiCrafterCards.tsx';
-export type { AiCrafterAmountFieldProps, AiCrafterCardProps, AiCrafterConfidenceProps, AiCrafterDecision } from './AiCrafterCards.tsx';
+export type {
+  AiCrafterAmountFieldProps,
+  AiCrafterAmountLabels,
+  AiCrafterCardLabels,
+  AiCrafterCardProps,
+  AiCrafterConfidenceLabels,
+  AiCrafterConfidenceProps,
+  AiCrafterDecision,
+} from './AiCrafterCards.tsx';
 export { MercuryGrid, amountCentsColumn, textColumn } from './MercuryGrid.tsx';
 export type { GridRowBase, MercuryGridColumn, MercuryGridLabels, MercuryGridProps, RowListener } from './MercuryGrid.tsx';
 export {

@@ -46,5 +46,30 @@
     "date": "ⴰⵣⵎⵣ",
     "currency": "ⴰⴷⵔⵉⵎ",
     "required": "ⵓⵔⵜⵉ ⵢⵜⵜⵡⴰⵙⵔⴰ"
+  },
+  "ui": {
+    "palette": {
+      "title": "ⵜⴰⴼⵍⵡⵉⵜ ⵏ ⵢⵉⵡⵍⵍⵉⵀⵏ",
+      "placeholder": "ⵏⴰⴷⵉ ⴰⵢⵏ ⵜⴱⵖⵉⴹ…",
+      "results": "ⵉⴳⵎⵓⴹⵏ: {count}"
+    },
+    "review": {
+      "title": "ⴰⵙⵏⵇⴷ ⵏ ⵓⴼⴰⵢⵍⵓ",
+      "sourcePane": "ⴰⴼⴰⵢⵍⵓ ⴰⵥⵥⴰⵢⴰⵏ",
+      "entryPane": "ⵜⵉⵔⴰ ⵢⵜⵜⵡⴰⵙⵓⵎⵔⵏ",
+      "aiBadge": "ⴰⵉ",
+      "reviewBadge": "ⴰⵢⵏ ⴰⵔⴰ ⵢⵜⵜⵡⴰⵙⵏⵇⴷ",
+      "approve": "ⵙⵏⵜⵎ (ⴰⵙⵏⵜⵎ ⵏ ⵢⵎⴷⴰⵏ)",
+      "reject": "ⴰⴳⵉ",
+      "humanApprovalNotice": "ⵓⵍⴰⵛ ⵜⵉⵔⴰ ⵢⵜⵜⵡⴰⵙⴽⵍⵙ ⵡⴰⵔ ⵓⵙⵏⵜⵎ-ⵉⴽ ⴰⵎⴰⵚⵎⵓⴹ.",
+      "illegibleAmountNotice": "ⴰⵎⴹⴰⵏ ⵓⵔ ⵢⵜⵜⵡⴰⵖⵔ ⴰⵔⴰ: ⵜⵉⵔⴰ ⵏ ⵢⵎⴷⴰⵏ ⵜⵜⵜⵡⴰⵙⵔⴰ."
+    },
+    "ai": {
+      "confidence": "ⵜⵉⵛⴽⵉ ⵏ ⴰⵉ",
+      "illegibleAmountGroup": "ⴰⵎⴹⴰⵏ ⵓⵔ ⵢⵜⵜⵡⴰⵖⵔ ⴰⵔⴰ",
+      "illegibleAmountText": "ⴰⵎⴹⴰⵏ ⵓⵔ ⵢⵜⵜⵡⴰⵖⵔ ⴰⵔⴰ — ⴰⴷ ⵜ-ⵢⴰⵔⵓ ⵡⵎⴷⴰⵏ",
+      "validatedByHuman": "ⵢⵜⵜⵡⴰⵙⵏⵜⵎ ⵙⵖⵓⵔ ⵡⵎⴷⴰⵏ",
+      "rejectedByHuman": "ⵢⵜⵜⵡⴰⴳⵉ ⵙⵖⵓⵔ ⵡⵎⴷⴰⵏ"
+    }
   }
 }

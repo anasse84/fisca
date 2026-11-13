@@ -46,5 +46,30 @@
     "date": "Date",
     "currency": "Devise",
     "required": "Champ obligatoire"
+  },
+  "ui": {
+    "palette": {
+      "title": "Palette de commande",
+      "placeholder": "Commande, dossier ou ICE…",
+      "results": "{count} résultat(s)"
+    },
+    "review": {
+      "title": "Révision de la pièce",
+      "sourcePane": "Document source",
+      "entryPane": "Écriture proposée",
+      "aiBadge": "IA",
+      "reviewBadge": "Point à examiner",
+      "approve": "Valider (approbation humaine)",
+      "reject": "Rejeter",
+      "humanApprovalNotice": "Aucune écriture n’est comptabilisée sans votre validation explicite.",
+      "illegibleAmountNotice": "Montant illisible : saisie humaine requise."
+    },
+    "ai": {
+      "confidence": "Confiance de l’IA",
+      "illegibleAmountGroup": "Montant illisible",
+      "illegibleAmountText": "Montant illisible — à saisir par un humain",
+      "validatedByHuman": "Validé par un humain",
+      "rejectedByHuman": "Rejeté par un humain"
+    }
   }
 }

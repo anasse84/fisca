@@ -46,5 +46,30 @@
     "date": "Azemz",
     "currency": "Adrim",
     "required": "Urti yettwasra"
+  },
+  "ui": {
+    "palette": {
+      "title": "Tafelwit n yiwellihen",
+      "placeholder": "Nadi ayen tebɣiḍ…",
+      "results": "Igmuḍen: {count}"
+    },
+    "review": {
+      "title": "Asenqed n ufaylu",
+      "sourcePane": "Afaylu aẓẓayan",
+      "entryPane": "Tira yettwasumeren",
+      "aiBadge": "AI",
+      "reviewBadge": "Ayen ara yettwasenqed",
+      "approve": "Sentem (asentem n yemdan)",
+      "reject": "Agi",
+      "humanApprovalNotice": "Ulac tira yettwasekles war usentem-ik amaṣmuḍ.",
+      "illegibleAmountNotice": "Amḍan ur yettwaɣer ara: tira n yemdan tettwasra."
+    },
+    "ai": {
+      "confidence": "Ticki n AI",
+      "illegibleAmountGroup": "Amḍan ur yettwaɣer ara",
+      "illegibleAmountText": "Amḍan ur yettwaɣer ara — ad t-yaru wemdan",
+      "validatedByHuman": "Yettwasentem sɣur wemdan",
+      "rejectedByHuman": "Yettwagi sɣur wemdan"
+    }
   }
 }

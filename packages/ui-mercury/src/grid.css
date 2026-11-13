@@ -59,6 +59,11 @@
   outline-offset: -2px;
 }
 
+.fisca-grid__scroller:focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: -2px;
+}
+
 .fisca-grid__row:focus-visible {
   outline: 2px solid var(--brand-indigo);
   outline-offset: -2px;
@@ -96,6 +101,14 @@
 }
 
 .fisca-grid__new-rows {
+  box-sizing: border-box;
+  display: block;
+  inline-size: min(14rem, calc(100vw - 32px));
+  overflow: hidden;
+  /* mercury-allow-physical: bord gauche fixe, Chromium mesure le décalage sur ce bord ; le décompte qui change de largeur ne doit rien déplacer, y compris en RTL. */
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding-block: 4px;
   padding-inline: 12px;
   border: 1px solid var(--brand-emerald);

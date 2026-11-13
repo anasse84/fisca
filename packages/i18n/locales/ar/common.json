@@ -46,5 +46,30 @@
     "date": "التاريخ",
     "currency": "العملة",
     "required": "حقل إلزامي"
+  },
+  "ui": {
+    "palette": {
+      "title": "لوحة الأوامر",
+      "placeholder": "أمر أو ملف أو ICE…",
+      "results": "{count} نتيجة"
+    },
+    "review": {
+      "title": "مراجعة المستند",
+      "sourcePane": "المستند المصدر",
+      "entryPane": "القيد المقترح",
+      "aiBadge": "ذكاء اصطناعي",
+      "reviewBadge": "نقطة للمراجعة",
+      "approve": "تأكيد (موافقة بشرية)",
+      "reject": "رفض",
+      "humanApprovalNotice": "لا يُرحَّل أي قيد دون موافقتك الصريحة.",
+      "illegibleAmountNotice": "المبلغ غير مقروء: يلزم إدخال بشري."
+    },
+    "ai": {
+      "confidence": "ثقة الذكاء الاصطناعي",
+      "illegibleAmountGroup": "المبلغ غير مقروء",
+      "illegibleAmountText": "المبلغ غير مقروء — يجب أن يُدخله شخص",
+      "validatedByHuman": "تم التأكيد من طرف إنسان",
+      "rejectedByHuman": "تم الرفض من طرف إنسان"
+    }
   }
 }

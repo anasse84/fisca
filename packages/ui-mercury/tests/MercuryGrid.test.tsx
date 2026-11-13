@@ -269,6 +269,17 @@ describe('MercuryGrid : RTL et CSS logique', () => {
     expect(css).toMatch(/overflow-anchor:\s*none/);
   });
 
+  it('CLS nul : l’indicateur « nouvelles lignes » a une boîte de taille fixe (le décompte qui grandit ne déplace rien)', () => {
+    const css = readFileSync(join(import.meta.dirname, '../src/grid.css'), 'utf8');
+    const rule = /\.fisca-grid__new-rows\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/inline-size:\s*(?!auto|fit-content|max-content|min-content)[^;]+;/);
+    expect(rule).toMatch(/box-sizing:\s*border-box/);
+    expect(rule).toMatch(/mercury-allow-physical: [^*]+\*\/\s*text-align:\s*left/);
+    expect(lintLogicalCss(css)).toEqual([]);
+    expect(rule).toMatch(/text-overflow:\s*ellipsis/);
+    expect(rule).toMatch(/white-space:\s*nowrap/);
+  });
+
   it('aucune propriété physique en style en ligne ; direction héritée du document (dir=rtl)', () => {
     const { container } = render(
       <div dir="rtl">

@@ -20,6 +20,7 @@ const labels = {
   reject: 'Rejeter',
   humanApprovalNotice: 'Aucune écriture n’est comptabilisée sans votre validation.',
   illegibleAmountNotice: 'Montant illisible : saisie humaine requise.',
+  confidence: 'Confiance de l’IA',
 };
 
 function Harness(props: Partial<SplitScreenReviewDrawerProps> & { readonly initiallyOpen?: boolean }) {
@@ -125,6 +126,7 @@ describe('SplitScreenReviewDrawer : garde-fous IA (Doc_08 Section 05)', () => {
     expect(screen.getByText('Point à examiner')).toBeTruthy();
     expect(screen.queryByText(/Anomalie confirmée/)).toBeNull();
     expect(screen.getByRole('meter').getAttribute('aria-valuenow')).toBe('87');
+    expect(screen.getByRole('meter').getAttribute('aria-label')).toBe(labels.confidence);
     expect(screen.getByText(labels.humanApprovalNotice)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Valider (approbation humaine)' })).toBeTruthy();
   });
@@ -182,6 +184,16 @@ describe('SplitScreenReviewDrawer : CSS logique et responsive', () => {
   it('passe lintLogicalCss, côté inline-end', () => {
     expect(lintLogicalCss(css)).toEqual([]);
     expect(css).toMatch(/inset-inline-end:\s*0/);
+  });
+
+  it('mobile 375 px : l’en-tête passe à la ligne et le titre peut rétrécir (aucun débordement horizontal)', () => {
+    const header = /\.fisca-drawer__header\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(header).toMatch(/flex-wrap:\s*wrap/);
+    const title = /\.fisca-drawer__title\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(title).toMatch(/min-inline-size:\s*0/);
+    expect(title).toMatch(/overflow-wrap:\s*anywhere/);
+    const close = /\.fisca-drawer__close\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(close).toMatch(/flex-shrink:\s*0/);
   });
 
   it('55 % dès 1280 px, deux volets dès 768 px, plein écran en mobile', () => {
