@@ -1,5 +1,5 @@
-import { getTableName, is } from 'drizzle-orm';
-import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
+import { Column, getTableName, is } from 'drizzle-orm';
+import { SQLiteTable, getTableConfig, getViewConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from 'vitest';
 import * as drizzleSchema from '../src/tenant-drizzle.ts';
 import { TENANT_INDEX_NAMES, TENANT_TABLE_NAMES } from '../src/tenant.ts';
@@ -99,5 +99,16 @@ describe('schéma Drizzle tenant = DDL SQLite (le DDL fait foi)', () => {
       String(row['name']),
     );
     expect(declared).toEqual(actual);
+  });
+});
+
+describe('vue Drizzle de la balance à 6 colonnes = vue SQLite', () => {
+  it('mêmes colonnes, dans le même ordre, que PRAGMA table_info sur la vue réelle', () => {
+    const config = getViewConfig(drizzleSchema.cgncTrialBalance6col);
+    expect(config.name).toBe('v_cgnc_trial_balance_6col');
+    const declared = Object.values(config.selectedFields).map((field) => (is(field, Column) ? field.name : ''));
+    const actual = all(openTenant(), `SELECT name FROM pragma_table_info('v_cgnc_trial_balance_6col') ORDER BY cid`).map((row) => String(row['name']));
+    expect(declared).toEqual(actual);
+    expect(actual).toHaveLength(10);
   });
 });

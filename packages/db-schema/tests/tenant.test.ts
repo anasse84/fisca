@@ -75,10 +75,16 @@ describe('migrations tenant : forme, ordre et immuabilité', () => {
     }
   });
 
-  it('chaque instruction est une instruction unique (un seul point-virgule final autorisé)', () => {
+  it('chaque instruction est une instruction unique (un seul point-virgule final autorisé ; un trigger porte ses instructions entre BEGIN et END)', () => {
     for (const migration of TENANT_MIGRATIONS) {
       for (const statement of migration.upSqlStatements) {
-        expect(statement.trim().replace(/;$/, '').includes(';'), statement).toBe(false);
+        const body = statement.trim().replace(/;$/, '');
+        if (/^CREATE TRIGGER /.test(body)) {
+          expect(body, statement).toMatch(/\bBEGIN\b[\s\S]*;\s*END$/);
+          expect(body.slice(body.lastIndexOf('END') + 3).includes(';'), statement).toBe(false);
+        } else {
+          expect(body.includes(';'), statement).toBe(false);
+        }
       }
     }
   });
@@ -141,18 +147,18 @@ describe('création du schéma', () => {
     const db = openTenant();
     const named = listObjects(db, 'index').filter((name) => !name.startsWith('sqlite_autoindex'));
     expect(named).toEqual([...TENANT_INDEX_NAMES].sort());
-    expect(TENANT_INDEX_NAMES).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir']);
+    expect(TENANT_INDEX_NAMES.slice(0, 3)).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir']);
   });
 
-  it("ne crée ni vue ni trigger (Doc_06 § 03 et § 04 n'en définissent aucun)", () => {
-    const db = openTenant();
+  it("les migrations v1 et v2 ne créent ni vue ni trigger (Doc_06 § 03 et § 04 n'en définissent aucun)", () => {
+    const db = openTenant(2);
     expect(listObjects(db, 'trigger')).toEqual([]);
     expect(listObjects(db, 'view')).toEqual([]);
   });
 
-  it("ne crée aucune table des tickets suivants (grand livre, sous-livres)", () => {
+  it("ne crée aucune table du ticket suivant (sous-livres, v4)", () => {
     const names: readonly string[] = TENANT_TABLE_NAMES;
-    for (const later of ['journal_entries', 'journal_entry_lines', 'subledger_invoices']) {
+    for (const later of ['subledger_invoices']) {
       expect(names).not.toContain(later);
     }
   });
@@ -564,8 +570,8 @@ describe('invoices', () => {
 });
 
 describe('pii_restricted_flag (ERRATA D-19, Doc_11 § 06)', () => {
-  it('existe sur invoices seulement (Factur-X), entier 0/1 NOT NULL DEFAULT 0', () => {
-    const db = openTenant();
+  it('existe sur invoices (Factur-X) ; v3 y ajoute le grand livre (tenant-ledger.test.ts) ; entier 0/1 NOT NULL DEFAULT 0', () => {
+    const db = openTenant(2);
     const tables = TENANT_TABLE_NAMES.filter((table) => columnsOf(db, table).some((c) => c.name === 'pii_restricted_flag'));
     expect(tables).toEqual(['invoices']);
     const column = all(db, `SELECT type, "notnull" AS not_null, dflt_value FROM pragma_table_info('invoices') WHERE name = 'pii_restricted_flag'`);

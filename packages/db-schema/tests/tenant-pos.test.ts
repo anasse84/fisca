@@ -54,11 +54,11 @@ describe('migration v2 : caisse Fisca POS (Doc_06 § 04)', () => {
   const v2 = TENANT_MIGRATIONS[1];
 
   it('est la deuxième migration, après la v1, et crée exactement 3 tables dans l\'ordre des clés étrangères', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version).slice(0, 2)).toEqual([1, 2]);
     expect(v2?.name).toBe('tenant_part2_pos_sessions_tickets_z');
     expect(v2?.tableNames).toEqual([...POS_TABLES]);
     expect(v2?.indexNames).toEqual([]);
-    expect(TENANT_TABLE_NAMES.slice(-3)).toEqual([...POS_TABLES]);
+    expect(TENANT_TABLE_NAMES.slice(7, 10)).toEqual([...POS_TABLES]);
   });
 
   it('empreinte SHA-256 recalculée identique à celle déclarée, pour la v1 comme pour la v2', () => {
@@ -76,13 +76,14 @@ describe('migration v2 : caisse Fisca POS (Doc_06 § 04)', () => {
   });
 
   it('crée les 3 tables sur SQLite, sans index nommé, sans vue et sans trigger (Doc_06 § 04 n\'en définit aucun)', () => {
-    const db = openTenant();
+    const db = openTenant(2);
     for (const table of POS_TABLES) {
       expect(names(db, 'table')).toContain(table);
     }
     expect(names(db, 'trigger')).toEqual([]);
     expect(names(db, 'view')).toEqual([]);
-    expect(TENANT_INDEX_NAMES).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir']);
+    expect(TENANT_MIGRATIONS[1]?.indexNames).toEqual([]);
+    expect(TENANT_INDEX_NAMES.slice(0, 3)).toEqual(['idx_partners_ice_bidx', 'idx_invoices_dedup_bidx', 'idx_inv_partner_date_dir']);
   });
 
   it('une base v1 se met à niveau en appliquant seulement la v2 (les 7 tables de la v1 restent)', () => {

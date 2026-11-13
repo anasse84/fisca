@@ -206,3 +206,192 @@ export function posZClosureRow(overrides: RowValues = {}): RowValues {
     ...overrides,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Grand livre CGNC (migration v3, Doc_06 § 05)
+// ---------------------------------------------------------------------------
+
+/** Empreinte de départ du chaînage (valeur par défaut de journals.last_entry_hash dans Doc_06 § 05). */
+export const GENESIS_HASH = 'GENESIS_HASH_00000000000000000000000000000000';
+
+export function fiscalYearRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'fy-2026',
+    code: 'EX-2026',
+    start_date: '2026-01-01',
+    end_date: '2026-12-31',
+    ...overrides,
+  };
+}
+
+export function journalRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'jrn-vte',
+    code: 'VTE',
+    name: 'Journal des ventes',
+    journal_type: 'SALE',
+    ...overrides,
+  };
+}
+
+export function accountRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'acc-5161',
+    account_number: '51610000',
+    label_fr: 'Caisse',
+    cgnc_class: 5,
+    normal_balance: 'DEBIT',
+    ...overrides,
+  };
+}
+
+export function entryRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'je-1',
+    fiscal_year_id: 'fy-2026',
+    journal_id: 'jrn-vte',
+    sequence_number: 1,
+    entry_reference: 'VTE-2026-000001',
+    entry_date: '2026-11-13',
+    source_document_type: 'INVOICE',
+    total_debit_cents: 120000,
+    total_credit_cents: 120000,
+    ...overrides,
+  };
+}
+
+export function entryLineRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'jel-1',
+    entry_id: 'je-1',
+    line_number: 1,
+    account_id: 'acc-3421',
+    description_enc: 'v1:aXY:bGlnbmU',
+    debit_cents: 120000,
+    ...overrides,
+  };
+}
+
+export function bankTransactionRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'bt-1',
+    bank_code: 'ATTIJARI',
+    statement_date: '2026-11-13',
+    value_date: '2026-11-13',
+    raw_label_enc: 'v1:aXY:bGFiZWw',
+    amount_cents: 120000,
+    ...overrides,
+  };
+}
+
+export function fixedAssetRow(overrides: RowValues = {}): RowValues {
+  return {
+    id: 'fa-1',
+    asset_account_number: '23400000',
+    label_enc: 'v1:aXY:dmVoaWN1bGU',
+    acquisition_date: '2026-03-01',
+    acquisition_ht_cents: 30000000,
+    acquisition_ttc_cents: 36000000,
+    depreciation_rate_bps: 2500,
+    ...overrides,
+  };
+}
+
+/** Comptes de test : caisse 5161, clients 3421, ventes 7111, TVA facturée 4455, capital 1111, charges 6111. */
+export const LEDGER_ACCOUNTS: readonly RowValues[] = [
+  accountRow(),
+  accountRow({ id: 'acc-3421', account_number: '34211000', label_fr: 'Clients', cgnc_class: 3 }),
+  accountRow({ id: 'acc-7111', account_number: '71111000', label_fr: 'Ventes de marchandises', cgnc_class: 7, normal_balance: 'CREDIT' }),
+  accountRow({ id: 'acc-4455', account_number: '44551000', label_fr: 'Etat TVA facturée', cgnc_class: 4, normal_balance: 'CREDIT', vat_regime_role: 'VAT_COLLECTED_DUE' }),
+  accountRow({ id: 'acc-1111', account_number: '11110000', label_fr: 'Capital social', cgnc_class: 1, normal_balance: 'CREDIT' }),
+  accountRow({ id: 'acc-6111', account_number: '61110000', label_fr: 'Achats revendus de marchandises', cgnc_class: 6 }),
+];
+
+/** Parents du grand livre : un exercice 2026, trois journaux (AN, VTE, CAI) et six comptes. */
+export const LEDGER_SEED: readonly (readonly [string, RowValues])[] = [
+  ['fiscal_years', fiscalYearRow()],
+  ['journals', journalRow({ id: 'jrn-an', code: 'AN', name: 'A nouveaux', journal_type: 'OPENING' })],
+  ['journals', journalRow()],
+  ['journals', journalRow({ id: 'jrn-cai', code: 'CAI', name: 'Journal de caisse', journal_type: 'CASH' })],
+  ...LEDGER_ACCOUNTS.map((values): readonly [string, RowValues] => ['cgnc_accounts', values]),
+];
+
+export interface LedgerLineSpec {
+  readonly account: string;
+  readonly debit?: number;
+  readonly credit?: number;
+}
+
+/** Une pièce au statut initial (DRAFT par défaut) et ses lignes ; les totaux sont ceux des lignes. */
+export function entryWithLines(
+  id: string,
+  sequence: number,
+  journalId: string,
+  lines: readonly LedgerLineSpec[],
+  overrides: RowValues = {},
+): readonly (readonly [string, RowValues])[] {
+  const debit = lines.reduce((sum, line) => sum + (line.debit ?? 0), 0);
+  const credit = lines.reduce((sum, line) => sum + (line.credit ?? 0), 0);
+  const header: readonly [string, RowValues] = [
+    'journal_entries',
+    entryRow({
+      id,
+      journal_id: journalId,
+      sequence_number: sequence,
+      entry_reference: `${journalId}-2026-${String(sequence).padStart(6, '0')}`,
+      status: 'DRAFT',
+      total_debit_cents: debit,
+      total_credit_cents: credit,
+      ...overrides,
+    }),
+  ];
+  return [
+    header,
+    ...lines.map((line, index): readonly [string, RowValues] => [
+      'journal_entry_lines',
+      entryLineRow({
+        id: `${id}-l${index + 1}`,
+        entry_id: id,
+        line_number: index + 1,
+        account_id: line.account,
+        debit_cents: line.debit ?? 0,
+        credit_cents: line.credit ?? 0,
+      }),
+    ]),
+  ];
+}
+
+/** Scellement DRAFT vers POSTED : UPDATE contrôlé portant les deux empreintes (Doc_06 § 05, PAF_MISSING_HASH). */
+export const POST_ENTRY_SQL =
+  `UPDATE journal_entries SET status = 'POSTED', validated_at = ?, entry_hash = ?, previous_entry_hash = ? WHERE id = ?`;
+
+export function postParams(id: string): [string, string, string, string] {
+  return [NOW, SHA_B, GENESIS_HASH, id];
+}
+
+/** Insère un jeu de lignes dans une base SQLite. */
+export function insertRows(db: DatabaseSync, rows: readonly (readonly [string, RowValues])[]): void {
+  for (const [table, values] of rows) {
+    insertRow(db, table, values);
+  }
+}
+
+/** Base tenant complète avec les parents du grand livre déjà insérés. */
+export function openLedger(): DatabaseSync {
+  const db = openTenant();
+  insertRows(db, LEDGER_SEED);
+  return db;
+}
+
+/** Pièce équilibrée de `amount` centimes : débit sur `debit`, crédit sur `credit`. */
+export function simpleEntry(
+  id: string,
+  sequence: number,
+  journalId: string,
+  debit: string,
+  credit: string,
+  amount: number,
+  overrides: RowValues = {},
+): readonly (readonly [string, RowValues])[] {
+  return entryWithLines(id, sequence, journalId, [{ account: debit, debit: amount }, { account: credit, credit: amount }], overrides);
+}

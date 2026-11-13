@@ -1,16 +1,25 @@
 /**
- * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 et 2 (T-S1B-02, T-S1B-03 : caisse POS).
+ * Schéma Drizzle (`drizzle-orm/sqlite-core`, compatible Cloudflare D1) de TENANT_DB, parties 1 à 3 (T-S1B-02, T-S1B-03 : caisse
+ * POS, T-S1B-04 : grand livre CGNC). La vue `v_cgnc_trial_balance_6col` est déclarée ici en lecture seule.
  *
  * Le DDL de `tenant.ts` fait foi : ce fichier ne sert qu'au typage des requêtes. Un test compare tables, colonnes,
  * nullités, clés primaires, clés étrangères, contraintes UNIQUE et index à PRAGMA sur la base réelle. Les CHECK ne sont pas
  * répétés ici : ils vivent dans le DDL appliqué par les migrations, jamais généré par drizzle-kit.
- * Les tickets suivants ajoutent ici les tables des migrations v3 et v4.
+ * Les tickets suivants ajoutent ici les tables de la migration v4.
  */
 
-import { index, integer, primaryKey, sqliteTable, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, sqliteView, text, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import {
+  BANK_RECONCILIATION_STATES,
+  CGNC_NORMAL_BALANCES,
+  CGNC_VAT_REGIME_ROLES,
   DISPUTE_STATUSES,
+  FISCAL_YEAR_STATUSES,
   INVOICE_DIRECTIONS,
+  LEDGER_JOURNAL_TYPES,
+  LEDGER_REVIEW_CYCLES,
+  LEDGER_SOURCE_DOCUMENT_TYPES,
+  LEDGER_STATUSES,
   PARTNER_ROLES,
   PARTNER_TAX_CATEGORIES,
   POS_B2B_CONVERSION_STATES,
@@ -247,3 +256,128 @@ export const posZClosures = sqliteTable(
   },
   (table) => [unique().on(table.terminalId, table.closureNumber)],
 );
+
+export const fiscalYears = sqliteTable('fiscal_years', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull().unique(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  status: text('status', { enum: FISCAL_YEAR_STATUSES }).notNull().default('OPEN'),
+  simplIsModel: integer('simpl_is_model').notNull().default(1),
+  provisionalVatProrataBps: integer('provisional_vat_prorata_bps').notNull().default(10000),
+  definitiveVatProrataBps: integer('definitive_vat_prorata_bps'),
+  closingHash: text('closing_hash'),
+});
+
+export const journals = sqliteTable('journals', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  journalType: text('journal_type', { enum: LEDGER_JOURNAL_TYPES }).notNull(),
+  lastSequenceNumber: integer('last_sequence_number').notNull().default(0),
+  lastEntryHash: text('last_entry_hash').notNull().default('GENESIS_HASH_00000000000000000000000000000000'),
+});
+
+export const cgncAccounts = sqliteTable('cgnc_accounts', {
+  id: text('id').primaryKey(),
+  accountNumber: text('account_number').notNull().unique(),
+  labelFr: text('label_fr').notNull(),
+  labelAr: text('label_ar'),
+  cgncClass: integer('cgnc_class').notNull(),
+  normalBalance: text('normal_balance', { enum: CGNC_NORMAL_BALANCES }).notNull(),
+  isReconcilable: integer('is_reconcilable').notNull().default(0),
+  vatRegimeRole: text('vat_regime_role', { enum: CGNC_VAT_REGIME_ROLES }).notNull().default('NONE'),
+});
+
+export const journalEntries = sqliteTable(
+  'journal_entries',
+  {
+    id: text('id').primaryKey(),
+    fiscalYearId: text('fiscal_year_id').notNull().references(() => fiscalYears.id),
+    journalId: text('journal_id').notNull().references(() => journals.id),
+    sequenceNumber: integer('sequence_number').notNull(),
+    entryReference: text('entry_reference').notNull().unique(),
+    entryDate: text('entry_date').notNull(),
+    validatedAt: text('validated_at'),
+    reviewCycle: text('review_cycle', { enum: LEDGER_REVIEW_CYCLES }).notNull().default('GENERAL'),
+    status: text('status', { enum: LEDGER_STATUSES }).notNull().default('IA_PROPOSITION'),
+    sourceDocumentType: text('source_document_type', { enum: LEDGER_SOURCE_DOCUMENT_TYPES }).notNull(),
+    invoiceId: text('invoice_id').references(() => invoices.id),
+    dgiClearanceUuid: text('dgi_clearance_uuid'),
+    partnerId: text('partner_id').references(() => fiscalPartners.id),
+    reversalOfEntryId: text('reversal_of_entry_id').references((): AnySQLiteColumn => journalEntries.id),
+    totalDebitCents: integer('total_debit_cents').notNull(),
+    totalCreditCents: integer('total_credit_cents').notNull(),
+    previousEntryHash: text('previous_entry_hash'),
+    entryHash: text('entry_hash'),
+    piiRestrictedFlag: integer('pii_restricted_flag').notNull().default(0),
+  },
+  (table) => [
+    unique().on(table.journalId, table.fiscalYearId, table.sequenceNumber),
+    index('idx_je_fy_status_seq').on(table.fiscalYearId, table.status, table.journalId, table.sequenceNumber),
+  ],
+);
+
+export const journalEntryLines = sqliteTable(
+  'journal_entry_lines',
+  {
+    id: text('id').primaryKey(),
+    entryId: text('entry_id').notNull().references(() => journalEntries.id),
+    lineNumber: integer('line_number').notNull(),
+    accountId: text('account_id').notNull().references(() => cgncAccounts.id),
+    auxiliaryAccount: text('auxiliary_account'),
+    descriptionEnc: text('description_enc').notNull(),
+    debitCents: integer('debit_cents').notNull().default(0),
+    creditCents: integer('credit_cents').notNull().default(0),
+    isTaxDeductible: integer('is_tax_deductible').notNull().default(1),
+    table3ReintegrationCode: text('table3_reintegration_code'),
+    reconciliationCode: text('reconciliation_code'),
+    reconciledAt: text('reconciled_at'),
+    piiRestrictedFlag: integer('pii_restricted_flag').notNull().default(0),
+  },
+  (table) => [unique().on(table.entryId, table.lineNumber), index('idx_jel_entry_account').on(table.entryId, table.accountId)],
+);
+
+export const bankTransactions = sqliteTable('bank_transactions', {
+  id: text('id').primaryKey(),
+  bankCode: text('bank_code').notNull(),
+  statementDate: text('statement_date').notNull(),
+  valueDate: text('value_date').notNull(),
+  rawLabelEnc: text('raw_label_enc').notNull(),
+  referenceCode: text('reference_code'),
+  amountCents: integer('amount_cents').notNull(),
+  reconciliationState: text('reconciliation_state', { enum: BANK_RECONCILIATION_STATES }).notNull().default('UNMATCHED'),
+  reconciliationCode: text('reconciliation_code'),
+  glEntryId: text('gl_entry_id').references(() => journalEntries.id),
+});
+
+export const fixedAssetsRegister = sqliteTable('fixed_assets_register', {
+  id: text('id').primaryKey(),
+  acquisitionInvoiceId: text('acquisition_invoice_id').references(() => invoices.id),
+  assetAccountNumber: text('asset_account_number').notNull(),
+  labelEnc: text('label_enc').notNull(),
+  acquisitionDate: text('acquisition_date').notNull(),
+  acquisitionHtCents: integer('acquisition_ht_cents').notNull(),
+  acquisitionTtcCents: integer('acquisition_ttc_cents').notNull(),
+  isPassengerVehicle: integer('is_passenger_vehicle').notNull().default(0),
+  fiscalDepreciableCapCents: integer('fiscal_depreciable_cap_cents'),
+  initialVatDeductedCents: integer('initial_vat_deducted_cents').notNull().default(0),
+  initialProrataBps: integer('initial_prorata_bps').notNull().default(10000),
+  vatRetentionMonthsRequired: integer('vat_retention_months_required').notNull().default(60),
+  disposalDate: text('disposal_date'),
+  depreciationRateBps: integer('depreciation_rate_bps').notNull(),
+});
+
+/** Balance générale à 6 colonnes (SIMPL-IS v2.0.3), vue existante : le DDL de `tenant.ts` la crée, Drizzle ne fait que la typer. */
+export const cgncTrialBalance6col = sqliteView('v_cgnc_trial_balance_6col', {
+  fiscalYearId: text('fiscal_year_id').notNull(),
+  accountNumber: text('account_number').notNull(),
+  cgncClass: integer('cgnc_class').notNull(),
+  openingDebitCents: integer('opening_debit_cents').notNull(),
+  openingCreditCents: integer('opening_credit_cents').notNull(),
+  mvtDebitCents: integer('mvt_debit_cents').notNull(),
+  mvtCreditCents: integer('mvt_credit_cents').notNull(),
+  totalDebitCents: integer('total_debit_cents').notNull(),
+  totalCreditCents: integer('total_credit_cents').notNull(),
+  netBalanceCents: integer('net_balance_cents').notNull(),
+}).existing();
