@@ -1,0 +1,38 @@
+---
+import '../styles/tokens.css';
+import '../styles/base.css';
+import { buildPageHead } from '../i18n/head.ts';
+import type { MarketingLocale } from '../i18n/locales.ts';
+
+interface Props {
+  locale: MarketingLocale;
+  slug: string;
+  title: string;
+  description: string;
+}
+
+const { locale, slug, title, description } = Astro.props;
+const head = buildPageHead(locale, slug, { title, description });
+---
+<html lang={head.htmlLang} dir={head.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{head.title}</title>
+    <meta name="description" content={head.description} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href={head.canonical} />
+    {head.alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={head.title} />
+    <meta property="og:description" content={head.description} />
+    <meta property="og:url" content={head.canonical} />
+    <meta property="og:locale" content={head.htmlLang} />
+  </head>
+  <body>
+    <header class="site-header"><span class="brand">Fisca</span></header>
+    <main class="container">
+      <slot />
+    </main>
+  </body>
+</html>

@@ -4,9 +4,24 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.13",
+    "astro": "^5.18.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/node": "^24.19.2",
+    "playwright": "^1.65.1",
+    "typescript": "~6.0.3",
+    "wrangler": "^4.162.0"
   }
 }
