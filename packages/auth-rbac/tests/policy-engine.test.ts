@@ -44,8 +44,9 @@ const PLAIN_ACTIONS_BY_ROLE: Readonly<Record<RoleCode, readonly PermissionAction
     'PARTNER_APPROVE_RIB_CHANGE', 'PAYMENT_PREPARE_PAIN001', 'PAYMENT_SIGN_PAIN001',
     'PAYROLL_9421_READ_EXPORT', 'REVERSIBILITY_EXPORT_10Y',
   ],
-  AIDE_COMPTABLE: ['INVOICE_CREATE_DRAFT', 'LEDGER_SAVE_DRAFT'],
-  CHEF_MISSION: ['LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE'],
+  // Doc_09 §06B : 9421 « Si attribut PII » (la matrice teste ici le RBAC, l'ABAC est testé plus bas).
+  AIDE_COMPTABLE: ['INVOICE_CREATE_DRAFT', 'LEDGER_SAVE_DRAFT', 'PAYROLL_9421_READ_EXPORT'],
+  CHEF_MISSION: ['LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'PAYROLL_9421_READ_EXPORT'],
   EXPERT_COMPTABLE_OEC: [
     'LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'LEDGER_POST_IMMUTABLE',
     'PAYROLL_9421_READ_EXPORT', 'REVERSIBILITY_EXPORT_10Y',
@@ -153,7 +154,7 @@ describe('verrou d’exercice clôturé', () => {
 });
 
 describe('ABAC PII — État 9421', () => {
-  for (const role of ['OWNER_GERANT', 'DAF_TRESORIER', 'EXPERT_COMPTABLE_OEC'] as const) {
+  for (const role of ['OWNER_GERANT', 'DAF_TRESORIER', 'EXPERT_COMPTABLE_OEC', 'AIDE_COMPTABLE', 'CHEF_MISSION'] as const) {
     it(`${role} sans habilitation can_access_payroll_pii est refusé`, () => {
       const d = evaluateAccessPolicy('PAYROLL_9421_READ_EXPORT', ctx({ role, canAccessPayrollPii: false }));
       expect(d).toMatchObject({ allowed: false, denialCode: 'ABAC_PAYROLL_PII_CLEARANCE_MISSING' });
