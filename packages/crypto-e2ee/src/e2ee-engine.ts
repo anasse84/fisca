@@ -2,7 +2,7 @@
  * CTR-COD-08 « e2ee-engine » (Doc_10 § 03, § 04, § 11 ; ERRATA section C).
  *
  * Point d'entrée unique du moteur E2EE. Ticket T-S1A-06 : chiffrement AES-256-GCM par cellule avec AAD
- * et index aveugle. Les tickets suivants (07 enveloppes RSA-OAEP et enclave HPKE : key-envelope.ts, hpke-enclave.ts ; 08 Shamir, 09 scrubber PII) ajoutent
+ * et index aveugle. Les tickets suivants (07 enveloppes RSA-OAEP et enclave HPKE : key-envelope.ts, hpke-enclave.ts ; 08 Shamir, 09 scrubber PII : pii-scrubber.ts) ajoutent
  * leurs modules et les réexportent ici.
  */
 export { E2eeError } from './e2ee-errors.ts';
@@ -64,3 +64,5 @@ export type {
   SealedEscrowShare,
   ShamirShare,
 } from './shamir-escrow.ts';
+export { EphemeralRamPiiScrubber } from './pii-scrubber.ts';
+export type { PiiScrubContext } from './pii-scrubber.ts';
