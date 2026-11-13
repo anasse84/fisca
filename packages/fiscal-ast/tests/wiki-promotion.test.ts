@@ -8,6 +8,7 @@ import {
   type WikiCompilerErrorCode,
 } from '../src/index.ts';
 import { CODES, GOLDEN_FILE, firstCase, readNumber } from './helpers/rule-fixtures.ts';
+import { cashVectors, vatVectors } from './helpers/vector-fixtures.ts';
 import { FIXTURE_CREATED_AT, asText, cashSource, vatSource } from './helpers/wiki-fixtures.ts';
 
 /**
@@ -30,6 +31,10 @@ function expectedCash(): Record<string, number> {
   const expected = firstCase('VEC-CGI-01').expected;
   return Object.fromEntries(Object.entries(expected).flatMap(([key, value]) => (typeof value === 'number' ? [[key, value]] : [])));
 }
+
+/** Vecteurs contradictoires valides (rôles POSITIVE_NOMINAL, NEGATIVE_COUNTEREXAMPLE, BOUNDARY_LIMIT) : exigés par toute promotion. */
+const CASH_VECTORS = cashVectors();
+const VAT_VECTORS = vatVectors();
 
 const VALUE_CASE = {
   case_id: 'CASE-VALUE',
@@ -95,7 +100,7 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
     const candidate = await cashCandidate();
     const pool = [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE];
     for (const count of [0, 1, 2]) {
-      const error = expectRefusal(() => promoteToShadowObserve(candidate, pool.slice(0, count)), 'PROMOTION_CASES_INSUFFICIENT');
+      const error = expectRefusal(() => promoteToShadowObserve(candidate, pool.slice(0, count), CASH_VECTORS), 'PROMOTION_CASES_INSUFFICIENT');
       expect(error.caseOutcomes.map((outcome) => outcome.caseId)).toEqual(pool.slice(0, count).map((c) => c.case_id));
       expect(error.message).toContain(String(count));
     }
@@ -103,24 +108,24 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
 
   it('refusée si les cas ne sont pas une liste, ou si un cas est mal formé', async () => {
     const candidate = await cashCandidate();
-    expectRefusal(() => promoteToShadowObserve(candidate, 'trois cas'), 'PROMOTION_CASES_INSUFFICIENT');
-    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, extra: 1 }]), 'PROMOTION_CASE_INVALID');
-    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, operation: 'eval' }]), 'PROMOTION_CASE_INVALID');
+    expectRefusal(() => promoteToShadowObserve(candidate, 'trois cas', CASH_VECTORS), 'PROMOTION_CASES_INSUFFICIENT');
+    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, extra: 1 }], CASH_VECTORS), 'PROMOTION_CASE_INVALID');
+    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, operation: 'eval' }], CASH_VECTORS), 'PROMOTION_CASE_INVALID');
     expectRefusal(
-      () => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, input: { ...goldenCashInput(), ruleCode: 'AUTRE' } }]),
+      () => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, { ...REFUSAL_NEGATIVE, input: { ...goldenCashInput(), ruleCode: 'AUTRE' } }], CASH_VECTORS),
       'PROMOTION_CASE_INVALID',
     );
   });
 
   it('refusée si un identifiant de cas est répété (trois fois le même cas ne font pas trois cas)', async () => {
     const candidate = await cashCandidate();
-    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, VALUE_CASE, VALUE_CASE]), 'PROMOTION_CASE_INVALID');
+    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, VALUE_CASE, VALUE_CASE], CASH_VECTORS), 'PROMOTION_CASE_INVALID');
   });
 
   it('refusée si l\'opération d\'un cas ne vise pas le genre de la règle', async () => {
     const candidate = await cashCandidate();
     const wrongKind = { ...REFUSAL_NEGATIVE, operation: 'evaluateBtpSettlement' };
-    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, wrongKind]), 'PROMOTION_CASE_INVALID');
+    expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, wrongKind], CASH_VECTORS), 'PROMOTION_CASE_INVALID');
   });
 
   it('refusée avec un cas qui échoue : la valeur attendue diffère d\'un centime', async () => {
@@ -129,7 +134,7 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
     const key = Object.keys(expected)[0] ?? '';
     const current = expected[key] ?? 0;
     const failing = { ...VALUE_CASE, case_id: 'CASE-OFF-BY-ONE', expect: { outcome: 'VALUE', fields: { ...expected, [key]: current + 1 } } };
-    const error = expectRefusal(() => promoteToShadowObserve(candidate, [failing, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE]), 'PROMOTION_CASE_FAILED');
+    const error = expectRefusal(() => promoteToShadowObserve(candidate, [failing, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE], CASH_VECTORS), 'PROMOTION_CASE_FAILED');
     const byId = new Map(error.caseOutcomes.map((outcome) => [outcome.caseId, outcome]));
     expect(byId.get('CASE-OFF-BY-ONE')?.passed).toBe(false);
     expect(byId.get('CASE-OFF-BY-ONE')?.detail).toContain(key);
@@ -140,16 +145,16 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
   it('refusée si un cas de refus ne refuse pas, ou refuse avec un autre code', async () => {
     const candidate = await cashCandidate();
     const notRefused = { ...REFUSAL_BEFORE_EFFECT, case_id: 'CASE-NOT-REFUSED', input: goldenCashInput() };
-    const error = expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, notRefused, REFUSAL_NEGATIVE]), 'PROMOTION_CASE_FAILED');
+    const error = expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, notRefused, REFUSAL_NEGATIVE], CASH_VECTORS), 'PROMOTION_CASE_FAILED');
     expect(error.caseOutcomes.find((o) => o.caseId === 'CASE-NOT-REFUSED')?.passed).toBe(false);
     const wrongCode = { ...REFUSAL_NEGATIVE, case_id: 'CASE-WRONG-CODE', expect: { outcome: 'REFUSAL', error_code: 'RULE_GAP' } };
-    const second = expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, wrongCode]), 'PROMOTION_CASE_FAILED');
+    const second = expectRefusal(() => promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, wrongCode], CASH_VECTORS), 'PROMOTION_CASE_FAILED');
     expect(second.caseOutcomes.find((o) => o.caseId === 'CASE-WRONG-CODE')?.detail).toContain('INPUT_INVALID');
   });
 
   it('acceptée avec 3 cas valides : ligne SHADOW_OBSERVE, source et état de vérification conservés', async () => {
     const candidate = await cashCandidate();
-    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE]);
+    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE], CASH_VECTORS);
     expect(promoted.row.status).toBe('SHADOW_OBSERVE');
     expect(promoted.row).toEqual({ ...candidate.row, status: 'SHADOW_OBSERVE' });
     expect(promoted.sourceSha256).toBe(candidate.sourceSha256);
@@ -161,7 +166,7 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
 
   it('acceptée avec plus de 3 cas ; jamais ACTIVE', async () => {
     const candidate = await cashCandidate();
-    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE, REFUSAL_VAT_1400]);
+    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE, REFUSAL_VAT_1400], CASH_VECTORS);
     expect(promoted.row.status).toBe('SHADOW_OBSERVE');
     expect(promoted.caseOutcomes).toHaveLength(4);
   });
@@ -172,22 +177,22 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
       ruleId: 'R-OTHER',
       createdAtIso: FIXTURE_CREATED_AT,
     });
-    expectRefusal(() => promoteToShadowObserve(other, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE]), 'PROMOTION_CASE_FAILED');
+    expectRefusal(() => promoteToShadowObserve(other, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE], CASH_VECTORS), 'PROMOTION_CASE_FAILED');
   });
 
   it('refusée si la ligne n\'est pas PENDING_ADMIN_APPROVAL (FSM) ou si la ligne est altérée', async () => {
     const candidate = await cashCandidate();
     const cases = [VALUE_CASE, REFUSAL_BEFORE_EFFECT, REFUSAL_NEGATIVE];
     for (const status of ['SHADOW_OBSERVE', 'ACTIVE', 'SUPERSEDED'] as const) {
-      expectRefusal(() => promoteToShadowObserve({ ...candidate, row: { ...candidate.row, status } }, cases), 'FSM_TRANSITION_REFUSED');
+      expectRefusal(() => promoteToShadowObserve({ ...candidate, row: { ...candidate.row, status } }, cases, CASH_VECTORS), 'FSM_TRANSITION_REFUSED');
     }
-    expectRefusal(() => promoteToShadowObserve({ ...candidate, row: { ...candidate.row, rule_ast_json: '{}' } }, cases), 'AST_INVALID');
+    expectRefusal(() => promoteToShadowObserve({ ...candidate, row: { ...candidate.row, rule_ast_json: '{}' } }, cases, CASH_VECTORS), 'AST_INVALID');
   });
 
   it('les cas sont des données : une chaîne de code dans un cas n\'est jamais exécutée', async () => {
     const candidate = await cashCandidate();
     const hostile = { ...REFUSAL_NEGATIVE, case_id: 'CASE-HOSTILE', input: { ...goldenCashInput(), paymentDateIso: 'process.exit(1)' }, expect: { outcome: 'REFUSAL', error_code: 'DATE_INVALID' } };
-    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, hostile]);
+    const promoted = promoteToShadowObserve(candidate, [VALUE_CASE, REFUSAL_BEFORE_EFFECT, hostile], CASH_VECTORS);
     expect(promoted.row.status).toBe('SHADOW_OBSERVE');
   });
 
@@ -198,7 +203,7 @@ describe('promotion vers SHADOW_OBSERVE : exigence des 3 cas exécutés contre l
       { case_id: 'V-2', label: '1400 bps en 2026', operation: 'evaluateVatRate', input: { issueDateIso: GOLDEN_FILE.ruleDate, vatRateBps: 1400 }, expect: { outcome: 'REFUSAL', error_code: 'ADR_04_LF2026_VAT_VIOLATION' } },
       { case_id: 'V-3', label: 'taux listé', operation: 'evaluateVatRate', input: { issueDateIso: GOLDEN_FILE.ruleDate, vatRateBps: 2000 }, expect: { outcome: 'VALUE', fields: { vatRateBps: 2000 } } },
     ];
-    expect(promoteToShadowObserve(candidate, vatCases).row.status).toBe('SHADOW_OBSERVE');
+    expect(promoteToShadowObserve(candidate, vatCases, VAT_VECTORS).row.status).toBe('SHADOW_OBSERVE');
     expect(CODES.VAT.length).toBeGreaterThan(0);
   });
 });

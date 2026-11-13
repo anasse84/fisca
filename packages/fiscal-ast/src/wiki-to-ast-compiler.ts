@@ -1,7 +1,8 @@
 import { assertValidVatRateForIssueYear } from '@fisca/shared-types';
 import { z } from 'zod';
 import { dayNumber, parseIsoDate } from './calendar.ts';
-import { DynamicFiscalAstEngine } from './dynamic-fiscal-ast-engine.ts';
+import { CONTRADICTORY_VECTOR_REJECTIONS, evaluateContradictoryVectors, rejectVectors, sandboxEngine, type VectorEvaluation } from './contradictory-vectors.ts';
+import type { DynamicFiscalAstEngine } from './dynamic-fiscal-ast-engine.ts';
 import { FISCAL_AST_ERROR_CODES, FiscalAstError, type FiscalAstErrorCode } from './errors.ts';
 import { COMPARATORS, DYNAMIC_FISCAL_RULE_SCHEMA, type DynamicFiscalRuleAst, type RuleKind } from './rule-ast.ts';
 import type { RuleRow, RuleRowStatus } from './rule-store.ts';
@@ -103,8 +104,11 @@ export interface CompiledRuleCandidate {
   readonly verificationState: VerificationState;
 }
 
-/** Marqueur : la définition de « contradictoire » n'est pas tranchée par les spécifications, le contrôle n'est pas évalué. */
-export const CONTRADICTION_CHECK_STATUS = 'NOT_EVALUATED_SPEC_AMBIGUITY' as const;
+/**
+ * Le contrôle de contradiction est ÉVALUÉ (décision H3, 2026-11-13) : il remplace l'ancien marqueur « non évalué »
+ * (définition de « contradictoire » alors non tranchée). Voir contradictory-vectors.ts.
+ */
+export const CONTRADICTION_CHECK_STATUS = 'EVALUATED' as const;
 
 export interface PromotedRuleCandidate {
   /** Même ligne, statut SHADOW_OBSERVE. */
@@ -113,7 +117,12 @@ export interface PromotedRuleCandidate {
   readonly verificationState: VerificationState;
   readonly caseOutcomes: readonly CaseOutcome[];
   readonly contradictionCheck: typeof CONTRADICTION_CHECK_STATUS;
+  /** Détail des vecteurs contradictoires évalués par le moteur (un par vecteur reçu). */
+  readonly vectorEvaluations: readonly VectorEvaluation[];
 }
+
+/** Ligne promue vers ACTIVE : porte les mêmes preuves que la promotion SHADOW_OBSERVE dont elle découle. */
+export type ActivatedRuleCandidate = PromotedRuleCandidate;
 
 // ------------------------------------------------------------------ compilation
 
@@ -272,18 +281,6 @@ function checkParameters(params: CompileWikiRuleParams): void {
   }
 }
 
-/** Le moteur n'évalue que les lignes ACTIVE : le bac à sable en mémoire en reçoit une copie, jamais renvoyée à l'appelant. */
-function sandboxEngine(row: RuleRow): DynamicFiscalAstEngine {
-  try {
-    return DynamicFiscalAstEngine.fromRows([{ ...row, status: 'ACTIVE' }]);
-  } catch (error) {
-    if (error instanceof FiscalAstError) {
-      throw new WikiCompilerError('AST_INVALID', error.detail, [], error.code);
-    }
-    throw error;
-  }
-}
-
 /**
  * Compile une source wiki en ligne de règle candidate. Échec fermé : toute anomalie lève une WikiCompilerError typée.
  * Même texte, même ruleId, même createdAtIso : même sortie, octet pour octet.
@@ -411,9 +408,10 @@ function executeCase(engine: DynamicFiscalAstEngine, testCase: CandidateCase, ru
 /**
  * Promeut une règle compilée vers SHADOW_OBSERVE à une condition : au moins ADVERSARIAL_CASES_MIN cas de test, bien formés,
  * à identifiants distincts, TOUS exécutés contre le moteur avec la règle candidate et TOUS conformes.
- * Le contrôle « contradictoire » n'est pas évalué (définition non tranchée) : voir CONTRADICTION_CHECK_STATUS.
+ * ET, après ces cas, le contrôle de contradiction : au moins CONTRADICTORY_VECTORS_MIN vecteurs {role, operation, input, expected},
+ * un par rôle, évalués RÉELLEMENT par le moteur (voir evaluateContradictoryVectors). Sinon AST_CONTRADICTORY_VECTORS_INVALID.
  */
-export function promoteToShadowObserve(candidate: CompiledRuleCandidate, rawCases: unknown): PromotedRuleCandidate {
+export function promoteToShadowObserve(candidate: CompiledRuleCandidate, rawCases: unknown, rawVectors: unknown): PromotedRuleCandidate {
   assertRuleTransitionAllowed(candidate.row.status, 'SHADOW_OBSERVE');
   const engine = sandboxEngine(candidate.row);
   const parsedAst = DYNAMIC_FISCAL_RULE_SCHEMA.safeParse(safeJson(candidate.row.rule_ast_json));
@@ -457,13 +455,32 @@ export function promoteToShadowObserve(candidate: CompiledRuleCandidate, rawCase
   if (failed.length > 0) {
     throw new WikiCompilerError('PROMOTION_CASE_FAILED', `${failed.length} cas en échec sur ${outcomes.length} : ${failed.map((o) => o.caseId).join(', ')}.`, outcomes);
   }
-  return {
-    row: { ...candidate.row, status: 'SHADOW_OBSERVE' },
+  const report = evaluateContradictoryVectors(candidate.row, rawVectors);
+  const promoted: PromotedRuleCandidate = Object.freeze({
+    row: Object.freeze({ ...candidate.row, status: 'SHADOW_OBSERVE' as const }),
     sourceSha256: candidate.sourceSha256,
     verificationState: candidate.verificationState,
     caseOutcomes: outcomes,
     contradictionCheck: CONTRADICTION_CHECK_STATUS,
-  };
+    vectorEvaluations: report.vectorEvaluations,
+  });
+  VALIDATED_PROMOTIONS.add(promoted);
+  return promoted;
+}
+
+/** Résultats de promotion émis par promoteToShadowObserve (identité d'objet) : seule preuve admise pour passer à ACTIVE. */
+const VALIDATED_PROMOTIONS = new WeakSet<PromotedRuleCandidate>();
+
+/**
+ * Promeut une règle SHADOW_OBSERVE vers ACTIVE. Le contrôle de contradiction ne peut pas être contourné : l'argument doit être
+ * le résultat de promoteToShadowObserve lui-même (un objet recopié ou forgé à la main est refusé), donc des vecteurs validés.
+ */
+export function promoteToActive(promoted: PromotedRuleCandidate): ActivatedRuleCandidate {
+  assertRuleTransitionAllowed(promoted.row.status, 'ACTIVE');
+  if (!VALIDATED_PROMOTIONS.has(promoted) || promoted.contradictionCheck !== CONTRADICTION_CHECK_STATUS || promoted.vectorEvaluations.length === 0) {
+    throw rejectVectors(CONTRADICTORY_VECTOR_REJECTIONS.NOT_VALIDATED, 'promotion vers ACTIVE refusée : le résultat reçu ne provient pas du contrôle de contradiction (promoteToShadowObserve).');
+  }
+  return Object.freeze({ ...promoted, row: Object.freeze({ ...promoted.row, status: 'ACTIVE' as const }) });
 }
 
 function safeJson(text: string): unknown {

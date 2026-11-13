@@ -16,4 +16,5 @@ export const FISCAL_RULE_CODES = {
 } as const;
 export * from './wiki-compiler-errors.ts';
 export { canonicalJson, parseStrictJson, sha256Hex, type StrictJsonValue } from './wiki-json.ts';
+export * from './contradictory-vectors.ts';
 export * from './wiki-to-ast-compiler.ts';

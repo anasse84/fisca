@@ -33,6 +33,8 @@ export const WIKI_COMPILER_ERROR_CODES = [
   'PROMOTION_CASE_INVALID',
   /** Au moins un cas exécuté contre le moteur échoue. */
   'PROMOTION_CASE_FAILED',
+  /** Vecteurs contradictoires absents, incomplets, non discriminants ou divergents de l'évaluation réelle du moteur (décision H3), ou ACTIVE sans résultat validé. */
+  'AST_CONTRADICTORY_VECTORS_INVALID',
 ] as const;
 
 export type WikiCompilerErrorCode = (typeof WIKI_COMPILER_ERROR_CODES)[number];
