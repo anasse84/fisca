@@ -7,8 +7,8 @@
  * - GET /api/v1/health/deep (CTR-API-13, logique dans src/core/health-deep.ts, route publique montée avant le pipeline) ;
  * - POST /api/v1/ledger/entries (CTR-API-45 : brouillon, `engine.createDraft`) ;
  * - POST /api/v1/ledger/entries/:id/submit (CTR-API-46 : IA_PROPOSITION → DRAFT, `engine.submitDraft`) ;
- * - GET /api/v1/ledger/verify-chain?journalId= (CTR-API-47 : `engine.verifyJournalChain`, lecture réservée par le repli
- *   `LEDGER_READ_PROOF_FALLBACK_ACTIONS` de src/core/ledger-read-proof.ts : plus ouverte à tout membre) ;
+ * - GET /api/v1/ledger/verify-chain?journalId= (CTR-API-47 : `engine.verifyJournalChain`, lecture réservée par la permission
+ *   `LEDGER_READ_PROOF` (src/core/ledger-read-proof.ts) : plus ouverte à tout membre) ;
  * - POST /api/v1/ledger/entries/:id/visa (CTR-API-48 : `engine.visaCycle`, DRAFT → REVISEE_CYCLE, LEDGER_VISA_CYCLE, une pièce à la fois).
  * Pas de route de visa par cycle (`/ledger/cycles/:cycleCode/visa`) : le moteur ne vise que pièce par pièce (`visaCycle(entryId)`), aucune méthode par code de cycle.
  * Le pipeline (authentification, TenantRouter, EntitlementGuard, Idempotency, RFC 9457) s'applique à `/api/v1/*`.

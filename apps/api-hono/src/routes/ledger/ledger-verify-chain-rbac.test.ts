@@ -1,6 +1,5 @@
 /**
- * S1B point 4 : GET /api/v1/ledger/verify-chain n'est plus ouverte à tout membre. auth-rbac n'a aucune permission de lecture du
- * grand livre : règle de repli à échec fermé (`LEDGER_READ_PROOF_FALLBACK_ACTIONS`), plafond de mandat appliqué.
+ * S1B point 4 : GET /api/v1/ledger/verify-chain n'est plus ouverte à tout membre : permission dédiée `LEDGER_READ_PROOF` à échec fermé, plafond de mandat appliqué.
  */
 import { describe, expect, it } from 'vitest';
 import type { PermissionAction, RoleCode } from '@fisca/auth-rbac';
@@ -21,7 +20,7 @@ function member(kit: Kit, userId: string, role: RoleCode): string {
   return userId;
 }
 
-describe('verify-chain : repli RBAC à échec fermé', () => {
+describe('verify-chain : permission LEDGER_READ_PROOF à échec fermé', () => {
   it('membre sans lecture : CAISSIER_POS, COMMERCIAL, ACHATS, MAGASINIER refusés 403 LEDGER_ACCESS_DENIED', async () => {
     const kit = await buildKit();
     await kit.entryAt('POSTED');
@@ -38,7 +37,7 @@ describe('verify-chain : repli RBAC à échec fermé', () => {
     }
   });
 
-  it('AUDITEUR_CAC_DGI et EXPERT_COMPTABLE_OEC autorisés (verdict complet) ; aide, chef et gérant aussi (action LEDGER_*)', async () => {
+  it('AUDITEUR_CAC_DGI et EXPERT_COMPTABLE_OEC autorisés (verdict complet) ; aide, chef et gérant aussi (LEDGER_READ_PROOF)', async () => {
     const kit = await buildKit();
     await kit.entryAt('POSTED');
     for (const user of [member(kit, 'u-aud', 'AUDITEUR_CAC_DGI'), USER_OEC, USER_AIDE, USER_CHEF, USER_1]) {
@@ -54,14 +53,14 @@ describe('verify-chain : repli RBAC à échec fermé', () => {
     expect(await denied(response)).toBe('LEDGER_ACCESS_DENIED');
   });
 
-  it('accès par mandat borné par le plafond : aucune action de repli = 403 ; plafond {REVERSIBILITY_EXPORT_10Y} = 200 ; plafond vide = 403', async () => {
+  it('accès par mandat borné par le plafond : plafond sans LEDGER_READ_PROOF = 403 ; plafond {LEDGER_READ_PROOF} = 200 ; plafond vide = 403', async () => {
     const kit = await buildKit();
     await kit.entryAt('POSTED');
-    grantMandate(kit.mandates, USER_2, COMPANY_A, 'EXPERT_COMPTABLE_OEC', { permissionCeiling: new Set<PermissionAction>(['INVOICE_CREATE_DRAFT', 'PAYROLL_9421_READ_EXPORT']) });
+    grantMandate(kit.mandates, USER_2, COMPANY_A, 'EXPERT_COMPTABLE_OEC', { permissionCeiling: new Set<PermissionAction>(['INVOICE_CREATE_DRAFT', 'PAYROLL_9421_READ_EXPORT', 'LEDGER_VISA_CYCLE', 'REVERSIBILITY_EXPORT_10Y']) });
     expect(await denied(await kit.call('GET', VERIFY, { user: USER_2 }))).toBe('LEDGER_ACCESS_DENIED');
     grantMandate(kit.mandates, USER_2, COMPANY_A, 'EXPERT_COMPTABLE_OEC', { permissionCeiling: new Set<PermissionAction>() });
     expect(await denied(await kit.call('GET', VERIFY, { user: USER_2 }))).toBe('LEDGER_ACCESS_DENIED');
-    grantMandate(kit.mandates, USER_2, COMPANY_A, 'AUDITEUR_CAC_DGI', { permissionCeiling: new Set<PermissionAction>(['REVERSIBILITY_EXPORT_10Y']) });
+    grantMandate(kit.mandates, USER_2, COMPANY_A, 'AUDITEUR_CAC_DGI', { permissionCeiling: new Set<PermissionAction>(['LEDGER_READ_PROOF']) });
     expect((await kit.call('GET', VERIFY, { user: USER_2 })).status).toBe(200);
   });
 });

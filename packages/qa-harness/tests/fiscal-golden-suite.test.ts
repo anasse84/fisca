@@ -338,28 +338,76 @@ describe('VEC-CGI-05 : date d\'émission illisible, rejet typé ADR_04_UNREADABL
 });
 
 describe('assertValidSage100PnmBuffer : 108 caractères ASCII + CRLF', () => {
-  function line(sense = 'D', fill = 'X'): string {
-    return `${fill.repeat(83)}${sense}${fill.repeat(PNM_LINE_WIDTH - 84)}`;
+  interface PnmFields {
+    readonly journal?: string;
+    readonly date?: string;
+    readonly reference?: string;
+    readonly sense?: string;
+    readonly amountField?: string;
+    readonly flag?: string;
+    readonly reserved?: string;
+    readonly label?: string;
+  }
+  /** Ligne .PNM conforme (Doc_07 § 04) ; chaque zone peut être remplacée pour fabriquer un cas fautif. */
+  function pnmLine(fields: PnmFields = {}): string {
+    return [
+      (fields.journal ?? 'VTE').padEnd(3),
+      (fields.date ?? '131126').padEnd(6),
+      'FC',
+      '34210000'.padEnd(13),
+      'X',
+      'CLI0001'.padEnd(13),
+      (fields.reference ?? 'FAC2026000001').padEnd(13),
+      (fields.label ?? 'FACTURE ATLAS SARL').padEnd(25),
+      'V',
+      '120127',
+      fields.sense ?? 'D',
+      fields.amountField ?? '100.00'.padStart(20),
+      fields.flag ?? 'N',
+      fields.reserved ?? '   ',
+    ].join('');
+  }
+  function line(sense = 'D', fill?: string): string {
+    return pnmLine({ sense, ...(fill === undefined ? {} : { label: fill.repeat(25) }) });
+  }
+  function amount(value: string): string {
+    return value.padStart(20);
+  }
+  /** Pièce équilibrée D 100.00 / C 100.00 (même référence). */
+  function balanced(): string {
+    return pnmLine({ sense: 'D' }) + crlf + pnmLine({ sense: 'C' }) + crlf;
   }
   const crlf = '\r\n';
+  const REFERENCE_LINE = 'VTE131126FC34210000     XCLI0001      FAC2026000001FACTURE ATLAS SARL       V120127D             1234.50N   ';
 
   it('largeur imposée : 108', () => {
     expect(PNM_LINE_WIDTH).toBe(108);
     expect(line()).toHaveLength(108);
+    expect(REFERENCE_LINE).toHaveLength(108);
   });
 
-  it('accepte une ligne et plusieurs lignes conformes (D et C)', () => {
-    expect(assertValidSage100PnmBuffer(line() + crlf)).toEqual({ linesCount: 1 });
+  it('la ligne de référence du propriétaire est reproduite par le gabarit', () => {
+    expect(pnmLine({ amountField: amount('1234.50') })).toBe(REFERENCE_LINE);
+    expect(REFERENCE_LINE.slice(84, 104)).toBe(amount('1234.50'));
+  });
+
+  it('accepte la ligne de référence équilibrée par sa contrepartie', () => {
+    const counterpart = `${REFERENCE_LINE.slice(0, 83)}C${REFERENCE_LINE.slice(84)}`;
+    expect(assertValidSage100PnmBuffer(REFERENCE_LINE + crlf + counterpart + crlf)).toEqual({ linesCount: 2 });
+  });
+
+  it('accepte une pièce D/C équilibrée', () => {
+    expect(assertValidSage100PnmBuffer(balanced())).toEqual({ linesCount: 2 });
     expect(assertValidSage100PnmBuffer(line('D') + crlf + line('C') + crlf)).toEqual({ linesCount: 2 });
   });
 
-  it('accepte des espaces et la ponctuation ASCII imprimable', () => {
-    expect(assertValidSage100PnmBuffer(line('C', ' ') + crlf).linesCount).toBe(1);
-    expect(assertValidSage100PnmBuffer(line('C', '~') + crlf).linesCount).toBe(1);
+  it('accepte des espaces et la ponctuation ASCII imprimable dans le libellé', () => {
+    expect(assertValidSage100PnmBuffer(line('D', ' ') + crlf + line('C', ' ') + crlf).linesCount).toBe(2);
+    expect(assertValidSage100PnmBuffer(line('D', '~') + crlf + line('C', '~') + crlf).linesCount).toBe(2);
   });
 
   it('accepte un tampon binaire (Uint8Array) conforme', () => {
-    expect(assertValidSage100PnmBuffer(Buffer.from(line() + crlf, 'ascii')).linesCount).toBe(1);
+    expect(assertValidSage100PnmBuffer(Buffer.from(balanced(), 'ascii')).linesCount).toBe(2);
   });
 
   it('refuse un tampon vide', () => {
@@ -401,5 +449,170 @@ describe('assertValidSage100PnmBuffer : 108 caractères ASCII + CRLF', () => {
   it('refuse un sens Débit/Crédit autre que D ou C en position 84', () => {
     expect(() => assertValidSage100PnmBuffer(line('X') + crlf)).toThrow(/PNM_INVALID_DEBIT_CREDIT_FLAG/);
     expect(() => assertValidSage100PnmBuffer(line('d') + crlf)).toThrow(/PNM_INVALID_DEBIT_CREDIT_FLAG/);
+  });
+});
+
+describe('assertValidSage100PnmBuffer : montant (85-104), type (105), zone réservée (106-108), équilibre par pièce', () => {
+  const crlf = '\r\n';
+
+  function pnm(options: {
+    readonly sense?: string;
+    readonly amountField?: string;
+    readonly flag?: string;
+    readonly reserved?: string;
+    readonly reference?: string;
+    readonly journal?: string;
+    readonly date?: string;
+  } = {}): string {
+    return [
+      (options.journal ?? 'VTE'),
+      (options.date ?? '131126'),
+      'FC',
+      '34210000'.padEnd(13),
+      'X',
+      'CLI0001'.padEnd(13),
+      (options.reference ?? 'FAC2026000001').padEnd(13),
+      'FACTURE ATLAS SARL'.padEnd(25),
+      'V',
+      '120127',
+      options.sense ?? 'D',
+      options.amountField ?? '100.00'.padStart(20),
+      options.flag ?? 'N',
+      options.reserved ?? '   ',
+    ].join('');
+  }
+  function right(value: string): string {
+    return value.padStart(20);
+  }
+  function entry(sense: 'D' | 'C', value: string, reference = 'FAC2026000001'): string {
+    return pnm({ sense, amountField: right(value), reference }) + crlf;
+  }
+  function failsWith(content: string, code: string): void {
+    expect(() => assertValidSage100PnmBuffer(content)).toThrow(new RegExp(`^${code}`));
+  }
+
+  it('accepte la ligne de référence du propriétaire avec sa contrepartie', () => {
+    expect(assertValidSage100PnmBuffer(entry('D', '1234.50') + entry('C', '1234.50')).linesCount).toBe(2);
+  });
+
+  describe('montant : cadré à droite sur 20 caractères, positif, 2 décimales', () => {
+    const invalid: readonly (readonly [string, string])[] = [
+      ['sans décimales', right('1234')],
+      ['une seule décimale', right('1234.5')],
+      ['trois décimales', right('1234.500')],
+      ['négatif', right('-1234.50')],
+      ['signe plus', right('+1234.50')],
+      ['nul', right('0.00')],
+      ['nul avec zéros', right('000.00')],
+      ['virgule décimale', right('1234,50')],
+      ['séparateur de milliers (virgule)', right('1,234.50')],
+      ['séparateur de milliers (espace)', right('1 234.50')],
+      ['séparateur de milliers (point)', right('1.234.50')],
+      ['non cadré à droite (espaces à droite)', '1234.50'.padEnd(20)],
+      ['cadré à gauche avec zone décalée', ` ${'1234.50'.padEnd(19)}`],
+      ['vide', ' '.repeat(20)],
+      ['point seul', right('.50')],
+      ['lettres', right('12A4.50')],
+      ['notation scientifique', right('1e3.00')],
+    ];
+    for (const [label, field] of invalid) {
+      it(`refuse un montant ${label}`, () => {
+        expect(field).toHaveLength(20);
+        failsWith(pnm({ amountField: field }) + crlf, 'PNM_INVALID_AMOUNT_FIELD');
+      });
+    }
+
+    it('refuse un montant sur 21 caractères (ligne trop longue) ou 19 (ligne trop courte)', () => {
+      failsWith(pnm({ amountField: ` ${right('100.00')}` }) + crlf, 'PNM_INVALID_LINE_LENGTH');
+      failsWith(pnm({ amountField: right('100.00').slice(1) }) + crlf, 'PNM_INVALID_LINE_LENGTH');
+    });
+
+    it('refuse un montant de 19 caractères dont la ligne reste à 108 (décalage d\'une zone)', () => {
+      const shifted = pnm({ amountField: right('100.00').slice(1), flag: 'N ' });
+      expect(shifted).toHaveLength(108);
+      failsWith(shifted + crlf, 'PNM_INVALID_AMOUNT_FIELD');
+    });
+
+    it('accepte le plus petit montant (0.01) et un montant sur 20 caractères pleins', () => {
+      expect(assertValidSage100PnmBuffer(entry('D', '0.01') + entry('C', '0.01')).linesCount).toBe(2);
+      const full = `${'1'.repeat(17)}.00`;
+      expect(full).toHaveLength(20);
+      expect(assertValidSage100PnmBuffer(
+        pnm({ sense: 'D', amountField: full }) + crlf + pnm({ sense: 'C', amountField: full }) + crlf,
+      ).linesCount).toBe(2);
+    });
+  });
+
+  it('refuse une position 105 autre que N', () => {
+    for (const flag of ['X', 'n', ' ', '0']) {
+      failsWith(pnm({ flag }) + crlf, 'PNM_INVALID_ENTRY_TYPE_FLAG');
+    }
+  });
+
+  it('refuse une zone réservée (106 à 108) non vide', () => {
+    for (const reserved of ['X  ', ' X ', '  X', '000', '.  ']) {
+      failsWith(pnm({ reserved }) + crlf, 'PNM_INVALID_RESERVED_ZONE');
+    }
+  });
+
+  describe('équilibre par pièce (code journal, date, référence)', () => {
+    it('accepte une pièce équilibrée sur plusieurs lignes (D 100.00 + C 60.00 + C 40.00)', () => {
+      expect(assertValidSage100PnmBuffer(entry('D', '100.00') + entry('C', '60.00') + entry('C', '40.00')).linesCount).toBe(3);
+    });
+
+    it('accepte des lignes dans un ordre quelconque', () => {
+      expect(assertValidSage100PnmBuffer(entry('C', '40.00') + entry('D', '100.00') + entry('C', '60.00')).linesCount).toBe(3);
+    });
+
+    it('refuse une pièce déséquilibrée d\'un centime', () => {
+      failsWith(entry('D', '100.00') + entry('C', '60.00') + entry('C', '39.99'), 'PNM_UNBALANCED_PIECE');
+      failsWith(entry('D', '100.00') + entry('C', '60.00') + entry('C', '40.01'), 'PNM_UNBALANCED_PIECE');
+    });
+
+    it('somme en centimes entiers : 0.10 + 0.20 est égal à 0.30, sans dérive de flottant', () => {
+      expect(assertValidSage100PnmBuffer(entry('D', '0.10') + entry('D', '0.20') + entry('C', '0.30')).linesCount).toBe(3);
+    });
+
+    it('somme exacte sur de très grands montants (au-delà de 2^53 centimes)', () => {
+      const big = '90071992547409.93';
+      expect(assertValidSage100PnmBuffer(entry('D', big) + entry('C', '90071992547409.92') + entry('C', '0.01')).linesCount).toBe(3);
+      failsWith(entry('D', big) + entry('C', '90071992547409.92') + entry('C', '0.02'), 'PNM_UNBALANCED_PIECE');
+    });
+
+    it('équilibre deux pièces distinctes (références différentes) séparément', () => {
+      const two = entry('D', '100.00', 'FAC2026000001') + entry('C', '100.00', 'FAC2026000001')
+        + entry('D', '50.00', 'FAC2026000002') + entry('C', '50.00', 'FAC2026000002');
+      expect(assertValidSage100PnmBuffer(two).linesCount).toBe(4);
+    });
+
+    it('refuse deux pièces qui ne s\'équilibrent qu\'ensemble', () => {
+      failsWith(entry('D', '100.00', 'FAC2026000001') + entry('C', '50.00', 'FAC2026000001')
+        + entry('D', '50.00', 'FAC2026000002') + entry('C', '100.00', 'FAC2026000002'), 'PNM_UNBALANCED_PIECE');
+    });
+
+    it('distingue aussi la pièce par le code journal et par la date', () => {
+      failsWith(
+        pnm({ sense: 'D', journal: 'VTE' }) + crlf + pnm({ sense: 'C', journal: 'ACH' }) + crlf,
+        'PNM_UNBALANCED_PIECE',
+      );
+      failsWith(
+        pnm({ sense: 'D', date: '131126' }) + crlf + pnm({ sense: 'C', date: '141126' }) + crlf,
+        'PNM_UNBALANCED_PIECE',
+      );
+    });
+
+    it('refuse une pièce de seulement des débits, ou seulement des crédits', () => {
+      failsWith(entry('D', '100.00'), 'PNM_UNBALANCED_PIECE');
+      failsWith(entry('D', '100.00') + entry('D', '50.00'), 'PNM_UNBALANCED_PIECE');
+      failsWith(entry('C', '100.00') + entry('C', '100.00'), 'PNM_UNBALANCED_PIECE');
+    });
+
+    it('signale la pièce fautive dans le message', () => {
+      expect(() => assertValidSage100PnmBuffer(entry('D', '100.00') + entry('C', '99.99'))).toThrow(/FAC2026000001.*10000.*9999/);
+    });
+
+    it('les contrôles de ligne priment sur l\'équilibre', () => {
+      failsWith(entry('D', '100.00') + pnm({ sense: 'C', flag: 'X' }) + crlf, 'PNM_INVALID_ENTRY_TYPE_FLAG');
+    });
   });
 });
