@@ -32,7 +32,7 @@ const PLAIN_ACTIONS_BY_ROLE: Readonly<Record<RoleCode, readonly PermissionAction
   OWNER_GERANT: [
     'INVOICE_CREATE_DRAFT', 'INVOICE_CERTIFY_XHUB', 'POS_ENCASH_TICKET', 'POS_VIEW_EXPECTED_CASH',
     'PO_CREATE', 'BL_CONFIRM_RECEIPT', 'PARTNER_PROPOSE_RIB_CHANGE', 'PARTNER_APPROVE_RIB_CHANGE',
-    'PAYMENT_PREPARE_PAIN001', 'PAYMENT_SIGN_PAIN001', 'LEDGER_SAVE_DRAFT', 'LEDGER_POST_IMMUTABLE',
+    'PAYMENT_PREPARE_PAIN001', 'PAYMENT_SIGN_PAIN001', 'LEDGER_SAVE_DRAFT', 'LEDGER_POST_IMMUTABLE', 'LEDGER_READ_PROOF',
     'PAYROLL_9421_READ_EXPORT', 'REVERSIBILITY_EXPORT_10Y', 'E2EE_REVOKE_CPA_GRANT',
   ],
   COMMERCIAL_FACTURATION: ['INVOICE_CREATE_DRAFT', 'INVOICE_CERTIFY_XHUB'],
@@ -41,17 +41,17 @@ const PLAIN_ACTIONS_BY_ROLE: Readonly<Record<RoleCode, readonly PermissionAction
   MAGASINIER_BL: ['BL_CONFIRM_RECEIPT'],
   DAF_TRESORIER: [
     'INVOICE_CREATE_DRAFT', 'INVOICE_CERTIFY_XHUB', 'POS_VIEW_EXPECTED_CASH',
-    'PARTNER_APPROVE_RIB_CHANGE', 'PAYMENT_PREPARE_PAIN001', 'PAYMENT_SIGN_PAIN001',
+    'PARTNER_APPROVE_RIB_CHANGE', 'PAYMENT_PREPARE_PAIN001', 'PAYMENT_SIGN_PAIN001', 'LEDGER_READ_PROOF',
     'PAYROLL_9421_READ_EXPORT', 'REVERSIBILITY_EXPORT_10Y',
   ],
   // Doc_09 §06B : 9421 « Si attribut PII » (la matrice teste ici le RBAC, l'ABAC est testé plus bas).
-  AIDE_COMPTABLE: ['INVOICE_CREATE_DRAFT', 'LEDGER_SAVE_DRAFT', 'PAYROLL_9421_READ_EXPORT'],
-  CHEF_MISSION: ['LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'PAYROLL_9421_READ_EXPORT'],
+  AIDE_COMPTABLE: ['INVOICE_CREATE_DRAFT', 'LEDGER_SAVE_DRAFT', 'LEDGER_READ_PROOF', 'PAYROLL_9421_READ_EXPORT'],
+  CHEF_MISSION: ['LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'LEDGER_READ_PROOF', 'PAYROLL_9421_READ_EXPORT'],
   EXPERT_COMPTABLE_OEC: [
-    'LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'LEDGER_POST_IMMUTABLE',
+    'LEDGER_SAVE_DRAFT', 'LEDGER_VISA_CYCLE', 'LEDGER_POST_IMMUTABLE', 'LEDGER_READ_PROOF',
     'PAYROLL_9421_READ_EXPORT', 'REVERSIBILITY_EXPORT_10Y',
   ],
-  AUDITEUR_CAC_DGI: ['REVERSIBILITY_EXPORT_10Y'],
+  AUDITEUR_CAC_DGI: ['LEDGER_READ_PROOF', 'REVERSIBILITY_EXPORT_10Y'],
   ERP_CONNECTOR_AGENT: ['INVOICE_CREATE_DRAFT', 'LEDGER_SAVE_DRAFT'],
   AI_MCP_ACTOR: ['INVOICE_CREATE_DRAFT'],
 };
@@ -74,6 +74,25 @@ describe('catalogue : 12 rôles (ERRATA D-02)', () => {
     expect(ROLE_CODES).toContain('COMMERCIAL_FACTURATION');
     expect(ROLE_CODES).toContain('ERP_CONNECTOR_AGENT');
     expect(ROLE_CODES).toContain('AI_MCP_ACTOR');
+  });
+});
+
+describe('catalogue : 17 actions dont LEDGER_READ_PROOF (lecture de preuve du grand livre, Doc_09 §06B)', () => {
+  it('compte 17 actions distinctes (16 historiques + LEDGER_READ_PROOF)', () => {
+    expect(PERMISSION_ACTIONS).toHaveLength(17);
+    expect(new Set(PERMISSION_ACTIONS).size).toBe(17);
+    expect(PERMISSION_ACTIONS).toContain('LEDGER_READ_PROOF');
+  });
+
+  it('LEDGER_READ_PROOF : accordée exactement aux 6 rôles qui lisaient la preuve via le repli, jamais aux rôles techniques', () => {
+    const granted = ROLE_CODES.filter((role) => evaluateAccessPolicy('LEDGER_READ_PROOF', matrixCtx(role, 'LEDGER_READ_PROOF')).allowed);
+    expect([...granted].sort()).toEqual(['AIDE_COMPTABLE', 'AUDITEUR_CAC_DGI', 'CHEF_MISSION', 'DAF_TRESORIER', 'EXPERT_COMPTABLE_OEC', 'OWNER_GERANT']);
+  });
+
+  it('LEDGER_READ_PROOF est une lecture : exercice clôturé non bloquant, pas de step-up ; abonnement en lecture seule bloque (seul l export 10 ans reste ouvert)', () => {
+    expect(evaluateAccessPolicy('LEDGER_READ_PROOF', ctx({ role: 'AUDITEUR_CAC_DGI', fiscalYearClosed: true, mfaVerifiedAtEpochSec: undefined })).allowed).toBe(true);
+    const readOnly = evaluateAccessPolicy('LEDGER_READ_PROOF', ctx({ role: 'AUDITEUR_CAC_DGI', subscriptionReadOnly: true }));
+    expect(readOnly.allowed).toBe(false);
   });
 });
 

@@ -26,7 +26,22 @@ Règles de conception : plafonds, seuils, taux directeur et durées sont des **p
 | Autres calculateurs | `computeAutoEntrepreneurSurplus`, `evaluateVatRate`, `assertReadableIssueDate`, `UnreadableIssueDateError` (code `ADR_04_UNREADABLE_ISSUE_DATE`), `computeBtpSettlement`, `computeGoldenCase` |
 | Moteur de vecteurs | `loadGoldenVectorFile`, `parseGoldenVectorFile`, `replayGoldenVector`, `diffGolden`, `assertGoldenCase`, `formatDiscrepancyReport`, `GoldenMismatchError`, `GoldenVectorFormatError`, `GOLDEN_STATES`, `GOLDEN_KINDS` |
 
-Validateur `.PNM` (Doc_14 § 11, Loi 9) : tampon non vide ; chaque ligne de 108 caractères ASCII imprimables (0x20 à 0x7E) ; fin de ligne CRLF après chaque ligne, dernière comprise ; aucune ligne vide ; sens Débit/Crédit `D` ou `C` en position 84. Erreurs : `PNM_EMPTY_FILE`, `PNM_MISSING_TRAILING_CRLF`, `PNM_EMPTY_LINE`, `PNM_NON_ASCII_CHAR` (accent, octet ≥ 0x80, tabulation, LF ou CR isolé), `PNM_INVALID_LINE_LENGTH`, `PNM_INVALID_DEBIT_CREDIT_FLAG`. Un `Uint8Array` est lu octet par octet (latin1) : un accent UTF-8 est refusé. **Non vérifié** : l'équilibre Débit/Crédit par pièce (Doc_14 § 08) et l'alignement des colonnes 85 à 104, car les spécifications ne donnent ni la colonne du numéro de pièce ni celle du montant.
+Validateur `.PNM` (Doc_14 § 11, Loi 9 ; layout Doc_07 § 04) : tampon non vide ; chaque ligne de 108 caractères ASCII imprimables (0x20 à 0x7E) ; fin de ligne CRLF après chaque ligne, dernière comprise ; aucune ligne vide. Layout (positions 1-based) : 1-3 code journal ; 4-9 date JJMMAA ; 10-11 type de pièce ; 12-24 compte général ; 25 type de compte (G ou X) ; 26-38 compte tiers ; 39-51 référence de pièce ; 52-76 libellé ; 77 mode de règlement ; 78-83 échéance JJMMAA ou espaces ; 84 sens `D` ou `C` ; 85-104 montant ; 105 `N` ; 106-108 espaces.
+
+Contrôles et codes d'erreur, dans l'ordre d'évaluation de chaque ligne :
+
+| Code | Contrôle |
+|---|---|
+| `PNM_EMPTY_FILE`, `PNM_MISSING_TRAILING_CRLF`, `PNM_EMPTY_LINE` | Tampon vide, CRLF final absent, ligne vide. |
+| `PNM_NON_ASCII_CHAR` | Accent, octet ≥ 0x80, tabulation, LF ou CR isolé (un `Uint8Array` est lu en latin1). |
+| `PNM_INVALID_LINE_LENGTH` | Ligne ≠ 108 caractères (un montant de 19 ou 21 caractères décale la ligne et tombe ici). |
+| `PNM_INVALID_DEBIT_CREDIT_FLAG` | Position 84 ≠ `D` / `C`. |
+| `PNM_INVALID_AMOUNT_FIELD` | Positions 85 à 104 : `^\s*\d+\.\d{2}$` cadré à droite sur 20 caractères (espaces à gauche seulement), strictement positif ; refus du négatif, du signe, de la virgule décimale, du séparateur de milliers, d'un nombre de décimales ≠ 2, du nul et des espaces à droite. |
+| `PNM_INVALID_ENTRY_TYPE_FLAG` | Position 105 ≠ `N`. |
+| `PNM_INVALID_RESERVED_ZONE` | Positions 106 à 108 ≠ 3 espaces. |
+| `PNM_UNBALANCED_PIECE` | Après les contrôles de toutes les lignes : pour chaque pièce, groupée par (code journal 1-3, date 4-9, référence 39-51), somme des débits ≠ somme des crédits, ou somme nulle (pièce de seulement des débits ou des crédits). |
+
+Les montants sont convertis en centimes entiers par la chaîne (`'1234.50'` devient `123450n`) et sommés en `BigInt` : aucun flottant, aucune dérive au-delà de 2^53. Écart d'un centime = refus. Ligne de référence conforme : `VTE131126FC34210000     XCLI0001      FAC2026000001FACTURE ATLAS SARL       V120127D             1234.50N   `. **Non vérifié** : la cohérence des dates (JJMMAA), des comptes, du type de pièce et du mode de règlement ; Doc_07 § 04 ne décrit pas les positions 106 à 108, leur contenu (3 espaces) vient de la décision du propriétaire.
 
 ## Règle `fisca/no-float-money`
 
