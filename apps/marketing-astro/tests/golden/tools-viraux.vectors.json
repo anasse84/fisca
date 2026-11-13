@@ -1,5 +1,6 @@
 {
   "ticket": "T-P2C-06",
+  "ticket_additions": "T-P2C-07 : vecteurs VEC-CGI-04, AE-* et MOW-* (valeurs recopiées de docs/specs/14-qa-harness.md S03, 03-entitlements-pricing.md S05 et S06, 18-seo-geo-aeo.md S06 ; jamais ajustées pour passer au vert)",
   "note": "Vecteurs d'or des outils publics. Valeurs attendues recopiées de docs/specs/14-qa-harness.md S03 (VEC-CGI-01 à 03), ERRATA D-13, D-20 et section E ; jamais ajustées pour passer au vert (AGENTS.md loi 10).",
   "rule_date": "2026-11-13",
   "vectors": [
@@ -49,6 +50,105 @@
         "eleventh_lost_vat_cents": 46667
       },
       "calculation": "10 x 4800 = 48000 MAD ; 11e : 52800 MAD, plafond mensuel 50000 MAD, excédent 2800 MAD TTC ; HT du 11e = 400000, HT admis = round(200000 x 10000 / 12000) = 166667, réintégré = 233333 ; TVA du 11e = 80000, admise = 33333, perdue = 46667"
+    },
+    {
+      "id": "VEC-CGI-04",
+      "law": "Auto-entrepreneur : seuil de 80 000 DH par client, retenue de 30 % sur le surplus (ERRATA E ; Doc_14 S03)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "prior_cumul_cents": 7500000, "invoice_cents": 1200000, "threshold_cents": 8000000, "withholding_bps": 3000 },
+      "expected": { "cumul_after_cents": 8700000, "surplus_cents": 700000, "withheld_cents": 210000, "net_cents": 990000 },
+      "calculation": "cumul 7500000 + 1200000 = 8700000 ; surplus 8700000 - 8000000 = 700000 ; retenue 700000 x 3000 / 10000 = 210000 ; net 1200000 - 210000 = 990000"
+    },
+    {
+      "id": "AE-THR-ALREADY-OVER",
+      "law": "Auto-entrepreneur : seuil par client, cumul déjà au-delà du seuil (déduit de VEC-CGI-04 ; assiette exacte à valider, ERRATA E)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "prior_cumul_cents": 9000000, "invoice_cents": 500000, "threshold_cents": 8000000, "withholding_bps": 3000 },
+      "expected": { "surplus_cents": 500000, "withheld_cents": 150000, "net_cents": 350000 },
+      "calculation": "le cumul dépassait déjà le seuil : toute la nouvelle facture est au-delà ; 500000 x 3000 / 10000 = 150000 ; net 350000"
+    },
+    {
+      "id": "AE-THR-AT-THRESHOLD",
+      "law": "Auto-entrepreneur : cumul égal au seuil, aucune retenue (déduit de VEC-CGI-04, « au-delà de 80 000 »)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "prior_cumul_cents": 7000000, "invoice_cents": 1000000, "threshold_cents": 8000000, "withholding_bps": 3000 },
+      "expected": { "cumul_after_cents": 8000000, "surplus_cents": 0, "withheld_cents": 0, "net_cents": 1000000 },
+      "calculation": "7000000 + 1000000 = 8000000 = seuil : surplus 0"
+    },
+    {
+      "id": "AE-IR-QUARTER-LOW",
+      "law": "IR trimestriel de l'auto-entrepreneur au taux bas de 0,5 % (Doc_18 S06 ; taux saisi ou daté, non recoupé)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "quarter_revenue_cents": 5000000, "rate_bps": 50 },
+      "expected": { "quarter_ir_cents": 25000 },
+      "calculation": "5000000 x 50 / 10000 = 25000"
+    },
+    {
+      "id": "AE-IR-QUARTER-HIGH",
+      "law": "IR trimestriel de l'auto-entrepreneur au taux haut de 1 % (Doc_18 S06 ; taux saisi ou daté, non recoupé)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "quarter_revenue_cents": 5000000, "rate_bps": 100 },
+      "expected": { "quarter_ir_cents": 50000 },
+      "calculation": "5000000 x 100 / 10000 = 50000"
+    },
+    {
+      "id": "MOW-TPME-80",
+      "law": "Pack TPME Mowakaba, prise en charge de 80 % (Doc_03 S06 ; Doc_18 S06)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "pack_price_ht_cents": 1800000, "coverage_bps": 8000 },
+      "expected": { "subsidy_cents": 1440000, "remaining_cents": 360000 },
+      "calculation": "1800000 x 8000 / 10000 = 1440000 ; reste 1800000 - 1440000 = 360000 (3 600 MAD HT)"
+    },
+    {
+      "id": "MOW-TPME-90",
+      "law": "Pack TPME Mowakaba, prise en charge de 90 % (Doc_03 S06 ; Doc_18 S06)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "pack_price_ht_cents": 1800000, "coverage_bps": 9000 },
+      "expected": { "subsidy_cents": 1620000, "remaining_cents": 180000 },
+      "calculation": "1800000 x 9000 / 10000 = 1620000 ; reste 180000 (1 800 MAD HT)"
+    },
+    {
+      "id": "MOW-CABINET-80",
+      "law": "Pack Cabinet (Fiduciaire) Mowakaba, prise en charge de 80 % (Doc_03 S06 ; Doc_18 S06)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "pack_price_ht_cents": 4500000, "coverage_bps": 8000 },
+      "expected": { "subsidy_cents": 3600000, "remaining_cents": 900000 },
+      "calculation": "4500000 x 8000 / 10000 = 3600000 ; reste 900000 (9 000 MAD HT)"
+    },
+    {
+      "id": "MOW-CABINET-90",
+      "law": "Pack Cabinet (Fiduciaire) Mowakaba, prise en charge de 90 % (Doc_03 S06 ; Doc_18 S06)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "pack_price_ht_cents": 4500000, "coverage_bps": 9000 },
+      "expected": { "subsidy_cents": 4050000, "remaining_cents": 450000 },
+      "calculation": "4500000 x 9000 / 10000 = 4050000 ; reste 450000 (4 500 MAD HT)"
+    },
+    {
+      "id": "MOW-ELIG-AT-CEILING",
+      "law": "Éligibilité Mowakaba : CA <= 200 M MAD HT, borne incluse (Doc_03 S05 et S06 ; ERRATA section C)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "revenue_ht_cents": 20000000000, "max_revenue_ht_cents": 20000000000 },
+      "expected": { "eligible": 1 },
+      "calculation": "200 000 000 MAD = 20000000000 centimes : égal au plafond, donc éligible"
+    },
+    {
+      "id": "MOW-ELIG-ABOVE-CEILING",
+      "law": "Éligibilité Mowakaba : un centime au-dessus de 200 M MAD HT (Doc_03 S05 ; ERRATA section C)",
+      "state": "NON RECOUPÉ",
+      "ticket": "T-P2C-07",
+      "input": { "revenue_ht_cents": 20000000001, "max_revenue_ht_cents": 20000000000 },
+      "expected": { "eligible": 0 },
+      "calculation": "20000000001 > 20000000000 : non éligible"
     }
   ],
   "ice_vectors": [

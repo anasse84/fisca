@@ -47,3 +47,12 @@ export const RAS_PARAM_KEYS: readonly string[] = [
 /** Base du plafond d'espèces : paramètre daté de la règle, TTC par défaut (ERRATA E, plafond d'espèces). */
 export type CapBasis = 'TTC' | 'HT';
 export const DEFAULT_CAP_BASIS: CapBasis = 'TTC';
+
+export const AE_PARAM_KEYS: readonly string[] = ['ae_ir_rate_low_bps', 'ae_ir_rate_high_bps', 'ae_client_threshold_cents', 'ae_withholding_bps'];
+
+export const MOWAKABA_PARAM_KEYS: readonly string[] = [
+  'mowakaba_coverage_low_bps',
+  'mowakaba_coverage_high_bps',
+  'mowakaba_max_revenue_ht_cents',
+  'mowakaba_group_ownership_max_bps',
+];

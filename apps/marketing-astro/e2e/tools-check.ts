@@ -1,5 +1,5 @@
 /**
- * Contrôle navigateur des outils publics (T-P2C-06) : Chromium réel, vrai dépôt de fichier CSV et .xlsx, fr et ar,
+ * Contrôle navigateur des outils publics (T-P2C-06 et T-P2C-07) : Chromium réel, vrai dépôt de fichier CSV et .xlsx, fr et ar,
  * 375 et 1440 px, clair et sombre. Usage : `node e2e/tools-check.ts http://localhost:4321` (serveur déjà lancé).
  * Sortie 0 si tout passe. Aucun envoi réseau n'est attendu : toute requête hors origine fait échouer le contrôle.
  */
@@ -137,6 +137,61 @@ try {
         const rasOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         check(`${tag} ras pas de défilement horizontal`, rasOverflow <= 1, String(rasOverflow));
         await page.screenshot({ path: `${outDir}/${tag}-ras.png`, fullPage: true });
+
+        // ---- Auto-entrepreneur : IR trimestriel, comparaison, seuil par client (VEC-CGI-04) ----
+        await page.goto(`${base}/${locale}/outils/simulateur-auto-entrepreneur`, { waitUntil: 'networkidle' });
+        await page.locator('#ae-revenue').fill('50000');
+        await page.locator('[data-role="ir-form"] button[type="submit"]').click();
+        await page.locator('[data-role="ir-results"]').waitFor({ state: 'visible', timeout: 3000 });
+        const aeIr = (await page.locator('[data-role="ir-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} ae IR 0,5 % de 50 000 = 250,00`, aeIr.includes('250,00 MAD') && aeIr.includes('1 000,00 MAD'), aeIr.slice(0, 300));
+        check(`${tag} ae règle datée et état affichés`, aeIr.includes('2026-11-13') && aeIr.includes('NON RECOUPÉ'), aeIr.slice(-300));
+        await page.selectOption('#ae-rate', 'custom');
+        await page.locator('#ae-custom-rate').fill('1,25');
+        await page.locator('#ae-costs').fill('6000');
+        await page.locator('[data-role="ir-form"] button[type="submit"]').click();
+        const aeCustom = (await page.locator('[data-role="ir-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} ae taux saisi 1,25 % = 625,00 et marqué non recoupé`, aeCustom.includes('625,00 MAD') && aeCustom.includes('NON RECOUPÉ'), aeCustom.slice(0, 300));
+        await page.locator('#ae-prior').fill('75000');
+        await page.locator('#ae-invoice').fill('12000');
+        await page.locator('[data-role="thr-form"] button[type="submit"]').click();
+        await page.locator('[data-role="thr-results"]').waitFor({ state: 'visible', timeout: 3000 });
+        const aeThr = (await page.locator('[data-role="thr-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} ae VEC-CGI-04 surplus 7 000,00, retenue 2 100,00, net 9 900,00`, aeThr.includes('7 000,00 MAD') && aeThr.includes('2 100,00 MAD') && aeThr.includes('9 900,00 MAD'), aeThr.slice(0, 300));
+        const aeAlert = await page.locator('[data-role="thr-list"] [role="alert"]').count();
+        check(`${tag} ae alerte de retenue annoncée`, aeAlert === 1, String(aeAlert));
+        await page.locator('#ae-invoice').fill('0');
+        await page.locator('[data-role="thr-form"] button[type="submit"]').click();
+        check(`${tag} ae erreur de saisie annoncée`, (await page.locator('[data-role="thr-error"]').innerText()).length > 5);
+        const aeOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        check(`${tag} ae pas de défilement horizontal`, aeOverflow <= 1, String(aeOverflow));
+        await page.screenshot({ path: `${outDir}/${tag}-ae.png`, fullPage: true });
+
+        // ---- Mowakaba : éligibilité et reste à charge ----
+        await page.goto(`${base}/${locale}/outils/subvention-mowakaba`, { waitUntil: 'networkidle' });
+        await page.locator('#mow-revenue').fill('12000000');
+        await page.locator('form button[type="submit"]').click();
+        await page.locator('[data-role="results"]').waitFor({ state: 'visible', timeout: 3000 });
+        const mow = (await page.locator('[data-role="results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} mowakaba TPME 1 800,00 à 3 600,00`, mow.includes('1 800,00 MAD') && mow.includes('3 600,00 MAD'), mow.slice(0, 300));
+        check(`${tag} mowakaba règle datée et état affichés`, mow.includes('2026-11-13') && mow.includes('NON RECOUPÉ'), mow.slice(-300));
+        await page.selectOption('#mow-pack', { index: 1 });
+        await page.locator('form button[type="submit"]').click();
+        const mowCab = (await page.locator('[data-role="results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} mowakaba Fiduciaire 4 500,00 à 9 000,00`, mowCab.includes('4 500,00 MAD') && mowCab.includes('9 000,00 MAD'), mowCab.slice(0, 300));
+        const mowScroll = await page.locator('[data-role="table"] .table-scroll').evaluate((n) => ({ ox: getComputedStyle(n).overflowX }));
+        check(`${tag} mowakaba tableau défilant`, mowScroll.ox === 'auto', JSON.stringify(mowScroll));
+        await page.locator('#mow-revenue').fill('200000000');
+        await page.locator('form button[type="submit"]').click();
+        const mowBorder = await page.locator('[data-role="list"] [role="alert"]').count();
+        check(`${tag} mowakaba borne 200 M MAD incluse = éligible (pas d’alerte)`, mowBorder === 0, String(mowBorder));
+        await page.locator('#mow-revenue').fill('200000000,01');
+        await page.locator('form button[type="submit"]').click();
+        const mowOver = await page.locator('[data-role="list"] [role="alert"]').count();
+        check(`${tag} mowakaba 200 M MAD + 1 centime = non éligible (alerte)`, mowOver === 1, String(mowOver));
+        const mowOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        check(`${tag} mowakaba pas de défilement horizontal`, mowOverflow <= 1, String(mowOverflow));
+        await page.screenshot({ path: `${outDir}/${tag}-mowakaba.png`, fullPage: true });
 
         check(`${tag} aucune requête hors origine`, foreign.length === 0, foreign.join(', '));
         check(`${tag} aucune erreur console`, errors.length === 0, errors.join(' | '));

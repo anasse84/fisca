@@ -1,5 +1,5 @@
 /**
- * Registre des outils publics (T-P2C-06) : 3 outils + un hub, chacun en 6 langues = 24 pages éditoriales, source unique du
+ * Registre des outils publics (T-P2C-06 et T-P2C-07) : 5 outils + un hub, chacun en 6 langues = 36 pages éditoriales, source unique du
  * HTML, du miroir Markdown, de llms.txt, du sitemap, des hreflang et du JSON-LD (HowTo, FAQPage).
  */
 import { datedValue } from '../content/dated-values.ts';
@@ -10,15 +10,23 @@ import type { CopyLocale } from '../i18n/copy-locale.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { formatBpsPercent, formatCentsMad } from '../lib/money.ts';
+import { getPricingPlan, PACK_MOWAKABA_CABINET } from '../content/pricing.ts';
+import { AE_PAGE } from './copy/ae.ts';
 import { COMMON, PARAM_LABELS, TOOLS_HUB_SLUG } from './copy/common.ts';
 import { ICE_EXISTENCE_NOTICE, ICE_PAGE } from './copy/ice.ts';
 import { LOI_PAGE } from './copy/loi.ts';
+import { MOWAKABA_PAGE } from './copy/mowakaba.ts';
 import type { ToolFaq, ToolPageCopy, ToolSection, ToolStep } from './copy/page-types.ts';
 import { RAS_PAGE } from './copy/ras.ts';
 import type { RulesPayload } from './ui/dom.ts';
-import { CASH_PARAM_KEYS, LATE_PARAM_KEYS, RAS_PARAM_KEYS } from './rule-params.ts';
+import { computeAeClientThreshold } from './auto-entrepreneur.ts';
+import { scenarioFor } from './mowakaba.ts';
+import { AE_PARAM_KEYS, CASH_PARAM_KEYS, LATE_PARAM_KEYS, MOWAKABA_PARAM_KEYS, RAS_PARAM_KEYS } from './rule-params.ts';
 
-export type ToolId = 'ice' | 'loi' | 'ras';
+export type ToolId = 'ice' | 'loi' | 'ras' | 'ae' | 'mowakaba';
+
+/** Exemple affiché dans la FAQ de l'auto-entrepreneur : entrées de VEC-CGI-04 (le résultat est recalculé, jamais recopié). */
+export const AE_EXAMPLE = { priorCumulCents: 7500000, invoiceCents: 1200000 } as const;
 
 export interface ToolDefinition {
   readonly id: ToolId;
@@ -32,6 +40,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   { id: 'ice', slug: `${TOOLS_HUB_SLUG}/audit-ice-excel`, copy: ICE_PAGE, paramKeys: ['ice_key_modulus'] },
   { id: 'loi', slug: `${TOOLS_HUB_SLUG}/simulateur-loi-69-21`, copy: LOI_PAGE, paramKeys: LATE_PARAM_KEYS },
   { id: 'ras', slug: `${TOOLS_HUB_SLUG}/ras-tva-especes`, copy: RAS_PAGE, paramKeys: [...new Set([...RAS_PARAM_KEYS, ...CASH_PARAM_KEYS])] },
+  { id: 'ae', slug: `${TOOLS_HUB_SLUG}/simulateur-auto-entrepreneur`, copy: AE_PAGE, paramKeys: AE_PARAM_KEYS },
+  { id: 'mowakaba', slug: `${TOOLS_HUB_SLUG}/subvention-mowakaba`, copy: MOWAKABA_PAGE, paramKeys: MOWAKABA_PARAM_KEYS },
 ];
 
 export function toolDefinition(id: ToolId): ToolDefinition {
@@ -49,9 +59,65 @@ export function formatDatedValue(key: string): string {
   return v.kind === 'bps' ? formatBpsPercent(v.value) : v.kind === 'cents' ? formatCentsMad(v.value) : String(v.value);
 }
 
+function recurringPlan(code: 'SOLO_AE' | 'ESSENTIEL_TPE'): { readonly monthly: number; readonly annual: number } {
+  const plan = getPricingPlan(code);
+  if (plan.kind !== 'RECURRING') throw new RangeError(`Offre récurrente attendue : ${code}`);
+  return { monthly: plan.monthly_ht_cents, annual: plan.annual_ht_cents };
+}
+
+function onePackPrice(): number {
+  const plan = getPricingPlan('PACK_MOWAKABA_TPME');
+  if (plan.kind !== 'ONE_OFF') throw new RangeError('Pack ponctuel attendu');
+  return plan.one_off_ht_cents;
+}
+
+/** Prix des deux packs Mowakaba, lus de `content/pricing.ts`. */
+export function mowakabaPackPrices(): { readonly tpmeCents: number; readonly cabinetCents: number } {
+  return { tpmeCents: onePackPrice(), cabinetCents: PACK_MOWAKABA_CABINET.one_off_ht_cents };
+}
+
+function aeExampleSlots(): Readonly<Record<string, string>> {
+  const out = computeAeClientThreshold(AE_EXAMPLE, { thresholdCents: datedValue('ae_client_threshold_cents').value, withholdingBps: datedValue('ae_withholding_bps').value });
+  if (!out.ok) throw new RangeError('Exemple auto-entrepreneur invalide');
+  const r = out.result;
+  return {
+    exPrior: formatCentsMad(AE_EXAMPLE.priorCumulCents),
+    exInvoice: formatCentsMad(AE_EXAMPLE.invoiceCents),
+    exCumul: formatCentsMad(r.cumulAfterCents),
+    exSurplus: formatCentsMad(r.surplusCents),
+    exWithheld: formatCentsMad(r.withheldCents),
+  };
+}
+
+function mowakabaSlots(): Readonly<Record<string, string>> {
+  const low = datedValue('mowakaba_coverage_low_bps').value;
+  const high = datedValue('mowakaba_coverage_high_bps').value;
+  const prices = mowakabaPackPrices();
+  return {
+    mowLow: formatDatedValue('mowakaba_coverage_low_bps'),
+    mowHigh: formatDatedValue('mowakaba_coverage_high_bps'),
+    mowCeiling: formatDatedValue('mowakaba_max_revenue_ht_cents'),
+    mowOwnership: formatDatedValue('mowakaba_group_ownership_max_bps'),
+    packTpme: formatCentsMad(prices.tpmeCents),
+    packCabinet: formatCentsMad(prices.cabinetCents),
+    tpmeFrom: formatCentsMad(scenarioFor(prices.tpmeCents, high).remainingCents),
+    tpmeTo: formatCentsMad(scenarioFor(prices.tpmeCents, low).remainingCents),
+    cabFrom: formatCentsMad(scenarioFor(prices.cabinetCents, high).remainingCents),
+    cabTo: formatCentsMad(scenarioFor(prices.cabinetCents, low).remainingCents),
+  };
+}
+
 /** Variables des textes de page : toutes tirées des valeurs datées, jamais recopiées dans les textes. */
 export function toolSlots(): Readonly<Record<string, string>> {
   return {
+    ...aeExampleSlots(),
+    ...mowakabaSlots(),
+    aeThreshold: formatDatedValue('ae_client_threshold_cents'),
+    aeWithholding: formatDatedValue('ae_withholding_bps'),
+    aeIrLow: formatDatedValue('ae_ir_rate_low_bps'),
+    aeIrHigh: formatDatedValue('ae_ir_rate_high_bps'),
+    priceEssentiel: formatCentsMad(recurringPlan('ESSENTIEL_TPE').monthly),
+    priceEssentielAnnual: formatCentsMad(recurringPlan('ESSENTIEL_TPE').annual),
     legalDays: formatDatedValue('late_legal_days'),
     contractualDays: formatDatedValue('late_contractual_days'),
     sectorDays: formatDatedValue('late_sector_days'),
@@ -158,6 +224,8 @@ const HOWTO_NAME = {
   ice: { fr: 'Auditer et réparer des ICE dans un fichier Excel', en: 'Audit and repair ICE numbers in an Excel file', ar: 'تدقيق وإصلاح أرقام ICE في ملف Excel', ary: 'تدقيق وإصلاح ICE فملف Excel' },
   loi: { fr: 'Calculer la pénalité de retard de la loi 69-21', en: 'Compute the law 69-21 late-payment penalty', ar: 'حساب غرامة التأخر وفق القانون 69-21', ary: 'حساب غرامة التأخير بالقانون 69-21' },
   ras: { fr: 'Calculer la RAS-TVA et contrôler le plafond d’espèces', en: 'Compute VAT withholding and check the cash cap', ar: 'حساب اقتطاع TVA ومراقبة سقف النقد', ary: 'حساب اقتطاع TVA ومراقبة سقف الكاش' },
+  ae: { fr: 'Simuler l’IR trimestriel et le seuil par client d’un auto-entrepreneur', en: 'Simulate an auto-entrepreneur’s quarterly income tax and per-client threshold', ar: 'محاكاة الضريبة الفصلية والعتبة لكل زبون للمقاول الذاتي', ary: 'محاكاة ضريبة الفصل والعتبة على كل كليان د المقاول الذاتي' },
+  mowakaba: { fr: 'Estimer l’éligibilité Mowakaba et le reste à charge d’un pack', en: 'Estimate Mowakaba eligibility and the remaining cost of a pack', ar: 'تقدير الأهلية لمواكبة والمبلغ المتبقي لباقة', ary: 'تقدير الأهلية لمواكبة والمبلغ اللي كيبقى د باقة' },
 } as const;
 
 export function buildToolView(locale: MarketingLocale, id: ToolId): ToolView {
@@ -291,7 +359,7 @@ function editorialOfHub(view: ToolsHubView): EditorialPage {
   };
 }
 
-/** 3 outils + 1 hub, 6 langues : 24 pages. */
+/** 5 outils + 1 hub, 6 langues : 36 pages. */
 export const TOOL_PAGES: readonly EditorialPage[] = [
   ...MARKETING_LOCALES.map((l) => editorialOfHub(buildToolsHubView(l))),
   ...TOOL_DEFINITIONS.flatMap((d) => MARKETING_LOCALES.map((l) => editorialOfTool(buildToolView(l, d.id)))),

@@ -14,10 +14,10 @@ export const COMMON = {
   breadcrumbLabel: t('Fil d’Ariane', 'Breadcrumb', 'مسار التنقل', 'مسار التنقل'),
   hubTitle: t('Outils fiscaux gratuits, sans compte', 'Free tax tools, no account', 'أدوات جبائية مجانية دون حساب', 'أدوات جبائية بلا فلوس وبلا حساب'),
   hubDescription: t(
-    'Trois outils qui s’exécutent dans votre navigateur : audit et réparation des ICE d’un fichier Excel, simulateur de la loi 69-21, calculateur de RAS-TVA et de plafond d’espèces.',
-    'Three tools that run in your browser: audit and repair of the ICE numbers in an Excel file, law 69-21 simulator, VAT withholding and cash-cap calculator.',
-    'ثلاث أدوات تعمل داخل متصفحك: تدقيق وإصلاح أرقام ICE في ملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الأداء نقدا.',
-    'تلات د الأدوات كتخدم فالمتصفح ديالك: تدقيق وإصلاح ICE فملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الكاش.',
+    'Cinq outils qui s’exécutent dans votre navigateur : audit et réparation des ICE d’un fichier Excel, simulateur de la loi 69-21, calculateur de RAS-TVA et de plafond d’espèces, simulateur auto-entrepreneur et estimateur de subvention Mowakaba.',
+    'Five tools that run in your browser: audit and repair of the ICE numbers in an Excel file, law 69-21 simulator, VAT withholding and cash-cap calculator, auto-entrepreneur simulator and Mowakaba subsidy estimator.',
+    'خمس أدوات تعمل داخل متصفحك: تدقيق وإصلاح أرقام ICE في ملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الأداء نقدا، ومحاكي المقاول الذاتي، ومقدّر دعم مواكبة.',
+    'خمس د الأدوات كتخدم فالمتصفح ديالك: تدقيق وإصلاح ICE فملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الكاش، ومحاكي المقاول الذاتي، ومقدر دعم مواكبة.',
   ),
   hubLead: t(
     'Aucun compte, aucun cookie, aucun script tiers : vos fichiers et vos montants ne quittent pas votre navigateur. Chaque résultat affiche la règle utilisée, sa date et son état de recoupement.',
@@ -84,6 +84,14 @@ export const PARAM_LABELS: Readonly<Record<string, L4>> = {
   ras_reduced_bps: t('Retenue avec attestation de moins de 6 mois', 'Withholding with an attestation under 6 months old', 'نسبة الاقتطاع مع شهادة عمرها أقل من 6 أشهر', 'نسبة الاقتطاع مع شهادة عمرها قل من 6 شهور'),
   ras_full_bps: t('Retenue sans attestation valide', 'Withholding without a valid attestation', 'نسبة الاقتطاع دون شهادة صالحة', 'نسبة الاقتطاع بلا شهادة صالحة'),
   ras_attestation_months: t('Validité de l’attestation de régularité fiscale (mois)', 'Validity of the tax-compliance attestation (months)', 'صلاحية شهادة الوضعية الجبائية (أشهر)', 'صلاحية شهادة الوضعية الجبائية (شهور)'),
+  ae_ir_rate_low_bps: t('Taux d’IR trimestriel de l’auto-entrepreneur, taux bas proposé', 'Auto-entrepreneur quarterly income tax rate, low rate offered', 'نسبة الضريبة الفصلية للمقاول الذاتي، النسبة الدنيا المقترحة', 'نسبة ضريبة الفصل د المقاول الذاتي، النسبة الصغيرة المقترحة'),
+  ae_ir_rate_high_bps: t('Taux d’IR trimestriel de l’auto-entrepreneur, taux haut proposé', 'Auto-entrepreneur quarterly income tax rate, high rate offered', 'نسبة الضريبة الفصلية للمقاول الذاتي، النسبة العليا المقترحة', 'نسبة ضريبة الفصل د المقاول الذاتي، النسبة الكبيرة المقترحة'),
+  ae_client_threshold_cents: t('Seuil de cumul par client (auto-entrepreneur)', 'Cumulative threshold per client (auto-entrepreneur)', 'عتبة المجموع لكل زبون (المقاول الذاتي)', 'عتبة المجموع على كل كليان (المقاول الذاتي)'),
+  ae_withholding_bps: t('Taux de retenue sur le surplus au-delà du seuil', 'Withholding rate on the surplus above the threshold', 'نسبة الاقتطاع على الفائض فوق العتبة', 'نسبة الاقتطاع على الزايد فوق العتبة'),
+  mowakaba_coverage_low_bps: t('Prise en charge Mowakaba, bas de fourchette', 'Mowakaba coverage, low end of the range', 'التكفل في مواكبة، الحد الأدنى للمجال', 'التكفل فمواكبة، الحد الأدنى د المجال'),
+  mowakaba_coverage_high_bps: t('Prise en charge Mowakaba, haut de fourchette', 'Mowakaba coverage, high end of the range', 'التكفل في مواكبة، الحد الأعلى للمجال', 'التكفل فمواكبة، الحد الأعلى د المجال'),
+  mowakaba_max_revenue_ht_cents: t('Plafond de chiffre d’affaires annuel HT d’éligibilité Mowakaba', 'Annual revenue ceiling (excl. VAT) for Mowakaba eligibility', 'سقف رقم المعاملات السنوي دون الرسوم للأهلية لمواكبة', 'سقف رقم المعاملات السنوي بلا الضريبة للأهلية لمواكبة'),
+  mowakaba_group_ownership_max_bps: t('Détention maximale par un grand groupe pour rester éligible', 'Maximum ownership by a large group to stay eligible', 'الحد الأقصى لملكية مجموعة كبرى للبقاء مؤهلا', 'الحد الأقصى د ملكية مجموعة كبيرة باش تبقى مؤهل'),
   ras_exclusion_threshold_ttc_cents: t('Seuil TTC en dessous duquel la retenue ne s’applique pas', 'VAT-inclusive amount at or below which no withholding applies', 'المبلغ شامل الرسوم الذي لا يطبق الاقتطاع عند بلوغه أو دونه', 'المبلغ بالضريبة اللي ما كيتطبقش الاقتطاع تحتو ولا فيه'),
 };
 

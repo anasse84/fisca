@@ -121,6 +121,7 @@ export const EDITORIAL_PAGES: readonly EditorialPage[] = [
 /**
  * T-P2C-04 : socle + 4 hubs de silo + 78 routes de silos, chacun en 6 langues (18 + 24 + 468 = 510 pages).
  * T-P2C-06 : + hub des outils et 3 outils publics, 6 langues (24 pages) : 534 pages.
+ * T-P2C-07 : + 2 outils (simulateur auto-entrepreneur, estimateur Mowakaba), 6 langues (12 pages) : 546 pages.
  */
 export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES, ...TOOL_PAGES];
 

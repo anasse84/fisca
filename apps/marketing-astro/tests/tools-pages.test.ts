@@ -20,6 +20,8 @@ const TOOL_ROUTES: readonly { readonly id: ToolId; readonly segment: string }[] 
   { id: 'ice', segment: 'audit-ice-excel' },
   { id: 'loi', segment: 'simulateur-loi-69-21' },
   { id: 'ras', segment: 'ras-tva-especes' },
+  { id: 'ae', segment: 'simulateur-auto-entrepreneur' },
+  { id: 'mowakaba', segment: 'subvention-mowakaba' },
 ];
 
 async function render(locale: MarketingLocale, segment: string | null): Promise<{ html: string; response: Response }> {
@@ -45,9 +47,9 @@ async function cached(locale: MarketingLocale, segment: string | null) {
 
 const FIRST_PARTY_HOST = /^https:\/\/([a-z0-9-]+\.)?fisca\.ma(\/|$)/;
 
-describe('registre : 24 pages d’outils dans les 6 langues', () => {
-  it('3 outils + hub x 6 langues, chemins exacts, enregistrés dans le registre global', () => {
-    expect(TOOL_PAGES).toHaveLength(24);
+describe('registre : 36 pages d’outils dans les 6 langues', () => {
+  it('5 outils + hub x 6 langues, chemins exacts, enregistrés dans le registre global', () => {
+    expect(TOOL_PAGES).toHaveLength(36);
     for (const locale of MARKETING_LOCALES) {
       const prefix = LOCALE_URL_PREFIX[locale];
       for (const route of TOOL_ROUTES) {
@@ -58,8 +60,14 @@ describe('registre : 24 pages d’outils dans les 6 langues', () => {
       }
       expect(findEditorialPage(locale, TOOLS_HUB_SLUG)).toBeDefined();
     }
-    expect(ALL_EDITORIAL_PAGES.filter((p) => p.slug.startsWith('outils'))).toHaveLength(24);
-    expect(TOOL_DEFINITIONS.map((d) => d.slug)).toEqual(['outils/audit-ice-excel', 'outils/simulateur-loi-69-21', 'outils/ras-tva-especes']);
+    expect(ALL_EDITORIAL_PAGES.filter((p) => p.slug.startsWith('outils'))).toHaveLength(36);
+    expect(TOOL_DEFINITIONS.map((d) => d.slug)).toEqual([
+      'outils/audit-ice-excel',
+      'outils/simulateur-loi-69-21',
+      'outils/ras-tva-especes',
+      'outils/simulateur-auto-entrepreneur',
+      'outils/subvention-mowakaba',
+    ]);
   });
 
   it('chaque page d’outil porte HowTo (4 étapes), FAQ (3 questions) et une section de limites', () => {
@@ -102,7 +110,7 @@ describe('registre : 24 pages d’outils dans les 6 langues', () => {
     }
   });
 
-  it('sitemap : les 4 slugs d’outils, 6 langues, alternates réciproques et x-default', async () => {
+  it('sitemap : les 6 slugs d’outils, 6 langues, alternates réciproques et x-default', async () => {
     const slugs = publishedSitemapSlugs(ALL_EDITORIAL_PAGES);
     for (const s of ['outils', ...TOOL_ROUTES.map((r) => `outils/${r.segment}`)]) expect(slugs).toContain(s);
     const xml = await handleSitemapXml().text();
@@ -137,7 +145,7 @@ describe('registre : 24 pages d’outils dans les 6 langues', () => {
   });
 });
 
-describe('HTML rendu : hub et 3 outils x 6 langues', () => {
+describe('HTML rendu : hub et 5 outils x 6 langues', () => {
   const targets: readonly (string | null)[] = [null, ...TOOL_ROUTES.map((r) => r.segment)];
 
   it('statut 200, lang et dir, 7 hreflang, h1, canonique', async () => {
@@ -203,6 +211,8 @@ describe('HTML rendu : hub et 3 outils x 6 langues', () => {
       ice: ['ice_key_modulus'],
       loi: ['late_base_bps', 'late_increment_bps', 'late_legal_days'],
       ras: ['ras_reduced_bps', 'ras_full_bps', 'cash_cap_day_cents', 'cash_cap_month_cents'],
+      ae: ['ae_ir_rate_low_bps', 'ae_ir_rate_high_bps', 'ae_client_threshold_cents', 'ae_withholding_bps'],
+      mowakaba: ['mowakaba_coverage_low_bps', 'mowakaba_coverage_high_bps', 'mowakaba_max_revenue_ht_cents', 'mowakaba_group_ownership_max_bps'],
     };
     for (const route of TOOL_ROUTES) {
       const { html } = await cached('fr', route.segment);
@@ -234,6 +244,14 @@ describe('HTML rendu : hub et 3 outils x 6 langues', () => {
       expect(loi).toMatch(/dir="ltr"[^>]*class="fisca-tabular-num"|class="fisca-tabular-num"[^>]*dir="ltr"/);
       const ras = (await cached(locale, 'ras-tva-especes')).html;
       for (const id of ['ras-ht', 'ras-vat', 'ras-payment-date', 'ras-attestation', 'cash-lines', 'cash-vat', 'cash-basis']) expect(ras).toContain(`for="${id}"`);
+      const ae = (await cached(locale, 'simulateur-auto-entrepreneur')).html;
+      for (const id of ['ae-revenue', 'ae-rate', 'ae-custom-rate', 'ae-costs', 'ae-prior', 'ae-invoice']) expect(ae, `${locale}/${id}`).toContain(`for="${id}"`);
+      expect((ae.match(/aria-live="polite"/g) ?? []).length).toBe(2);
+      expect((ae.match(/role="alert"/g) ?? []).length).toBe(2);
+      const mow = (await cached(locale, 'subvention-mowakaba')).html;
+      for (const id of ['mow-revenue', 'mow-ownership', 'mow-pack', 'mow-coverage']) expect(mow, `${locale}/${id}`).toContain(`for="${id}"`);
+      expect(mow).toMatch(/aria-live="polite"/);
+      expect(mow).toMatch(/dir="ltr"[^>]*class="fisca-tabular-num"|class="fisca-tabular-num"[^>]*dir="ltr"/);
     }
   });
 
@@ -262,7 +280,31 @@ describe('HTML rendu : hub et 3 outils x 6 langues', () => {
     }
   });
 
-  it('hub : 3 liens vers les outils, fil d’Ariane', async () => {
+  it('auto-entrepreneur et Mowakaba : taux datés NON RECOUPÉ, prix lus de la grille, montants de la fourchette, aucun taux présenté comme un fait', async () => {
+    const ae = (await cached('fr', 'simulateur-auto-entrepreneur')).html;
+    expect(ae).toContain('NON RECOUPÉ');
+    expect(ae).toContain('0,50 %');
+    expect(ae).toContain('1 %');
+    expect(ae).toContain('80 000,00 MAD');
+    expect(ae).toContain('2 100,00 MAD');
+    expect(ae).toContain('value="custom"');
+    expect(ae).toContain('&#34;soloAnnualCents&#34;:129000');
+    expect(ae).toContain('&#34;essentielAnnualCents&#34;:390000');
+    const mow = (await cached('fr', 'subvention-mowakaba')).html;
+    for (const amount of ['1 800,00 MAD', '3 600,00 MAD', '4 500,00 MAD', '9 000,00 MAD', '18 000,00 MAD', '45 000,00 MAD', '200 000 000,00 MAD']) expect(mow, amount).toContain(amount);
+    expect(mow).toContain('value="1800000"');
+    expect(mow).toContain('value="4500000"');
+    expect(mow).toMatch(/80 %/);
+    expect(mow).toMatch(/90 %/);
+    for (const locale of MARKETING_LOCALES) {
+      const aeView = buildToolView(locale, 'ae');
+      expect(aeView.params.map((p) => p.key)).toEqual(['ae_ir_rate_low_bps', 'ae_ir_rate_high_bps', 'ae_client_threshold_cents', 'ae_withholding_bps']);
+      for (const p of aeView.params) expect(p.state).toBe('NON RECOUPÉ');
+      expect(aeView.existenceNotice).toBeNull();
+    }
+  });
+
+  it('hub : 5 liens vers les outils, fil d’Ariane', async () => {
     for (const locale of MARKETING_LOCALES) {
       const { html } = await cached(locale, null);
       const hub = buildToolsHubView(locale);

@@ -4,6 +4,8 @@ import ToolFrame from '../../../components/tools/ToolFrame.astro';
 import IceTool from '../../../components/tools/IceTool.astro';
 import LoiTool from '../../../components/tools/LoiTool.astro';
 import RasTool from '../../../components/tools/RasTool.astro';
+import AeTool from '../../../components/tools/AeTool.astro';
+import MowakabaTool from '../../../components/tools/MowakabaTool.astro';
 import { localeFromPrefix } from '../../../i18n/locales.ts';
 import { buildToolView, toolIdFromSlug } from '../../../tools/registry.ts';
 
@@ -27,5 +29,7 @@ const view = buildToolView(locale, id);
     {id === 'ice' && <IceTool locale={view.copyLocale} />}
     {id === 'loi' && <LoiTool locale={view.copyLocale} />}
     {id === 'ras' && <RasTool locale={view.copyLocale} />}
+    {id === 'ae' && <AeTool locale={view.copyLocale} />}
+    {id === 'mowakaba' && <MowakabaTool locale={view.copyLocale} />}
   </ToolFrame>
 </BaseLayout>

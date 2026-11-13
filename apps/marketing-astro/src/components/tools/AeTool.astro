@@ -1,0 +1,94 @@
+---
+import { fill } from '../../i18n/copy-locale.ts';
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { getPricingPlan } from '../../content/pricing.ts';
+import { AE_UI } from '../../tools/copy/ae.ts';
+import { paramView, rulesPayload } from '../../tools/registry.ts';
+import { AE_PARAM_KEYS, ruleParam } from '../../tools/rule-params.ts';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const { locale } = Astro.props;
+const ui = AE_UI[locale];
+const solo = getPricingPlan('SOLO_AE');
+const essentiel = getPricingPlan('ESSENTIEL_TPE');
+if (solo.kind !== 'RECURRING' || essentiel.kind !== 'RECURRING') throw new RangeError('Offres récurrentes attendues');
+const payload = {
+  copy: ui,
+  rules: rulesPayload(AE_PARAM_KEYS, locale),
+  params: {
+    thresholdCents: ruleParam('ae_client_threshold_cents').value,
+    withholdingBps: ruleParam('ae_withholding_bps').value,
+    soloAnnualCents: solo.annual_ht_cents,
+    essentielAnnualCents: essentiel.annual_ht_cents,
+  },
+};
+const rates = [paramView('ae_ir_rate_low_bps', locale), paramView('ae_ir_rate_high_bps', locale)];
+---
+<div class="tool" data-tool="ae" data-payload={JSON.stringify(payload)}>
+  <section class="tool-block" aria-labelledby="ae-ir-titre">
+    <h3 id="ae-ir-titre">{ui.irHeading}</h3>
+    <form novalidate class="tool-form" data-role="ir-form" aria-describedby="ae-ir-error">
+      <div class="tool-grid">
+        <div class="field">
+          <label for="ae-revenue">{ui.revenueLabel}</label>
+          <input id="ae-revenue" name="revenue" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" placeholder={ui.revenueHint} />
+        </div>
+        <div class="field">
+          <label for="ae-rate">{ui.rateLabel}</label>
+          <select id="ae-rate" name="rate">
+            {rates.map((r, index) => <option value={String(r.value)} data-key={r.key} selected={index === 0}>{fill(ui.rateOption, { value: r.display, state: r.state, date: r.as_of })}</option>)}
+            <option value="custom">{ui.rateCustomOption}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ae-custom-rate">{ui.customRateLabel}</label>
+          <input id="ae-custom-rate" name="custom-rate" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" disabled aria-describedby="ae-custom-hint" />
+          <p class="field-hint" id="ae-custom-hint">{ui.customRateHint}</p>
+        </div>
+        <div class="field">
+          <label for="ae-costs">{ui.costsLabel}</label>
+          <input id="ae-costs" name="costs" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="ae-costs-hint" />
+          <p class="field-hint" id="ae-costs-hint">{ui.costsHint}</p>
+        </div>
+      </div>
+      <p class="tool-error" id="ae-ir-error" role="alert" data-role="ir-error" hidden></p>
+      <p><button type="submit" class="button">{ui.irSubmit}</button></p>
+    </form>
+    <div class="tool-results" data-role="ir-results" aria-live="polite" hidden>
+      <dl class="result-list" data-role="ir-list"></dl>
+      <div class="rules-used" data-role="ir-rules"></div>
+    </div>
+  </section>
+
+  <section class="tool-block" aria-labelledby="ae-thr-titre">
+    <h3 id="ae-thr-titre">{ui.thrHeading}</h3>
+    <form novalidate class="tool-form" data-role="thr-form" aria-describedby="ae-thr-error">
+      <div class="tool-grid">
+        <div class="field">
+          <label for="ae-prior">{ui.priorLabel}</label>
+          <input id="ae-prior" name="prior" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="ae-prior-hint" />
+          <p class="field-hint" id="ae-prior-hint">{ui.priorHint}</p>
+        </div>
+        <div class="field">
+          <label for="ae-invoice">{ui.invoiceLabel}</label>
+          <input id="ae-invoice" name="invoice" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" />
+        </div>
+      </div>
+      <p class="tool-error" id="ae-thr-error" role="alert" data-role="thr-error" hidden></p>
+      <p><button type="submit" class="button">{ui.thrSubmit}</button></p>
+    </form>
+    <div class="tool-results" data-role="thr-results" aria-live="polite" hidden>
+      <dl class="result-list" data-role="thr-list"></dl>
+      <div class="rules-used" data-role="thr-rules"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { mountAeTool } from '../../tools/ui/ae-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="ae"]')) mountAeTool(root);
+</script>
