@@ -302,3 +302,101 @@ describe('EphemeralRamPiiScrubber — ICE (15 chiffres) avec séparateurs', () =
     expect(out).toMatch(/\[IBAN_MA_/);
   });
 });
+
+describe('EphemeralRamPiiScrubber — ICE : groupes de chiffres admis par le propriétaire', () => {
+  const ICE_TOKEN = /^\[ICE15_01_[0-9a-f]{8}\]$/;
+  const OWNER_SPELLINGS: readonly string[] = [
+    '0012 3456 7000 089',
+    '001-234-567-000-089',
+    '001.234.567.000.089',
+    '001234567 000089',
+    '001234567 0000 89',
+    '001 234 567 000 089',
+    '0012-3456-7000-089',
+    '001234567000089',
+    '001 2345 6700 0089',
+    '1-2345-6789-0123-45',
+    '00-123-4-5670-00089',
+  ];
+
+  for (const spelling of OWNER_SPELLINGS) {
+    it(`« ${spelling} » est masqué en entier, sans aucun fragment`, () => {
+      const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(21) }).scrubText(spelling, []);
+      expect(out).toMatch(ICE_TOKEN);
+    });
+  }
+
+  it('même valeur => même jeton pour toutes les graphies du propriétaire de 001234567000089', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(22) });
+    const tokens = [
+      '0012 3456 7000 089',
+      '001-234-567-000-089',
+      '001.234.567.000.089',
+      '001234567 000089',
+      '001234567 0000 89',
+      '001 234 567 000 089',
+    ].map((spelling) => scrubber.scrubText(spelling, []));
+    expect(new Set(tokens).size).toBe(1);
+    expect(scrubber.tokenCount).toBe(1);
+  });
+
+  it('non-régression : références et dates de 15 chiffres au total mais mal groupés restent intacts', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(23) });
+    for (const text of ['Facture 20261113 1500000 MAD', 'Date 2026-11-13 et total 120 000,00 MAD']) {
+      expect(scrubber.scrubText(text, [])).toBe(text);
+    }
+    expect(scrubber.tokenCount).toBe(0);
+  });
+
+  it('un groupement non admis (5-5-5, 2-13, 7-8, 8-7) n’est pas un ICE', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(24) });
+    for (const text of ['00123 45670 00089', '00 1234567000089', '0012345 67000089', '00123456 7000089']) {
+      expect(scrubber.scrubText(text, [])).toBe(text);
+    }
+  });
+
+  it('garde-fou de bords : un ICE collé à des lettres n’est pas masqué comme ICE', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(25) });
+    for (const text of ['ICE001234567000089', '001234567000089X', 'AB001-234-567-000-089', '001-234-567-000-089z']) {
+      expect(scrubber.scrubText(text, [])).not.toMatch(/ICE15_/);
+    }
+    expect(scrubber.scrubText('ICE:001-234-567-000-089.', [])).toMatch(/^ICE:\[ICE15_01_[0-9a-f]{8}\]\.$/);
+  });
+
+  it('le RIB 24 chiffres espacé est masqué comme RIB, avant l’ICE', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(26) });
+    for (const text of ['0117 8000 0012 3456 7890 1234', '011 780 000 012 345 678 901 234', '0117-8000-0012-3456-7890-1234']) {
+      expect(scrubber.scrubText(text, [])).toMatch(/^\[RIB24_01_[0-9a-f]{8}\]$/);
+    }
+  });
+
+  it('faux positif ACCEPTÉ (règle du propriétaire 3-3-3-3-3) : « 100 200 300 400 500 » est masqué comme ICE', () => {
+    const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(27) }).scrubText('100 200 300 400 500', []);
+    expect(out).toMatch(ICE_TOKEN);
+  });
+});
+
+describe('EphemeralRamPiiScrubber — faux rouges des jetons (hexadécimal minuscule et MAJUSCULE)', () => {
+  const ANY_CASE_TOKEN = /\[[A-Za-z0-9_]+\]/g;
+
+  it('2 000 graines fixes : aucun faux rouge, jetons relus tels quels ou passés en majuscules', () => {
+    let falseReds = 0;
+    let upperCaseDigitRuns = 0;
+    for (let seed = 1; seed <= 2000; seed += 1) {
+      const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(seed * 7919) }).scrubText(OBFUSCATED, []);
+      if (/\d{6}/.test(out.replace(ANY_CASE_TOKEN, ''))) falseReds += 1;
+      const upper = out.toUpperCase();
+      if (/\d{6}/.test(upper.replace(ANY_CASE_TOKEN, ''))) falseReds += 1;
+      if (/\[[A-Z0-9_]*[A-F0-9]{8}\]/.test(upper)) upperCaseDigitRuns += 1;
+    }
+    expect(falseReds).toBe(0);
+    expect(upperCaseDigitRuns).toBe(2000);
+  });
+
+  it('le jeton produit a toujours la forme [KIND_NN_xxxxxxxx] en hexadécimal minuscule, 4 octets d’aléa', () => {
+    for (let seed = 1; seed <= 2000; seed += 1) {
+      const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(seed) }).scrubText(ICE, []);
+      expect(out).toMatch(/^\[ICE15_01_[0-9a-f]{8}\]$/);
+    }
+  });
+});
