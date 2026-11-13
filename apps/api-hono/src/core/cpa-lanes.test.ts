@@ -27,6 +27,7 @@ import {
   createSqlMandateResolver,
   createSqlRevokeGrantsPort,
   createSqlTenantKeyGrantReader,
+  mandatePermissionCeiling,
   revokeCpaMandate,
   type RevokeGrantsPort,
   type TenantKeyGrantReader,
@@ -218,6 +219,8 @@ describe('TenantRouter : voies A, B et C (mandats de cabinet)', () => {
     await seedMandate(rig.control.driver, { maxRole: 'AIDE_COMPTABLE' });
     expect((await rig.request(U_CHEF, CO_CLOUD)).status).toBe(200);
     expect(rig.seen.tenant?.role).toBe('AIDE_COMPTABLE');
+    expect(rig.seen.tenant?.permissionCeiling).toEqual(mandatePermissionCeiling('CHEF_MISSION', 'AIDE_COMPTABLE'));
+    expect(rig.seen.tenant?.permissionCeiling?.has('INVOICE_CREATE_DRAFT')).toBe(false);
     await exec(rig.control.driver, `UPDATE company_cpa_mandates SET max_delegated_role = 'EXPERT_COMPTABLE_OEC'`);
     expect((await rig.request(U_AIDE, CO_CLOUD)).status).toBe(200);
     expect(rig.seen.tenant?.role).toBe('AIDE_COMPTABLE');

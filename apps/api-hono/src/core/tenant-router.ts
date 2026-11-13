@@ -8,7 +8,7 @@
  * Échec fermé : dossier inconnu ou non autorisé → même réponse 403 ; base indisponible → 503.
  */
 import { createMiddleware } from 'hono/factory';
-import { SessionJwtError, type AccessTokenClaims, type RoleCode } from '@fisca/auth-rbac';
+import { SessionJwtError, type AccessTokenClaims, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
 import { InfrastructureError, assertValidCompanyId, type TenantSqlDriver } from '@fisca/shared-types';
 import type { MandateAccess, MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
 import {
@@ -106,6 +106,11 @@ export interface TenantContext {
    * `company_cpa_mandates.can_access_payroll_pii`. L'attribut propre de l'utilisateur s'y ajoute (ET logique, `ledger-api.ts`).
    */
   readonly canAccessPayrollPii: boolean;
+  /**
+   * Plafond de permissions (décision 2 du pilote) : accès par mandat = intersection des permissions du rôle du cabinet et de
+   * `max_delegated_role` ; `null` pour une appartenance directe (aucun plafond). Appliqué par `assertPermissionWithinMandateCeiling`.
+   */
+  readonly permissionCeiling: ReadonlySet<PermissionAction> | null;
   readonly tenantDb: TenantSqlDriver;
 }
 
@@ -373,6 +378,7 @@ export function createTenantRouter(deps: TenantRouterDeps) {
         accessKind: access.accessKind,
         plan: access.planCode,
         canAccessPayrollPii: mandate === null ? true : mandate.canAccessPayrollPii,
+        permissionCeiling: mandate === null ? null : mandate.permissionCeiling,
         tenantDb,
       }),
     );

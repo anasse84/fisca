@@ -41,6 +41,7 @@ import {
   type PermissionAction,
   type RoleCode,
 } from '@fisca/auth-rbac';
+import { assertPermissionWithinMandateCeiling } from './mandate-permission-ceiling.ts';
 import {
   LEDGER_REVIEW_CYCLES,
   LEDGER_SOURCE_DOCUMENT_TYPES,
@@ -191,6 +192,8 @@ export interface LedgerActor {
   readonly subscriptionReadOnly: boolean;
   readonly canAccessPayrollPii: boolean;
   readonly mfaVerifiedAtEpochSec?: number | undefined;
+  /** Plafond de permissions d'un accès par mandat (intersection, décision 2 du pilote) ; null ou absent : appartenance directe, aucun plafond. */
+  readonly permissionCeiling?: ReadonlySet<PermissionAction> | null | undefined;
 }
 
 export interface DraftLineInput {
@@ -1421,6 +1424,7 @@ export class ImmutableCgncLedgerEngine {
   // -------------------------------------------------------------------------------------------------------------------
 
   private authorize(actor: LedgerActor, action: PermissionAction, fiscalYearClosed: boolean, nowIso: string): void {
+    assertPermissionWithinMandateCeiling(action, actor);
     const epochMs = Date.parse(nowIso);
     const context: AuthorizationContext = {
       actorId: actor.actorId,

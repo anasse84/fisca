@@ -29,6 +29,7 @@ import {
   createSqlRevokeGrantsPort,
   createSqlTenantKeyGrantReader,
   effectiveMandateRole,
+  mandatePermissionCeiling,
   revokeCpaMandate,
   type MandateResolver,
   type RevokeGrantsPort,
@@ -68,7 +69,7 @@ describe('effectiveMandateRole : le rôle effectif ne dépasse jamais le plus re
     }
   });
 
-  it("preuve contre la matrice réelle de policy-engine : le rôle effectif est l'un des deux rôles, jamais plus haut que l'un ou l'autre, et ses permissions sont incluses dans celles des deux (sauf INVOICE_CREATE_DRAFT, voir ci-dessous)", () => {
+  it("REMPLACEMENT DE RÈGLE (décision 2 du pilote, T-S1B-11) : l'ancien test tolérait INVOICE_CREATE_DRAFT hors intersection ; désormais le rôle d'évaluation reste l'un des deux et le plafond de permissions porte l'intersection EXACTE : aucune permission hors intersection, aucune tolérance", () => {
     const allowed = (role: RoleCode): ReadonlySet<PermissionAction> => {
       const context: AuthorizationContext = {
         actorId: 'a',
@@ -87,31 +88,36 @@ describe('effectiveMandateRole : le rôle effectif ne dépasse jamais le plus re
     };
     const RANK: Readonly<Record<string, number>> = { EXPERT_COMPTABLE_OEC: 3, CHEF_MISSION: 2, AIDE_COMPTABLE: 1, AUDITEUR_CAC_DGI: 0 };
     const outsideBoth = new Set<PermissionAction>();
+    const exposedByCeiling = new Set<PermissionAction>();
     let checked = 0;
     for (const user of CPA_MANDATE_DELEGABLE_ROLES) {
       for (const cap of CPA_MANDATE_DELEGABLE_ROLES) {
         const effective = effectiveMandateRole(user, cap);
         if (effective === null) {
-          // refus justifié : aucun des 4 rôles délégables n'a des permissions incluses dans celles du rôle cabinet ET du plafond
           const carriers = CPA_MANDATE_DELEGABLE_ROLES.filter((role) => [...allowed(role)].every((p) => allowed(user).has(p) && allowed(cap).has(p)));
           expect(carriers, `${user} / ${cap}`).toEqual([]);
           continue;
         }
         expect([user, cap], `${user} / ${cap}`).toContain(effective);
         expect(RANK[effective] ?? -1, `${user} / ${cap}`).toBeLessThanOrEqual(Math.min(RANK[user] ?? -1, RANK[cap] ?? -1));
+        const ceiling = mandatePermissionCeiling(user, cap);
+        expect(ceiling, `${user} / ${cap}`).not.toBeNull();
         for (const permission of allowed(effective)) {
           if (!allowed(user).has(permission) || !allowed(cap).has(permission)) {
             outsideBoth.add(permission);
+            if (ceiling !== null && ceiling.has(permission)) {
+              exposedByCeiling.add(permission);
+            }
           }
         }
         checked += 1;
       }
     }
     expect(checked).toBeGreaterThanOrEqual(10);
-    // La matrice n'est pas un treillis : AIDE_COMPTABLE porte INVOICE_CREATE_DRAFT, absent de CHEF_MISSION et de l'OEC. L'ordre
-    // OEC > CHEF_MISSION > AIDE_COMPTABLE est celui du propriétaire ; cet écart (un brouillon de facture) est le seul toléré et ne
-    // doit pas s'élargir : toute autre permission sortant de l'intersection fait échouer ce test.
+    // Le rôle seul déborde encore sur INVOICE_CREATE_DRAFT (matrice non hiérarchique) : c'est pourquoi le plafond est obligatoire ;
+    // mais le plafond n'en laisse passer AUCUNE.
     expect([...outsideBoth]).toEqual(['INVOICE_CREATE_DRAFT']);
+    expect([...exposedByCeiling]).toEqual([]);
   });
 });
 
@@ -167,7 +173,18 @@ describe.each(['sqlite', 'postgres'] as const)('createSqlMandateResolver sur %s 
       fiduciaryOrgId: CABINET,
       canAccessPayrollPii: true,
       cryptoMode: 'CLOUD_ASSISTED',
+      permissionCeiling: mandatePermissionCeiling('EXPERT_COMPTABLE_OEC', 'EXPERT_COMPTABLE_OEC'),
     });
+  });
+
+  it('permissionCeiling : CHEF_MISSION plafonné à AIDE_COMPTABLE reçoit le rôle AIDE_COMPTABLE ET un plafond sans INVOICE_CREATE_DRAFT ni LEDGER_VISA_CYCLE', async () => {
+    await seedMandate(backend.driver, { maxRole: 'AIDE_COMPTABLE' });
+    const access = await resolver.resolveMandate({ userId: U_CHEF, companyId: CO_CLOUD });
+    expect(access?.role).toBe('AIDE_COMPTABLE');
+    expect(access?.permissionCeiling).toEqual(mandatePermissionCeiling('CHEF_MISSION', 'AIDE_COMPTABLE'));
+    expect(access?.permissionCeiling?.has('INVOICE_CREATE_DRAFT')).toBe(false);
+    expect(access?.permissionCeiling?.has('LEDGER_VISA_CYCLE')).toBe(false);
+    expect(access?.permissionCeiling?.has('LEDGER_SAVE_DRAFT')).toBe(true);
   });
 
   it('can_access_payroll_pii = 0 donne canAccessPayrollPii false ; dossier E2EE donne cryptoMode ZERO_KNOWLEDGE_E2EE', async () => {

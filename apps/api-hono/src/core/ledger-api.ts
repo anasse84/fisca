@@ -6,6 +6,7 @@
  * claim `mfa_verified_at` du jeton. L'état « lecture seule » vient de l'EntitlementGuard (échec fermé s'il manque).
  */
 import { evaluateAccessPolicy, type AuthorizationContext, type OrgPlanSegment, type PermissionAction } from '@fisca/auth-rbac';
+import { assertPermissionWithinMandateCeiling } from './mandate-permission-ceiling.ts';
 import {
   ImmutableCgncLedgerEngine,
   type LedgerActor,
@@ -68,6 +69,7 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
     const actor: LedgerActor = {
       actorId: call.tenant.userId,
       role: call.tenant.role,
+      permissionCeiling: call.tenant.permissionCeiling,
       assignedCompanyIds: [call.tenant.companyId],
       orgPlanSegment: profile.orgPlanSegment,
       activeHumanMembersCount: profile.activeHumanMembersCount,
@@ -88,6 +90,7 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
   }
 
   function authorize(actor: LedgerActor, companyId: string, action: PermissionAction): void {
+    assertPermissionWithinMandateCeiling(action, actor);
     const context: AuthorizationContext = {
       actorId: actor.actorId,
       role: actor.role,

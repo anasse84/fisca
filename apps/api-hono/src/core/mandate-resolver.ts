@@ -15,9 +15,10 @@
  * Convention d'enveloppe : le destinataire `EXTERNAL_CPA` est le cabinet (`grantee_actor_id` = `fiduciary_org_id`) ; une enveloppe
  * posée au nom d'un membre du cabinet est aussi acceptée. La révocation couvre les deux formes.
  */
-import type { RoleCode } from '@fisca/auth-rbac';
+import type { PermissionAction, RoleCode } from '@fisca/auth-rbac';
 import { CPA_MANDATE_DELEGABLE_ROLES, type CpaMandateDelegableRole } from '@fisca/db-schema';
 import type { TenantSqlDriver } from '@fisca/shared-types';
+import { intersectRolePermissions } from './mandate-permission-ceiling.ts';
 
 export type TenantCryptoMode = 'CLOUD_ASSISTED' | 'ZERO_KNOWLEDGE_E2EE';
 
@@ -26,6 +27,12 @@ export interface MandateAccess {
   readonly organizationId: string;
   /** Rôle EFFECTIF : le plus restrictif entre le rôle de l'utilisateur dans le cabinet et `max_delegated_role`. */
   readonly role: RoleCode;
+  /**
+   * Plafond de permissions (décision 2 du pilote) : INTERSECTION des permissions du rôle de l'utilisateur dans le cabinet et de
+   * celles de `max_delegated_role`. Toute action hors de cet ensemble est refusée, quelle que soit la décision de la politique
+   * sur `role`. `null` n'est jamais produit par l'adaptateur SQL ; il est réservé à l'accès direct (aucun plafond).
+   */
+  readonly permissionCeiling: ReadonlySet<PermissionAction> | null;
   /** `subscriptions.plan_code` de l'organisation propriétaire du dossier. */
   readonly planCode: string;
   /** Cabinet par lequel passe l'accès (`company_cpa_mandates.fiduciary_org_id`). */
@@ -78,6 +85,18 @@ export function effectiveMandateRole(userRoleInCabinet: string, maxDelegatedRole
     return null;
   }
   return lower;
+}
+
+/**
+ * Plafond de permissions d'un accès par mandat : intersection des permissions des deux rôles (null si la combinaison est refusée,
+ * comme `effectiveMandateRole`). Le rôle effectif n'est qu'un rôle d'évaluation : seul ce plafond garantit qu'aucune permission
+ * hors intersection n'est accordée (ex. CHEF_MISSION plafonné à AIDE_COMPTABLE ne gagne jamais INVOICE_CREATE_DRAFT).
+ */
+export function mandatePermissionCeiling(userRoleInCabinet: string, maxDelegatedRole: string): ReadonlySet<PermissionAction> | null {
+  if (effectiveMandateRole(userRoleInCabinet, maxDelegatedRole) === null || !isDelegableRole(userRoleInCabinet) || !isDelegableRole(maxDelegatedRole)) {
+    return null;
+  }
+  return intersectRolePermissions(userRoleInCabinet, maxDelegatedRole);
 }
 
 // ---------------------------------------------------------------- adaptateur SQL de la voie B
@@ -146,6 +165,7 @@ export function createSqlMandateResolver(controlPlane: TenantSqlDriver): Mandate
             access: {
               organizationId: row.owner_org_id,
               role,
+              permissionCeiling: mandatePermissionCeiling(row.member_role_code, row.max_delegated_role),
               planCode: row.plan_code,
               fiduciaryOrgId: row.fiduciary_org_id,
               canAccessPayrollPii: Number(row.can_access_payroll_pii) === 1,

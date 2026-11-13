@@ -12,6 +12,7 @@ import {
 } from '@fisca/auth-rbac';
 import type { BatchResult, TenantSqlDriver } from '@fisca/shared-types';
 import type { EntitlementRows, EntitlementSource, FastKv } from './entitlement-guard.ts';
+import { probeRolePermissions } from './mandate-permission-ceiling.ts';
 import type { MandateAccess, MandateResolver } from './mandate-resolver.ts';
 import type { MembershipAccess, MembershipResolver, TenantDatabaseProvider } from './tenant-router.ts';
 
@@ -160,7 +161,7 @@ export function createFakeMandates(): FakeMandates {
 }
 
 export function grantMandate(mandates: FakeMandates, userId: string, companyId: string, role: RoleCode = 'EXPERT_COMPTABLE_OEC', overrides: Partial<MandateAccess> = {}): void {
-  mandates.mandates.set(membershipKey(userId, companyId), { organizationId: 'org-client', role, planCode: 'PLAN_TEST', fiduciaryOrgId: 'org-cabinet', canAccessPayrollPii: false, cryptoMode: 'CLOUD_ASSISTED', ...overrides });
+  mandates.mandates.set(membershipKey(userId, companyId), { organizationId: 'org-client', role, permissionCeiling: probeRolePermissions(role), planCode: 'PLAN_TEST', fiduciaryOrgId: 'org-cabinet', canAccessPayrollPii: false, cryptoMode: 'CLOUD_ASSISTED', ...overrides });
 }
 
 export interface FakeTenants extends TenantDatabaseProvider {
