@@ -64,6 +64,14 @@ export const CreateInvoiceRequestSchema = z
 export type CreateInvoiceRequest = z.infer<typeof CreateInvoiceRequestSchema>;
 
 // 3. Enveloppe d'erreur déterministe conforme RFC 9457
+// issues[] (Doc_07 § 01) : membre d'extension RFC 9457. La spécification n'en fixe pas la forme ; forme minimale
+// retenue (chemin du champ fautif + message, code optionnel), à confirmer à G1. instance : RFC 9457 § 3.1.5.
+export const ProblemIssueSchema = z.object({
+  path: z.string(),
+  message: z.string(),
+  code: z.string().optional(),
+});
+
 export const ProblemDetailsSchema = z.object({
   type: z.url(),
   title: z.string(),
@@ -72,7 +80,11 @@ export const ProblemDetailsSchema = z.object({
   legalRef: z.string().optional(),
   traceId: z.string(),
   detail: z.string(),
+  instance: z.string().optional(),
+  issues: z.array(ProblemIssueSchema).optional(),
 });
+
+export type ProblemIssue = z.infer<typeof ProblemIssueSchema>;
 
 export type ProblemDetails = z.infer<typeof ProblemDetailsSchema>;
 
