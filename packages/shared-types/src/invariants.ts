@@ -205,6 +205,15 @@ export function assertReadOnlySageSql(sqlQuery: string): void {
   if (keyword !== null) {
     return refuse(`mot-clé ${keyword[1] ?? ''}`);
   }
+  if (/\bREPLACE\s+INTO\b/.test(code)) {
+    return refuse('mot-clé REPLACE INTO');
+  }
+  // AGENTS.md loi 9 : lecture WITH (NOLOCK) seulement. Chaque table lue (FROM ou JOIN) porte son indice.
+  const tableReads = (code.match(/\b(?:FROM|JOIN)\b/g) ?? []).length;
+  const noLockHints = (code.match(/\bWITH\s*\(\s*NOLOCK\s*\)/g) ?? []).length;
+  if (tableReads === 0 || noLockHints < tableReads) {
+    return refuse('lecture sans WITH (NOLOCK) sur chaque table');
+  }
 }
 
 // ---------------------------------------------------------------- invariants dérivés

@@ -31,7 +31,7 @@ describe('constat 1 : FISCA_ADR_INVARIANTS est un objet de fonctions (Doc_05 §1
     expect(FISCA_ADR_INVARIANTS.assertSafeIntegerAmount(100, 'x')).toBe(100);
     expect(() => FISCA_ADR_INVARIANTS.assertSafeMcpToolSchema('t', ['companyId'])).toThrowError(/ADR_02_10_TENANT_LEAK_RISK/);
     expect(() => FISCA_ADR_INVARIANTS.assertValidVatRateForIssueYear(1400, '2026-02-01')).toThrowError(/ADR_04_LF2026_VAT_VIOLATION/);
-    expect(() => FISCA_ADR_INVARIANTS.assertReadOnlySageSql('SELECT 1')).not.toThrow();
+    expect(() => FISCA_ADR_INVARIANTS.assertReadOnlySageSql('SELECT cbMarq FROM F_ECRITUREC WITH (NOLOCK)')).not.toThrow();
     expect(() => FISCA_ADR_INVARIANTS.assertCertificateMatchesEmitter(`CN=X, 2.5.4.97=${ICE}`, ICE, '1234567')).not.toThrow();
   });
 
@@ -112,6 +112,10 @@ describe('constat 4a : SQL Sage = une seule instruction SELECT en lecture seule'
     '   ',
     'WITH x AS (SELECT 1) DELETE FROM F_ECRITUREC',
     'SELECT 1\nEXEC sp_who',
+    'SELECT * FROM F_ECRITUREC',
+    'SELECT a.x FROM A a WITH (NOLOCK) JOIN B b ON a.id = b.id',
+    'SELECT 1',
+    'REPLACE INTO F_ECRITUREC SELECT * FROM F_ECRITUREC WITH (NOLOCK)',
     'SELECT * FROM OPENROWSET(\'SQLNCLI\', \'x\', \'y\')',
   ];
   for (const sql of adverse) {
@@ -126,6 +130,7 @@ describe('constat 4a : SQL Sage = une seule instruction SELECT en lecture seule'
       'select a.x, b.y from A a with (nolock) join B b with (nolock) on a.id = b.id;',
       "SELECT CT_Intitule FROM F_COMPTET WITH (NOLOCK) WHERE CT_Intitule = 'CREATE; DROP -- /* INTO'",
       "SELECT CreatedAt, InsertedBy FROM T WITH (NOLOCK) WHERE n = 'l''été'",
+      'SELECT REPLACE(CT_Intitule, \'a\', \'b\') FROM F_COMPTET WITH (NOLOCK)',
     ]) {
       expect(() => FISCA_ADR_INVARIANTS.assertReadOnlySageSql(sql)).not.toThrow();
     }
