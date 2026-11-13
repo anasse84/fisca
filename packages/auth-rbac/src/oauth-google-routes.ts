@@ -13,6 +13,9 @@
 
 import { Hono } from 'hono';
 import type { ProblemDetails } from '@fisca/shared-types';
+import { completeFirstFactor } from './first-factor.ts';
+import type { FirstFactorDeps } from './first-factor.ts';
+import { firstFactorResponse } from './first-factor-response.ts';
 import {
   GoogleOAuthError,
   beginGoogleAuthorization,
@@ -39,6 +42,12 @@ export interface GoogleOAuthRouterDeps {
   readonly oauth: GoogleOAuthDeps;
   readonly turnstile: TurnstileVerifier;
   readonly rateLimiter: RateLimiter;
+  /**
+   * Raccordement MFA de bout en bout (Doc_09 § 02). Fourni : le callback émet un mfa_challenge_token quand le compte
+   * a un second facteur actif et n'émet une session qu'en son absence. À fournir en production ; sans lui le callback
+   * garde son comportement d'avant T-S1A-04 (identité confirmée, aucune session émise).
+   */
+  readonly login?: FirstFactorDeps;
 }
 
 type ProblemStatus = 400 | 401 | 403 | 429 | 502;
@@ -144,7 +153,12 @@ export function createGoogleOAuthRouter(deps: GoogleOAuthRouterDeps): Hono {
           409,
         );
       }
-      return c.json({ status: 'AUTHENTICATED', userId: outcome.userId, isNewUser: outcome.kind === 'SIGNED_UP' }, 200);
+      const isNewUser = outcome.kind === 'SIGNED_UP';
+      if (deps.login !== undefined) {
+        const next = await completeFirstFactor(deps.login, { userId: outcome.userId, firstFactor: 'GOOGLE_OAUTH' });
+        return firstFactorResponse(c, next, { userId: outcome.userId, isNewUser });
+      }
+      return c.json({ status: 'AUTHENTICATED', userId: outcome.userId, isNewUser }, 200);
     } catch (error) {
       if (error instanceof GoogleOAuthError) {
         return problemResponse(error.code, PROBLEMS[error.code]);
