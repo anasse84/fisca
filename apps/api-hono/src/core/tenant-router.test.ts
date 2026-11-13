@@ -118,7 +118,7 @@ describe('TenantRouter : sélection et résolution du dossier', () => {
     const { app, seen, tenants } = harness();
     const response = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: COMPANY_A } });
     expect(response.status).toBe(200);
-    expect(seen.tenant).toMatchObject({ userId: USER_1, role: 'CHEF_MISSION', companyId: COMPANY_A, plan: 'PLAN_TEST', organizationId: 'org-1' });
+    expect(seen.tenant).toMatchObject({ userId: USER_1, role: 'CHEF_MISSION', companyId: COMPANY_A, plan: 'PLAN_TEST', organizationId: 'org-1', canAccessPayrollPii: true });
     expect(seen.tenant?.tenantDb).toBe(tenants.drivers.get(COMPANY_A));
     expect(tenants.requested).toEqual([COMPANY_A]);
     expect(Object.isFrozen(seen.tenant)).toBe(true);

@@ -41,6 +41,7 @@ const TICKET_EXTRA_TABLES = [
   'one_time_tokens',
   'mfa_challenge_states',
   'processed_queue_messages',
+  'company_cpa_mandates',
 ] as const;
 
 const HUMAN_ROLES = [

@@ -64,7 +64,7 @@ describe('migration v4 du plan de contrôle : forme et immuabilité de v1, v2 et
   const v4 = CONTROL_PLANE_MIGRATIONS[3];
 
   it('est la quatrième migration ; les empreintes de v1, v2 et v3 sont inchangées (recalculées)', () => {
-    expect(CONTROL_PLANE_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4]);
+    expect(CONTROL_PLANE_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5]);
     expect(v4?.name).toBe('control_plane_v4_whatsapp_optin_oauth_ttl');
     for (const [index, expected] of [V1_SHA256, V2_SHA256, V3_SHA256].entries()) {
       const migration = CONTROL_PLANE_MIGRATIONS[index];
@@ -79,7 +79,7 @@ describe('migration v4 du plan de contrôle : forme et immuabilité de v1, v2 et
     expect(v4?.triggerNames).toEqual(['enforce_oauth_transaction_max_ttl']);
     expect([...CONTROL_PLANE_TRIGGER_NAMES]).toEqual(['enforce_oauth_transaction_max_ttl']);
     const names: readonly string[] = CONTROL_PLANE_TABLE_NAMES;
-    expect(names).toHaveLength(26);
+    expect(names).toHaveLength(27);
     expect(all(openControlPlane(), `SELECT name FROM sqlite_master WHERE type = 'trigger'`)).toEqual([{ name: 'enforce_oauth_transaction_max_ttl' }]);
   });
 

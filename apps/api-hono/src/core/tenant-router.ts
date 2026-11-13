@@ -10,7 +10,7 @@
 import { createMiddleware } from 'hono/factory';
 import { SessionJwtError, type AccessTokenClaims, type RoleCode } from '@fisca/auth-rbac';
 import { InfrastructureError, assertValidCompanyId, type TenantSqlDriver } from '@fisca/shared-types';
-import type { MandateResolver } from './mandate-resolver.ts';
+import type { MandateAccess, MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
 import {
   AUTH_REQUIRED_PROBLEM,
   TENANT_OUT_OF_SCOPE_PROBLEM,
@@ -101,6 +101,11 @@ export interface TenantContext {
   readonly organizationId: string;
   readonly accessKind: MembershipAccessKind;
   readonly plan: string;
+  /**
+   * Première moitié de l'habilitation paie (Doc_09 § 07) : vrai pour une appartenance directe ; pour un accès par mandat, vaut
+   * `company_cpa_mandates.can_access_payroll_pii`. L'attribut propre de l'utilisateur s'y ajoute (ET logique, `ledger-api.ts`).
+   */
+  readonly canAccessPayrollPii: boolean;
   readonly tenantDb: TenantSqlDriver;
 }
 
@@ -262,6 +267,8 @@ export interface TenantRouterDeps {
   /** Absent : échec fermé, tout accès cabinet (mandat) est refusé. */
   readonly mandates?: MandateResolver;
   readonly tenants: TenantDatabaseProvider;
+  /** Voie C. Absent : échec fermé, tout accès par mandat à un dossier ZERO_KNOWLEDGE_E2EE est refusé. */
+  readonly keyGrants?: TenantKeyGrantReader;
 }
 
 function isTenantDenial(error: unknown): boolean {
@@ -314,13 +321,16 @@ export function createTenantRouter(deps: TenantRouterDeps) {
       return respondProblem(c, policy.audience === 'AI_MCP' ? TENANT_OUT_OF_SCOPE_PROBLEM : COMPANY_ID_INVALID);
     }
 
+    // Ordre exact. Voie A : appartenance directe active à l'organisation propriétaire ; voie B : sinon, mandat actif d'un cabinet dont
+    // l'utilisateur est membre actif. Un refus ici se produit AVANT toute ouverture de TENANT_DB.
     let access: MembershipAccess | null;
+    let mandate: MandateAccess | null = null;
     try {
       const direct = await deps.memberships.resolveAccess({ userId: actor.userId, companyId });
       access = direct !== null && direct.accessKind === 'MEMBERSHIP' ? direct : null;
       if (access === null && deps.mandates !== undefined) {
-        const mandate = await deps.mandates.resolveMandate({ userId: actor.userId, companyId });
-        access = mandate === null ? null : { ...mandate, accessKind: 'MANDATE' };
+        mandate = await deps.mandates.resolveMandate({ userId: actor.userId, companyId });
+        access = mandate === null ? null : { organizationId: mandate.organizationId, role: mandate.role, planCode: mandate.planCode, accessKind: 'MANDATE' };
       }
     } catch {
       return respondProblem(c, TENANT_UNAVAILABLE_PROBLEM);
@@ -336,6 +346,23 @@ export function createTenantRouter(deps: TenantRouterDeps) {
       return respondProblem(c, isTenantDenial(error) ? TENANT_OUT_OF_SCOPE_PROBLEM : TENANT_UNAVAILABLE_PROBLEM);
     }
 
+    // Voie C : accès par mandat à un dossier E2EE : enveloppe non révoquée exigée, lue dans la base du dossier (donc après son
+    // ouverture). Refus par défaut sans lecteur ; même 403 qu'un mandat absent (aucune énumération).
+    if (mandate !== null && mandate.cryptoMode === 'ZERO_KNOWLEDGE_E2EE') {
+      if (deps.keyGrants === undefined) {
+        return respondProblem(c, TENANT_OUT_OF_SCOPE_PROBLEM);
+      }
+      let hasGrant: boolean;
+      try {
+        hasGrant = await deps.keyGrants.hasActiveGrant({ tenantDb, companyId, userId: actor.userId, fiduciaryOrgId: mandate.fiduciaryOrgId });
+      } catch {
+        return respondProblem(c, TENANT_UNAVAILABLE_PROBLEM);
+      }
+      if (!hasGrant) {
+        return respondProblem(c, TENANT_OUT_OF_SCOPE_PROBLEM);
+      }
+    }
+
     c.set(
       'tenant',
       Object.freeze({
@@ -345,6 +372,7 @@ export function createTenantRouter(deps: TenantRouterDeps) {
         organizationId: access.organizationId,
         accessKind: access.accessKind,
         plan: access.planCode,
+        canAccessPayrollPii: mandate === null ? true : mandate.canAccessPayrollPii,
         tenantDb,
       }),
     );

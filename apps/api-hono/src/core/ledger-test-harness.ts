@@ -48,6 +48,11 @@ function execute(sqlite: DatabaseSync, sql: string, values: readonly D1Value[]):
   if (READ_KEYWORDS.has(keywordOf(sql))) {
     return { success: true, results: statement.all(...values).map((row) => ({ ...row })), meta: { changes: 0 } };
   }
+  // Comme D1 : une instruction `INSERT/UPDATE/DELETE ... RETURNING` rend ses lignes (et `changes` en est le nombre).
+  if (DML_KEYWORDS.has(keywordOf(sql)) && /\bRETURNING\b/i.test(sql)) {
+    const rows = statement.all(...values).map((row) => ({ ...row }));
+    return { success: true, results: rows, meta: { changes: rows.length } };
+  }
   const outcome = statement.run(...values);
   return { success: true, results: [], meta: { changes: DML_KEYWORDS.has(keywordOf(sql)) ? Number(outcome.changes) : 0 } };
 }

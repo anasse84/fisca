@@ -297,18 +297,18 @@ describe.each(BACKENDS)('ensureTenantSchemaUpToDate sur $name', (backend) => {
     expect(await ensureTenantSchemaUpToDate(null, driver, 'soc-test', [fixed])).toEqual({ currentVersion: 1, appliedCount: 1 });
   });
 
-  it('plan de contrôle v1→v4 : tables créées, no-op au second appel', async () => {
+  it('plan de contrôle v1→v5 : tables créées, no-op au second appel', async () => {
     const driver = await backend.fresh();
     const options = { statementsFor: backend.controlStatements };
     const first = await ensureTenantSchemaUpToDate(null, driver, 'control-plane', CONTROL_PLANE_MIGRATIONS, options);
-    expect(first).toEqual({ currentVersion: 4, appliedCount: 4 });
+    expect(first).toEqual({ currentVersion: 5, appliedCount: 5 });
     expect((await stored(driver)).map((r) => r.sha256)).toEqual(CONTROL_PLANE_MIGRATIONS.map((m) => m.expectedSha256Hex));
     const tables = await backend.tables(driver);
     for (const table of CONTROL_PLANE_TABLE_NAMES) {
       expect(tables, table).toContain(table);
     }
     expect(await ensureTenantSchemaUpToDate(null, driver, 'control-plane', CONTROL_PLANE_MIGRATIONS, options)).toEqual({
-      currentVersion: 4,
+      currentVersion: 5,
       appliedCount: 0,
     });
   });

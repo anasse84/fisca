@@ -16,7 +16,7 @@ import {
   type InternalErrorReport,
   type TraceContext,
 } from './problem-details.ts';
-import type { MandateResolver } from './mandate-resolver.ts';
+import type { MandateResolver, TenantKeyGrantReader } from './mandate-resolver.ts';
 import {
   createAuthenticationMiddleware,
   createTenantRouter,
@@ -34,6 +34,8 @@ export interface RequestPipelineDeps {
   /** Absent : échec fermé, aucun accès cabinet (mandat OEC). */
   readonly mandates?: MandateResolver;
   readonly tenants: TenantDatabaseProvider;
+  /** Absent : échec fermé, tout accès par mandat à un dossier ZERO_KNOWLEDGE_E2EE est refusé (voie C). */
+  readonly keyGrants?: TenantKeyGrantReader;
   readonly entitlements: { readonly source: EntitlementSource; readonly kv: FastKv; readonly cacheTtlSec: number };
   readonly idempotencyStore: IdempotencyStore;
   readonly nowMs: () => number;
@@ -75,6 +77,7 @@ export function createRequestPipeline(deps: RequestPipelineDeps): RequestPipelin
         memberships: deps.memberships,
         ...(deps.mandates === undefined ? {} : { mandates: deps.mandates }),
         tenants: deps.tenants,
+        ...(deps.keyGrants === undefined ? {} : { keyGrants: deps.keyGrants }),
       }),
     },
     {

@@ -6,8 +6,10 @@
  * Les CHECK ne sont pas répétés ici : ils vivent dans le DDL appliqué par les migrations, jamais généré par drizzle-kit.
  */
 
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 import {
+  CPA_MANDATE_DELEGABLE_ROLES,
+  CPA_MANDATE_STATUSES,
   DOSSIER_METER_STATUSES,
   DOSSIER_TIERS,
   HUMAN_ROLE_CODES,
@@ -350,5 +352,26 @@ export const processedQueueMessages = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.queueName, table.eventId] }),
     index('idx_processed_queue_messages_expires_at').on(table.expiresAt),
+  ],
+);
+
+/** Mandat d'un cabinet sur le dossier d'un client (migration 5 du plan de contrôle, T-S1B-11) : voie B du TenantRouter. */
+export const companyCpaMandates = sqliteTable(
+  'company_cpa_mandates',
+  {
+    mandateId: text('mandate_id').primaryKey(),
+    companyId: text('company_id').notNull().references(() => tenantDatabases.companyId),
+    fiduciaryOrgId: text('fiduciary_org_id').notNull().references(() => organizations.id),
+    status: text('status', { enum: CPA_MANDATE_STATUSES }).notNull(),
+    maxDelegatedRole: text('max_delegated_role', { enum: CPA_MANDATE_DELEGABLE_ROLES }).notNull(),
+    canAccessPayrollPii: integer('can_access_payroll_pii').notNull().default(0),
+    scopedUserIdsJson: text('scoped_user_ids_json'),
+    grantedByUserId: text('granted_by_user_id').notNull().references(() => users.id),
+    grantedAt: text('granted_at').notNull(),
+    revokedAt: text('revoked_at'),
+  },
+  (table) => [
+    unique().on(table.companyId, table.fiduciaryOrgId),
+    index('idx_cpa_mandates_lookup').on(table.fiduciaryOrgId, table.companyId, table.status),
   ],
 );

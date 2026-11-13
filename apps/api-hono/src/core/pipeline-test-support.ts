@@ -160,7 +160,7 @@ export function createFakeMandates(): FakeMandates {
 }
 
 export function grantMandate(mandates: FakeMandates, userId: string, companyId: string, role: RoleCode = 'EXPERT_COMPTABLE_OEC', overrides: Partial<MandateAccess> = {}): void {
-  mandates.mandates.set(membershipKey(userId, companyId), { organizationId: 'org-client', role, planCode: 'PLAN_TEST', ...overrides });
+  mandates.mandates.set(membershipKey(userId, companyId), { organizationId: 'org-client', role, planCode: 'PLAN_TEST', fiduciaryOrgId: 'org-cabinet', canAccessPayrollPii: false, cryptoMode: 'CLOUD_ASSISTED', ...overrides });
 }
 
 export interface FakeTenants extends TenantDatabaseProvider {

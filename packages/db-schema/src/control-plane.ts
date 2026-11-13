@@ -58,6 +58,13 @@ export const SUBSCRIPTION_STATUSES = [
   'RESTRICTED_READ_ONLY',
   'CANCELED_WORM_PRESERVED',
 ] as const;
+/** Statuts d'un mandat de cabinet (`company_cpa_mandates.status`). */
+export const CPA_MANDATE_STATUSES = ['ACTIVE', 'REVOKED'] as const;
+/** Rôles qu'un mandat peut déléguer au plus (`max_delegated_role`) : les 4 rôles de cabinet / contrôle de Doc_09 § 05. */
+export const CPA_MANDATE_DELEGABLE_ROLES = ['EXPERT_COMPTABLE_OEC', 'CHEF_MISSION', 'AIDE_COMPTABLE', 'AUDITEUR_CAC_DGI'] as const;
+export type CpaMandateStatus = (typeof CPA_MANDATE_STATUSES)[number];
+export type CpaMandateDelegableRole = (typeof CPA_MANDATE_DELEGABLE_ROLES)[number];
+
 export const PASSKEY_PURPOSES = ['REGISTRATION', 'AUTHENTICATION'] as const;
 export const ONE_TIME_TOKEN_PURPOSES = ['email-verify', 'password-reset'] as const;
 /** Algorithmes COSE acceptés par passkeys.ts : ES256 (-7) et EdDSA (-8). */
@@ -78,6 +85,10 @@ export interface ControlPlaneMigration {
    * (trigger PL/pgSQL). Clé = rang de l'instruction SQLite ; absent des migrations 1 à 3.
    */
   readonly postgresOverrides?: Readonly<Record<number, string>>;
+  /** Tables créées par CETTE migration (métadonnée hors empreinte) ; absent des migrations 1 à 4. */
+  readonly tableNames?: readonly string[];
+  /** Index nommés créés par CETTE migration (métadonnée hors empreinte) ; absent des migrations 1 à 4. */
+  readonly indexNames?: readonly string[];
 }
 
 function quoteList(values: readonly string[]): string {
@@ -527,6 +538,58 @@ const MIGRATION_4_STATEMENTS: readonly string[] = [ALTER_USERS_WHATSAPP_OPTIN, A
 
 const MIGRATION_4_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = { 2: CREATE_OAUTH_TRANSACTION_TTL_TRIGGER_PG };
 
+// ---------------------------------------------------------------------------
+// Migration 5 : mandats de cabinet (T-S1B-11, H2 tranché par le propriétaire)
+// ---------------------------------------------------------------------------
+
+/**
+ * `company_cpa_mandates` : mandat d'un cabinet (`fiduciary_org_id`) sur le dossier d'un client (`company_id`) ; source de vérité de la
+ * voie B du TenantRouter. Schéma du propriétaire, plus des contraintes de cohérence qui ne le contredisent pas :
+ * - FK `company_id` vers `tenant_databases(company_id)`, `fiduciary_org_id` vers `organizations(id)`, `granted_by_user_id` vers
+ *   `users(id)` : les trois tables existent dans le DDL v1 (migration 1) ; un mandat orphelin est refusé ;
+ * - `status = 'REVOKED'` si et seulement si `revoked_at` est renseigné ; `revoked_at >= granted_at` ;
+ * - `granted_at` et `revoked_at` au format UTC `YYYY-MM-DDTHH:MM:SSZ` du plan de contrôle ;
+ * - `scoped_user_ids_json` NULL ou tableau JSON valide (SQLite : `json_valid` + `json_type` ; PostgreSQL 16 : `IS JSON ARRAY`).
+ * Le UNIQUE (company_id, fiduciary_org_id) interdit un second mandat du même cabinet sur le même dossier, révoqué compris : on
+ * réactive la ligne existante plutôt que d'en créer une. L'index `idx_cpa_mandates_lookup` est celui du propriétaire.
+ */
+const SQLITE_SCOPED_USERS_CHECK = `CASE WHEN json_valid(scoped_user_ids_json) THEN json_type(scoped_user_ids_json) = 'array' ELSE 0 END`;
+const POSTGRES_SCOPED_USERS_CHECK = 'scoped_user_ids_json IS JSON ARRAY';
+
+const CREATE_COMPANY_CPA_MANDATES = `CREATE TABLE IF NOT EXISTS company_cpa_mandates (
+    mandate_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL REFERENCES tenant_databases(company_id),
+    fiduciary_org_id TEXT NOT NULL REFERENCES organizations(id),
+    status TEXT NOT NULL CHECK (status IN (${quoteList(CPA_MANDATE_STATUSES)})),
+    max_delegated_role TEXT NOT NULL CHECK (max_delegated_role IN (${quoteList(CPA_MANDATE_DELEGABLE_ROLES)})),
+    can_access_payroll_pii INTEGER NOT NULL DEFAULT 0 ${booleanCheck('can_access_payroll_pii')},
+    scoped_user_ids_json TEXT CHECK (scoped_user_ids_json IS NULL OR (${SQLITE_SCOPED_USERS_CHECK})),
+    granted_by_user_id TEXT NOT NULL REFERENCES users(id),
+    granted_at TEXT NOT NULL ${utcTimestampCheck('granted_at')},
+    revoked_at TEXT ${nullableUtcTimestampCheck('revoked_at')},
+    UNIQUE (company_id, fiduciary_org_id),
+    CHECK ((status = 'REVOKED') = (revoked_at IS NOT NULL)),
+    CHECK (revoked_at IS NULL OR revoked_at >= granted_at)
+)`;
+
+const MIGRATION_5_INDEXES: readonly (readonly [string, string])[] = [
+  [
+    'idx_cpa_mandates_lookup',
+    'CREATE INDEX IF NOT EXISTS idx_cpa_mandates_lookup ON company_cpa_mandates (fiduciary_org_id, company_id, status)',
+  ],
+];
+
+const MIGRATION_5_STATEMENTS: readonly string[] = [CREATE_COMPANY_CPA_MANDATES, ...MIGRATION_5_INDEXES.map(([, sql]) => sql)];
+
+/** Mapping mécanique SQLite vers PostgreSQL 16 (voir `controlPlaneMigrationPostgresStatements`). */
+function mechanicalPostgresTranslation(statement: string): string {
+  return statement.replace(/ CHECK \((\w+) = CAST\(\1 AS INTEGER\)\)/g, '').replace(/\bINTEGER\b/g, 'BIGINT');
+}
+
+const MIGRATION_5_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = {
+  0: mechanicalPostgresTranslation(CREATE_COMPANY_CPA_MANDATES.replace(SQLITE_SCOPED_USERS_CHECK, POSTGRES_SCOPED_USERS_CHECK)),
+};
+
 /**
  * Migrations versionnées du plan de contrôle, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : toute correction est une migration de version supérieure.
@@ -559,6 +622,15 @@ export const CONTROL_PLANE_MIGRATIONS: readonly ControlPlaneMigration[] = [
     triggerNames: ['enforce_oauth_transaction_max_ttl'],
     postgresOverrides: MIGRATION_4_POSTGRES_OVERRIDES,
   },
+  {
+    version: 5,
+    name: 'control_plane_v5_company_cpa_mandates',
+    upSqlStatements: MIGRATION_5_STATEMENTS,
+    expectedSha256Hex: '44d771b3bb4f7d40a2867d55cd9cf4641f4d62c4c906ce4cd0b6326dfdbd7ded',
+    tableNames: ['company_cpa_mandates'],
+    indexNames: ['idx_cpa_mandates_lookup'],
+    postgresOverrides: MIGRATION_5_POSTGRES_OVERRIDES,
+  },
 ];
 
 /** Triggers créés par les migrations du plan de contrôle, dans leur ordre de création. */
@@ -577,9 +649,7 @@ export function controlPlaneMigrationPostgresStatements(migration: ControlPlaneM
   return migration.upSqlStatements.map(
     (statement, index) =>
       migration.postgresOverrides?.[index] ??
-      statement
-        .replace(/ CHECK \((\w+) = CAST\(\1 AS INTEGER\)\)/g, '')
-        .replace(/\bINTEGER\b/g, 'BIGINT'),
+      mechanicalPostgresTranslation(statement),
   );
 }
 
@@ -611,10 +681,11 @@ export const CONTROL_PLANE_TABLE_NAMES: readonly string[] = [
   'one_time_tokens',
   'mfa_challenge_states',
   'processed_queue_messages',
+  'company_cpa_mandates',
 ];
 
 /** Index nommés créés par les migrations, dans leur ordre de création. */
-export const CONTROL_PLANE_INDEX_NAMES: readonly string[] = [...MIGRATION_2_INDEXES, ...MIGRATION_3_INDEXES].map(([name]) => name);
+export const CONTROL_PLANE_INDEX_NAMES: readonly string[] = [...MIGRATION_2_INDEXES, ...MIGRATION_3_INDEXES, ...MIGRATION_5_INDEXES].map(([name]) => name);
 
 /**
  * Requêtes d'usage des stockages (paramètres `?`, un par valeur, dans l'ordre indiqué). Les lectures-suppressions

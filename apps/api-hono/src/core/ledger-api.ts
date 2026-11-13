@@ -27,6 +27,14 @@ export interface LedgerActorProfile {
   readonly canAccessPayrollPii: boolean;
 }
 
+/**
+ * Habilitation paie effective (Doc_09 § 07) : le chemin d'accès l'autorise (`TenantContext.canAccessPayrollPii` : mandat
+ * `can_access_payroll_pii` pour un cabinet, vrai pour une appartenance directe) ET l'utilisateur porte l'attribut. Jamais un OU.
+ */
+export function effectivePayrollPiiClearance(accessPathAllows: boolean, userAttribute: boolean): boolean {
+  return accessPathAllows && userAttribute;
+}
+
 export interface LedgerActorProfileSource {
   resolve(tenant: TenantContext): Promise<LedgerActorProfile>;
 }
@@ -64,7 +72,7 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
       orgPlanSegment: profile.orgPlanSegment,
       activeHumanMembersCount: profile.activeHumanMembersCount,
       subscriptionReadOnly: call.subscriptionReadOnly,
-      canAccessPayrollPii: profile.canAccessPayrollPii,
+      canAccessPayrollPii: effectivePayrollPiiClearance(call.tenant.canAccessPayrollPii, profile.canAccessPayrollPii),
       ...(mfa === null || mfa === undefined ? {} : { mfaVerifiedAtEpochSec: mfa }),
     };
     const engine = new ImmutableCgncLedgerEngine({
