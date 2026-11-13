@@ -77,7 +77,9 @@ Exécute ensuite chaque ligne `ACTION`, dans l'ordre :
 | `STOP_OWNER reason=…` | Section 7. |
 | `COMPLETE` | Rapport final (section 7). |
 
-**Attendre.** Après les envois, attends les voies avec WaitForAgentThread, par appels répétés, tant que ton tour a moins de 40 minutes (`date +%s` noté au début du tour). Dès qu'une voie rend son tour, lis sa dernière ligne (`ETAT …` ou `VERDICT …`) et fais un nouveau tick en la citant dans `--completed`. À 40 minutes : complète l'échelle de rappels si l'outil est appelable, écris l'état dans `01_Current_Wave_Status`, et termine ton tour par la ligne `ETAT PILOTE` (section 7). Le tour suivant commence par un tick.
+**Attendre.** Après les envois, attends les voies avec WaitForAgentThread, par appels répétés, tant que ton tour a moins de 40 minutes (`date +%s` noté au début du tour). Dès qu'une voie rend son tour, lis sa dernière ligne (`ETAT …` ou `VERDICT …`) et fais un nouveau tick en la citant dans `--completed`. À 40 minutes : complète l'échelle de rappels si l'outil est appelable, écris l'état dans `01_Current_Wave_Status`, et termine ton tour par la ligne `ETAT PILOTE` (section 7). Le tour suivant commence par un tick. Si la note rendue par un envoi dit que ce fil reprendra automatiquement à la fin de la voie, tu peux terminer ton tour plus tôt : la reprise fera le tick.
+
+**Relais refusé.** Sur un tour repris automatiquement (rappel, fin d'une voie), il se peut qu'un outil de relais soit refusé pour une voie ouverte à un tour précédent (WaitForAgentThread ou SendThreadMessage). N'ouvre alors jamais une voie de remplacement : elle n'aurait ni l'accord npm ni le clone, et deux fils travailleraient sur la même branche. Écris l'état dans `01_Current_Wave_Status` et termine par `ETAT PILOTE … — RELAIS REFUSÉ : écris CONTINUE`. Le message du propriétaire rouvre un tour où ces outils sont disponibles.
 
 **Ne fais jamais à la place d'une voie.** Si une voie échoue, relance-la ou arrête-toi ; ne code pas ses tickets et ne modifie pas ses verdicts.
 
