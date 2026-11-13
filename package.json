@@ -14,6 +14,7 @@
     "test:unit": "turbo run test:unit && vitest run scripts",
     "test": "turbo run test && vitest run scripts",
     "build": "turbo run build",
+    "test:xsd": "pnpm --filter @fisca/ubl-xades test:xsd",
     "verify:fast": "turbo run typecheck lint test:unit && tsc -p scripts/tsconfig.json && eslint scripts && vitest run scripts && pnpm enforce",
     "enforce": "node scripts/enforce-constitution.ts"
   },
