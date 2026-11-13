@@ -31,6 +31,7 @@ import {
   openTenant,
   POST_ENTRY_SQL,
   postParams,
+  sealSqlite,
   simpleEntry,
   SHA_B,
   type RowValues,
@@ -94,7 +95,7 @@ function messageOf(db: DatabaseSync, sql: string, params: readonly (string | num
 }
 
 function post(db: DatabaseSync, id: string): void {
-  db.prepare(POST_ENTRY_SQL).run(...postParams(id));
+  sealSqlite(db, id);
 }
 
 /** Pièce équilibrée de 1 200,00 : débit 3421 clients, crédit 7111 ventes (HT) et 4455 (TVA), puis scellée en POSTED. */

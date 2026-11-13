@@ -361,9 +361,33 @@ export function entryWithLines(
   ];
 }
 
-/** Scellement DRAFT vers POSTED : UPDATE contrôlé portant les deux empreintes (Doc_06 § 05, PAF_MISSING_HASH). */
+/**
+ * Scellement vers POSTED : UPDATE contrôlé portant les deux empreintes (Doc_06 § 05, PAF_MISSING_HASH). Depuis la v11 (décision du
+ * pilote 7, Doc_02) la base n'accepte POSTED que depuis REVISEE_CYCLE : une pièce de test passe d'abord par `REVISE_ENTRY_SQL`
+ * (visa du chef de mission), puis par ce scellement (helpers `sealOn`, `sealSqlite`).
+ */
 export const POST_ENTRY_SQL =
   `UPDATE journal_entries SET status = 'POSTED', validated_at = ?, entry_hash = ?, previous_entry_hash = ? WHERE id = ?`;
+
+/** Visa du chef de mission : DRAFT (ou IA_PROPOSITION) vers REVISEE_CYCLE, étape qui précède tout scellement. */
+export const REVISE_ENTRY_SQL = `UPDATE journal_entries SET status = 'REVISEE_CYCLE' WHERE id = ? AND status IN ('DRAFT', 'IA_PROPOSITION')`;
+
+/** Un moteur ou une connexion capable d'exécuter un ordre paramétré (structurellement `Engine` de dual-engine.ts). */
+export interface StatementRunner {
+  run(sql: string, params?: readonly Param[]): Promise<void>;
+}
+
+/** Flux complet DRAFT vers REVISEE_CYCLE vers POSTED sur un moteur. */
+export async function sealOn(runner: StatementRunner, id: string): Promise<void> {
+  await runner.run(REVISE_ENTRY_SQL, [id]);
+  await runner.run(POST_ENTRY_SQL, postParams(id));
+}
+
+/** Flux complet DRAFT vers REVISEE_CYCLE vers POSTED sur une base SQLite. */
+export function sealSqlite(db: DatabaseSync, id: string): void {
+  db.prepare(REVISE_ENTRY_SQL).run(id);
+  db.prepare(POST_ENTRY_SQL).run(...postParams(id));
+}
 
 export function postParams(id: string): [string, string, string, string] {
   return [NOW, SHA_B, GENESIS_HASH, id];

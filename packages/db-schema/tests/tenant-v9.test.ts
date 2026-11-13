@@ -28,6 +28,8 @@ import {
   openTenant,
   POST_ENTRY_SQL,
   postParams,
+  sealSqlite,
+  REVISE_ENTRY_SQL,
   simpleEntry,
   type RowValues,
 } from './tenant-support.ts';
@@ -69,6 +71,7 @@ const MSG_FY_CHANGE = 'CGNC_FISCAL_YEAR_IMMUTABLE: Une pièce ne change jamais d
 const MSG_FY_UPDATE = 'VIOLATION_PAF_CGI_ART_145: Exercice clos immuable. Ouvrez un nouvel exercice.';
 const MSG_NEGATIVE_CASH = 'CGNC_NEGATIVE_CASH_5161: Décaissement refusé car il rendrait le solde de caisse 5161 créditeur.';
 const MSG_CASH_CHECK = 'new row for relation "cgnc_accounts" violates check constraint "cgnc_accounts_cash_5161_nonnegative_check"';
+const MSG_POST_ONLY_FROM_REVISED_CYCLE = 'CGNC_POST_ONLY_FROM_REVISED_CYCLE: Une pièce ne passe à POSTED que depuis REVISEE_CYCLE (visa du chef de mission).';
 const MSG_REVERSAL_TARGET = 'CGNC_REVERSAL_TARGET_INVALID: La pièce contre-passée doit exister et être POSTED.';
 const SOURCE_TYPES_CHECK = 'journal_entries_source_document_type_check';
 
@@ -175,6 +178,7 @@ function names(db: DatabaseSync, type: 'table' | 'trigger' | 'index'): string[] 
 }
 
 async function seal(id: string): Promise<void> {
+  await runBoth(REVISE_ENTRY_SQL, [id]);
   await runBoth(POST_ENTRY_SQL, postParams(id));
 }
 
@@ -196,7 +200,7 @@ describe('migration v9 : forme, immuabilité de v1 à v8, objets créés', () =>
   const v9 = TENANT_MIGRATIONS[8];
 
   it('est la neuvième migration ; les empreintes de v1 à v8 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(v9?.name).toBe('tenant_part9_ledger_cash_balance_closed_year_source_types');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -324,7 +328,7 @@ describe('mise à niveau d\'une base v8 contenant des pièces POSTED (backfill, 
     await ensureTenantSchemaUpToDate(null, driver, 'soc-upgrade', TENANT_MIGRATIONS.slice(0, 8));
     sqliteRun(fake.sqlite, SEED_ROWS);
     for (const id of SEALED) {
-      fake.sqlite.prepare(POST_ENTRY_SQL).run(...postParams(id));
+      sealSqlite(fake.sqlite, id);
     }
     expect(all(fake.sqlite, `SELECT COUNT(*) AS n FROM pragma_table_info('cgnc_accounts') WHERE name = 'posted_balance_cents'`)).toEqual([{ n: 0 }]);
     const result = await ensureTenantSchemaUpToDate(null, driver, 'soc-upgrade', TENANT_MIGRATIONS.slice(0, 9));
@@ -342,7 +346,8 @@ describe('mise à niveau d\'une base v8 contenant des pièces POSTED (backfill, 
     expect(all(db, `SELECT gl_entry_id FROM bank_transactions`)).toEqual([{ gl_entry_id: 'je-fund' }]);
     expect(all(db, 'PRAGMA foreign_key_check')).toEqual([]);
     expect(all(db, `SELECT COUNT(*) AS n FROM v_cgnc_trial_balance_6col`)).toEqual([{ n: 5 }]);
-    for (const name of TENANT_TRIGGER_NAMES) {
+    // Base mise à niveau jusqu'à la v9 : les triggers de v1 à v9 (la v11, qui suit, n'y est pas encore appliquée).
+    for (const name of TENANT_MIGRATIONS.slice(0, 9).flatMap((migration) => migration.triggerNames ?? [])) {
       expect(names(db, 'trigger'), name).toContain(name);
     }
     // Les pièces POSTED restent immuables après la reconstruction, et les nouveaux triggers sont actifs.
@@ -362,8 +367,8 @@ describe('mise à niveau d\'une base v8 contenant des pièces POSTED (backfill, 
       ...simpleEntry('je-fund', 1, 'jrn-cai', 'acc-5161', 'acc-1111', 10000),
       ...simpleEntry('je-annex', 2, 'jrn-cai', 'acc-6111', 'acc-5161b', 3000),
     ]);
-    fake.sqlite.prepare(POST_ENTRY_SQL).run(...postParams('je-fund'));
-    fake.sqlite.prepare(POST_ENTRY_SQL).run(...postParams('je-annex'));
+    sealSqlite(fake.sqlite, 'je-fund');
+    sealSqlite(fake.sqlite, 'je-annex');
     await expect(ensureTenantSchemaUpToDate(null, driver, 'soc-negative', TENANT_MIGRATIONS)).rejects.toThrow(MSG_CASH_CHECK);
     expect(all(fake.sqlite, `SELECT COUNT(*) AS n FROM pragma_table_info('cgnc_accounts') WHERE name = 'posted_balance_cents'`)).toEqual([{ n: 0 }]);
     expect(all(fake.sqlite, `SELECT COUNT(*) AS n FROM _fisca_schema_migrations`)).toEqual([{ n: 8 }]);
@@ -449,14 +454,16 @@ describe('a. ligne : jamais de déplacement ; insertion directe POSTED ; passage
     await expectEqualRows(`SELECT status FROM journal_entries WHERE id = 'je-draft2'`, [{ status: 'POSTED' }]);
   });
 
-  it('ÉCART DOCUMENTÉ : la base accepte encore DRAFT vers POSTED (tests et outils de seed scellent depuis DRAFT) ; la restriction à REVISEE_CYCLE est portée par le moteur', async () => {
+  it('RÈGLE REMPLACÉE (décision du pilote 7, migration v11) : l\'ancien « ÉCART DOCUMENTÉ » (DRAFT vers POSTED accepté par la base) est INVERSÉ ; DRAFT et IA_PROPOSITION vers POSTED sont refusés, seul REVISEE_CYCLE scelle', async () => {
     await seedBoth(simpleEntry('je-ia', 4, 'jrn-vte', 'acc-3421', 'acc-7111', 100, { status: 'IA_PROPOSITION' }));
-    await seal('je-draft');
-    await seal('je-ia');
+    await failBoth(POST_ENTRY_SQL, MSG_POST_ONLY_FROM_REVISED_CYCLE, postParams('je-draft'));
+    await failBoth(POST_ENTRY_SQL, MSG_POST_ONLY_FROM_REVISED_CYCLE, postParams('je-ia'));
     await expectEqualRows(`SELECT id, status FROM journal_entries WHERE id IN ('je-draft', 'je-ia') ORDER BY id`, [
-      { id: 'je-draft', status: 'POSTED' },
-      { id: 'je-ia', status: 'POSTED' },
+      { id: 'je-draft', status: 'DRAFT' },
+      { id: 'je-ia', status: 'IA_PROPOSITION' },
     ]);
+    await seal('je-draft');
+    await expectEqualRows(`SELECT id, status FROM journal_entries WHERE id = 'je-draft'`, [{ id: 'je-draft', status: 'POSTED' }]);
   });
 });
 
@@ -690,8 +697,8 @@ describe('c. caisse 5161 sous PostgreSQL READ COMMITTED : deux connexions réell
     await seedBoth(LEDGER_SEED);
     await seedBoth(simpleEntry('je-fund', 1, 'jrn-cai', 'acc-5161', 'acc-1111', 10000));
     await seal('je-fund');
-    await seedBoth(simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000));
-    await seedBoth(simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000));
+    await seedBoth(simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }));
+    await seedBoth(simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }));
   });
 
   async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
@@ -754,7 +761,7 @@ describe('c. caisse 5161 sous PostgreSQL READ COMMITTED : deux connexions réell
     const statuses = await client.query(`SELECT id, status FROM journal_entries WHERE id LIKE 'je-out-%' ORDER BY id`);
     expect(statuses.rows).toEqual([
       { id: 'je-out-1', status: 'POSTED' },
-      { id: 'je-out-2', status: 'DRAFT' },
+      { id: 'je-out-2', status: 'REVISEE_CYCLE' },
     ]);
   });
 
@@ -821,12 +828,12 @@ describe('c. le verrou de ligne du solde suffit seul : mêmes deux connexions, v
       await admin.query(withoutAdvisory);
       await pgRun(admin, [
         ...LEDGER_SEED,
-        ...simpleEntry('je-fund', 1, 'jrn-cai', 'acc-5161', 'acc-1111', 10000),
+        ...simpleEntry('je-fund', 1, 'jrn-cai', 'acc-5161', 'acc-1111', 10000, { status: 'REVISEE_CYCLE' }),
       ]);
       await admin.query(toPg(POST_ENTRY_SQL), postParams('je-fund'));
       await pgRun(admin, [
-        ...simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000),
-        ...simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000),
+        ...simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }),
+        ...simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }),
       ]);
       await first.query('BEGIN');
       await second.query('BEGIN');

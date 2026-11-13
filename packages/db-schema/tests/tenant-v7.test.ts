@@ -75,7 +75,7 @@ describe('migration v7 : forme et immuabilité de v1 à v6', () => {
   const v7 = TENANT_MIGRATIONS[6];
 
   it('est la septième migration ; les empreintes de v1 à v6 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(v7?.name).toBe('tenant_part7_idempotency_keys');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];

@@ -95,7 +95,7 @@ describe('migration v10 : forme et immuabilité de v1 à v9', () => {
   const v10 = TENANT_MIGRATIONS[9];
 
   it('est la dixième migration ; les empreintes de v1 à v9 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(v10?.name).toBe('tenant_part10_idempotency_records');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];

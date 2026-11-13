@@ -20,11 +20,10 @@ import {
   openTenant,
   partnerRow,
   payrollRow,
-  POST_ENTRY_SQL,
   posSessionRow,
   posTicketRow,
   posZClosureRow,
-  postParams,
+  sealOn,
   sealedArchivalRow,
   simpleEntry,
   SHA_B,
@@ -162,7 +161,7 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
   const v6 = TENANT_MIGRATIONS[5];
 
   it('est la sixième migration ; les empreintes de v1 à v5 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(v6?.name).toBe('tenant_part6_pii_flag_monotone_all_tables');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -183,8 +182,8 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
     expect(v6?.viewNames ?? []).toEqual([]);
     expect(v6?.sqliteOnlyTriggerNames ?? []).toEqual([]);
     // La v9 ajoute 6 triggers au registre SQLite (4 sous PostgreSQL) après les trois nouveaux de la v8.
-    expect(TENANT_TRIGGER_NAMES.slice(-14, -9)).toEqual([...V6_TRIGGERS]);
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-12, -7)).toEqual([...V6_TRIGGERS]);
+    expect(TENANT_TRIGGER_NAMES.slice(-15, -10)).toEqual([...V6_TRIGGERS]);
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-13, -8)).toEqual([...V6_TRIGGERS]);
     expect(TENANT_TABLE_NAMES).toHaveLength(26);
     expect(TENANT_INDEX_NAMES).toHaveLength(9);
   });
@@ -374,7 +373,7 @@ describe('4. journal_entries, journal_entry_lines, archival_packages : pii_restr
     await seedBoth(LEDGER_SEED);
     await seedBoth(simpleEntry('je-1', 1, 'jrn-vte', 'acc-3421', 'acc-7111', 120000));
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams('je-1'));
+      await sealOn(engine, 'je-1');
     }
     await seedBoth(simpleEntry('je-d', 2, 'jrn-vte', 'acc-3421', 'acc-7111', 700));
     await seedBoth([['archival_packages', sealedArchivalRow({ pii_restricted_flag: 1 })], ['archival_packages', archivalRow({ aip_id: 'aip-2', r2_object_key: 'r2/2' })]]);
@@ -449,7 +448,7 @@ describe('4. journal_entries, journal_entry_lines, archival_packages : pii_restr
     await runBoth(`UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE entry_id = 'je-3'`);
     await runBoth(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-3'`);
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams('je-3'));
+      await sealOn(engine, 'je-3');
     }
     expect(await valueOf(`SELECT status FROM journal_entries WHERE id = 'je-3'`)).toEqual(['POSTED', 'POSTED']);
     expect(await flagOf('journal_entries', 'id', 'je-3')).toEqual([1, 1]);

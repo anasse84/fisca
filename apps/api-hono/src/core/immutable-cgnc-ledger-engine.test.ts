@@ -319,6 +319,24 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
     ).rejects.toThrow(/CGNC_UNBALANCED_LINES/);
   });
 
+  it('base (décision du pilote 7, migration v11) : hors du moteur, DRAFT ou IA_PROPOSITION vers POSTED est refusé par le trigger ; le moteur, lui, ne scelle que depuis REVISEE_CYCLE', async () => {
+    const w = await setup();
+    const draft = await w.engine.createDraft(w.aide, draftInput({ initialState: 'DRAFT' }));
+    const proposal = await w.engine.createDraft(w.aide, draftInput({ initialState: 'IA_PROPOSITION' }));
+    for (const entryId of [draft.entryId, proposal.entryId]) {
+      await expect(
+        w.exec(`UPDATE journal_entries SET status = 'POSTED', entry_hash = ?, previous_entry_hash = ? WHERE id = ?`, ['a'.repeat(64), GENESIS, entryId]),
+      ).rejects.toThrow(/CGNC_POST_ONLY_FROM_REVISED_CYCLE/);
+    }
+    expect(await statusOf(w, draft.entryId)).toBe('DRAFT');
+    expect(await statusOf(w, proposal.entryId)).toBe('IA_PROPOSITION');
+    // Le chemin du moteur passe par REVISEE_CYCLE (visa du chef de mission) : le scellement aboutit.
+    await w.engine.visaCycle(w.chef, { entryId: draft.entryId, idempotencyKey: w.key() });
+    expect((await w.engine.sealEntry(fresh(w, w.oec), { entryId: draft.entryId, idempotencyKey: w.key() })).toState).toBe('POSTED');
+    // Aucun chemin « gérant en direct » depuis DRAFT : le moteur refuse avant la base.
+    expect((await failure(() => w.engine.sealEntry(fresh(w, w.gerant), { entryId: proposal.entryId, idempotencyKey: w.key() }))).code).toBe('LEDGER_ENTRY_NOT_IN_EXPECTED_STATE');
+  });
+
   it('caisse 5161 : un décaissement qui la rendrait négative est refusé par le moteur ; le solde nul est admis', async () => {
     const w = await setup();
     await postEntry(w, draftInput({ lines: [L('51610000', 200000, 0), L('11110000', 0, 200000)] }));

@@ -20,11 +20,10 @@ import {
   LEDGER_SEED,
   openTenant,
   partnerRow,
-  POST_ENTRY_SQL,
   posSessionRow,
   posTicketRow,
   posZClosureRow,
-  postParams,
+  sealOn,
   SHA_B,
   SHA_C,
   simpleEntry,
@@ -229,11 +228,13 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
       'enforce_reversal_target_posted_insert',
       'enforce_reversal_target_posted_update',
     ] as const;
+    // La v11 (décision du pilote 7) crée un trigger : POSTED seulement depuis REVISEE_CYCLE (SQLite et PostgreSQL).
+    const V11_NEW_TRIGGERS = ['enforce_posted_only_from_revised_cycle'] as const;
     const V9_SQLITE_ONLY = ['enforce_cash_5161_posted_balance_insert', 'enforce_cash_5161_posted_balance_update'] as const;
     const ALL_SQLITE_ONLY = [...(SQLITE_ONLY_TRIGGERS as readonly string[]), ...V9_SQLITE_ONLY];
-    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS])].sort());
+    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS, ...V11_NEW_TRIGGERS])].sort());
     expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual(
-      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS])].filter((n) => !ALL_SQLITE_ONLY.includes(n)).sort(),
+      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS, ...V8_NEW_TRIGGERS, ...V9_NEW_TRIGGERS, ...V11_NEW_TRIGGERS])].filter((n) => !ALL_SQLITE_ONLY.includes(n)).sort(),
     );
   });
 
@@ -296,7 +297,7 @@ describe('1. trou d\'immuabilité : INSERT d\'une ligne dans une pièce POSTED (
 
   async function postBoth(id: string): Promise<void> {
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams(id));
+      await sealOn(engine, id);
     }
   }
 
@@ -343,7 +344,7 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
     await seedBoth(LEDGER_SEED);
     await seedBoth(simpleEntry('je-1', 1, 'jrn-vte', 'acc-3421', 'acc-7111', 120000));
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams('je-1'));
+      await sealOn(engine, 'je-1');
     }
   });
 
@@ -539,7 +540,7 @@ describe('5. exercice clos : fiscal_years CLOSED immuable ; aucune pièce rattac
       simpleEntry('je-an', 1, 'jrn-an', 'acc-5161', 'acc-1111', 100000, { fiscal_year_id: 'fy-2027', source_document_type: 'CUTOFF_OD', entry_date: '2027-01-01' }),
     );
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams('je-an'));
+      await sealOn(engine, 'je-an');
     }
     const [lite, pg] = await dual.onBoth((e) => e.rows(`SELECT fiscal_year_id, status FROM journal_entries`));
     expect(lite).toEqual([{ fiscal_year_id: 'fy-2027', status: 'POSTED' }]);
@@ -916,7 +917,7 @@ describe('7. montants supérieurs à 2^31 centimes : une table de chaque migrati
   it('v3 : journal_entries et journal_entry_lines acceptent 5 000 000 000 centimes ; la pièce se scelle en POSTED', async () => {
     await seedBoth(simpleEntry('je-big', 1, 'jrn-vte', 'acc-3421', 'acc-7111', BIG));
     for (const engine of dual.engines()) {
-      await engine.run(POST_ENTRY_SQL, postParams('je-big'));
+      await sealOn(engine, 'je-big');
     }
     const [lite, pg] = await dual.onBoth((e) => e.rows(`SELECT total_debit_cents, status FROM journal_entries WHERE id = 'je-big'`));
     expect(lite).toEqual([{ total_debit_cents: BIG, status: 'POSTED' }]);

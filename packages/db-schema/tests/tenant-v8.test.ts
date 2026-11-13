@@ -18,6 +18,7 @@ import {
   openTenant,
   POST_ENTRY_SQL,
   postParams,
+  REVISE_ENTRY_SQL,
   simpleEntry,
   type RowValues,
 } from './tenant-support.ts';
@@ -149,6 +150,7 @@ function names(db: DatabaseSync, type: 'table' | 'trigger' | 'index'): string[] 
 }
 
 async function seal(id: string): Promise<void> {
+  await runBoth(REVISE_ENTRY_SQL, [id]);
   await runBoth(POST_ENTRY_SQL, postParams(id));
 }
 
@@ -156,7 +158,7 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
   const v8 = TENANT_MIGRATIONS[7];
 
   it('est la huitième migration ; les empreintes de v1 à v7 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(v8?.name).toBe('tenant_part8_g1_corrections_ledger_integrity');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -177,8 +179,8 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
     expect(v8?.viewNames ?? []).toEqual([]);
     expect(v8?.sqliteOnlyTriggerNames ?? []).toEqual([]);
     // La v9 ajoute ensuite 6 triggers au registre SQLite (4 sous PostgreSQL) : les trois nouveaux de la v8 les précèdent.
-    expect(TENANT_TRIGGER_NAMES.slice(-9, -6)).toEqual(V8_TRIGGERS.slice(2));
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-7, -4)).toEqual(V8_TRIGGERS.slice(2));
+    expect(TENANT_TRIGGER_NAMES.slice(-10, -7)).toEqual(V8_TRIGGERS.slice(2));
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-8, -5)).toEqual(V8_TRIGGERS.slice(2));
     expect(TENANT_INDEX_NAMES.at(-2)).toBe(REVERSAL_INDEX);
   });
 
@@ -367,9 +369,9 @@ describe('3. caisse 5161 : scellements concurrents sous PostgreSQL (READ COMMITT
     await seedBoth(simpleEntry('je-fund', 1, 'jrn-cai', 'acc-5161', 'acc-1111', 10000));
     await seal('je-fund');
     // Deux décaissements de 6 000 centimes chacun, déjà prêts à sceller, plus une pièce sans caisse.
-    await seedBoth(simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000));
-    await seedBoth(simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000));
-    await seedBoth(simpleEntry('je-other', 4, 'jrn-vte', 'acc-3421', 'acc-7111', 900));
+    await seedBoth(simpleEntry('je-out-1', 2, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }));
+    await seedBoth(simpleEntry('je-out-2', 3, 'jrn-cai', 'acc-6111', 'acc-5161', 6000, { status: 'REVISEE_CYCLE' }));
+    await seedBoth(simpleEntry('je-other', 4, 'jrn-vte', 'acc-3421', 'acc-7111', 900, { status: 'REVISEE_CYCLE' }));
   });
 
   async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
@@ -425,7 +427,7 @@ describe('3. caisse 5161 : scellements concurrents sous PostgreSQL (READ COMMITT
     const statuses = await client.query(`SELECT id, status FROM journal_entries WHERE id LIKE 'je-out-%' ORDER BY id`);
     expect(statuses.rows).toEqual([
       { id: 'je-out-1', status: 'POSTED' },
-      { id: 'je-out-2', status: 'DRAFT' },
+      { id: 'je-out-2', status: 'REVISEE_CYCLE' },
     ]);
   });
 

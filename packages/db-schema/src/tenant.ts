@@ -1766,7 +1766,8 @@ const MIGRATION_8_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
 //    testé de nouveau. PASSAGE À POSTED : le moteur fait DRAFT, REVISEE_CYCLE puis POSTED (`UPDATE ... AND status = 'REVISEE_CYCLE'`),
 //    mais le trigger de scellement accepte encore le passage depuis DRAFT ou IA_PROPOSITION, et tous les jeux de test du dépôt
 //    (POST_ENTRY_SQL, v3 à v8) scellent depuis DRAFT : l'imposer en base casserait ces tests, donc la restriction reste portée par
-//    le moteur (écart documenté et épinglé par un test).
+//    le moteur (écart documenté et épinglé par un test). REMPLACÉ par la v11 (décision du pilote 7) : la base refuse désormais
+//    tout passage à POSTED qui ne vient pas de REVISEE_CYCLE.
 // b. Exercice CLOSED étanche : `prevent_entry_update_in_closed_fiscal_year` (UPDATE de toute pièce non POSTED dont l'exercice est
 //    CLOSED, exercice inchangé) et `prevent_entry_delete_in_closed_fiscal_year` (DELETE), même texte que le refus d'INSERT de la
 //    v4 (conservé). Le changement d'`fiscal_year_id` reste refusé par `prevent_entry_fiscal_year_change` (v8, ancien ou nouvel
@@ -2154,6 +2155,54 @@ const MIGRATION_10_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = {
     .replace(/\bINTEGER\b/g, 'BIGINT'),
 };
 
+// ---------------------------------------------------------------------------
+// Migration v11 (T-S1B-04, DÉCISION DU PILOTE 7, Doc_02) : une pièce ne passe à POSTED QUE depuis REVISEE_CYCLE (visa du chef de
+// mission). Trigger `enforce_posted_only_from_revised_cycle` (BEFORE UPDATE de `journal_entries`) : SQLite RAISE(ABORT), PostgreSQL
+// RAISE EXCEPTION (P0001), même texte (`TENANT_V11_TRIGGER_MESSAGES`). Il REMPLACE la règle que la v9 documentait comme écart
+// (DRAFT vers POSTED accepté par la base) ; les migrations v1 à v10 restent intactes (empreintes figées).
+// Condition : NEW.status = 'POSTED' ET OLD.status ni 'REVISEE_CYCLE' (passage légitime) ni 'POSTED' (un UPDATE sans changement
+// de statut reste refusé par `prevent_posted_entry_update`, texte inchangé).
+// ORDRE D'EXÉCUTION : les deux moteurs n'ordonnent pas les triggers pareil (SQLite exécute le trigger créé en DERNIER en premier,
+// vérifié par essai ; PostgreSQL suit l'ordre alphabétique des noms). Le nom étant imposé, le texte du refus ne doit pas dépendre
+// de cet ordre : la condition du trigger exclut donc tout cas où un AUTRE refus du scellement s'applique, et le refus de statut
+// ne se lève que s'il est la SEULE violation. Les autres textes (empreinte absente, équilibre, caisse 5161, exercice CLOSED,
+// changement d'exercice, baisse du drapeau PII, cible de contre-passation invalide) l'emportent donc, à l'identique sur SQLite et
+// PostgreSQL ; le refus de statut ne masque aucun d'eux.
+// ---------------------------------------------------------------------------
+export const TENANT_V11_TRIGGER_MESSAGES = {
+  postedOnlyFromRevisedCycle: 'CGNC_POST_ONLY_FROM_REVISED_CYCLE: Une pièce ne passe à POSTED que depuis REVISEE_CYCLE (visa du chef de mission).',
+} as const;
+
+const MESSAGES_V11 = TENANT_V11_TRIGGER_MESSAGES;
+
+/** Refus du scellement porté par `enforce_balance_and_positive_cash_on_post` (v9) : SQL portable, identique sur les deux moteurs. */
+const SEAL_CHECKS_REJECT = `(SELECT COALESCE(SUM(debit_cents), 0) FROM journal_entry_lines WHERE entry_id = NEW.id) != NEW.total_debit_cents
+    OR (SELECT COALESCE(SUM(credit_cents), 0) FROM journal_entry_lines WHERE entry_id = NEW.id) != NEW.total_credit_cents
+    OR NEW.entry_hash IS NULL OR NEW.previous_entry_hash IS NULL
+    OR (EXISTS (SELECT 1 FROM journal_entry_lines jel JOIN cgnc_accounts ca ON ca.id = jel.account_id WHERE jel.entry_id = NEW.id AND ca.account_number LIKE '5161%' AND jel.credit_cents > 0)
+        AND (SELECT COALESCE(SUM(jel2.debit_cents - jel2.credit_cents), 0) FROM journal_entry_lines jel2 JOIN journal_entries je2 ON je2.id = jel2.entry_id JOIN cgnc_accounts ca2 ON ca2.id = jel2.account_id WHERE (je2.status = 'POSTED' OR je2.id = NEW.id) AND ca2.account_number LIKE '5161%') < 0)
+    OR EXISTS (SELECT 1 FROM cgnc_accounts ca3 WHERE ca3.account_number LIKE '5161%' AND EXISTS (SELECT 1 FROM journal_entry_lines l3 WHERE l3.entry_id = NEW.id AND l3.account_id = ca3.id) AND ca3.posted_balance_cents + ${ENTRY_DELTA_ON_ACCOUNT_SQLITE('ca3.id')} < 0)`;
+
+const OTHER_REFUSALS_FIRST_SQLITE = `NOT (${SEAL_CHECKS_REJECT}) AND NEW.fiscal_year_id IS OLD.fiscal_year_id AND (SELECT status FROM fiscal_years WHERE id = OLD.fiscal_year_id) IS NOT 'CLOSED' AND NOT (OLD.pii_restricted_flag = 1 AND NEW.pii_restricted_flag IS NOT 1) AND NOT (NEW.reversal_of_entry_id IS NOT OLD.reversal_of_entry_id AND ${REVERSAL_TARGET_REJECTED_SQLITE})`;
+const OTHER_REFUSALS_FIRST_POSTGRES = `NOT (${SEAL_CHECKS_REJECT}) AND NEW.fiscal_year_id IS NOT DISTINCT FROM OLD.fiscal_year_id AND (SELECT status FROM fiscal_years WHERE id = OLD.fiscal_year_id) IS DISTINCT FROM 'CLOSED' AND NOT (OLD.pii_restricted_flag = 1 AND NEW.pii_restricted_flag IS DISTINCT FROM 1) AND NOT (NEW.reversal_of_entry_id IS DISTINCT FROM OLD.reversal_of_entry_id AND ${REVERSAL_TARGET_REJECTED_POSTGRES})`;
+
+const MIGRATION_11_ITEMS: readonly MigrationStatement[] = [
+  createGuardedTrigger(
+    'enforce_posted_only_from_revised_cycle',
+    'UPDATE',
+    'journal_entries',
+    `NEW.status = 'POSTED' AND OLD.status NOT IN ('POSTED', 'REVISEE_CYCLE') AND ${OTHER_REFUSALS_FIRST_SQLITE}`,
+    `NEW.status = 'POSTED' AND OLD.status NOT IN ('POSTED', 'REVISEE_CYCLE') AND ${OTHER_REFUSALS_FIRST_POSTGRES}`,
+    MESSAGES_V11.postedOnlyFromRevisedCycle,
+  ),
+];
+
+const MIGRATION_11_STATEMENTS: readonly string[] = MIGRATION_11_ITEMS.map((item) => item.sqlite);
+
+const MIGRATION_11_TRIGGER_NAMES: readonly string[] = MIGRATION_11_ITEMS.flatMap((item) => (item.trigger === undefined ? [] : [item.trigger]));
+
+const MIGRATION_11_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_11_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
@@ -2165,7 +2214,8 @@ const MIGRATION_10_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = {
  * la v9 (arbitrages du propriétaire : ligne immobile, exercice CLOSED étanche, solde de caisse 5161 en colonne, cible de
  * contre-passation POSTED, types de pièce source étendus) est AJOUTÉE sans toucher aux versions 1 à 8 ;
  * la v10 (arbitrages du propriétaire : table `idempotency_records`, retrait de `idempotency_keys`) est AJOUTÉE sans toucher
- * aux versions 1 à 9 (la v7 reste intacte).
+ * aux versions 1 à 9 (la v7 reste intacte) ;
+ * la v11 (décision du pilote 7 : POSTED seulement depuis REVISEE_CYCLE) est AJOUTÉE sans toucher aux versions 1 à 10.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -2267,6 +2317,16 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     droppedTableNames: MIGRATION_10_DROPPED_TABLES,
     droppedIndexNames: MIGRATION_10_DROPPED_INDEXES,
     postgresOverrides: MIGRATION_10_POSTGRES_OVERRIDES,
+  },
+  {
+    version: 11,
+    name: 'tenant_part11_posted_only_from_revised_cycle',
+    upSqlStatements: MIGRATION_11_STATEMENTS,
+    expectedSha256Hex: '2c5a9fab8e526eb204c6a086eaa40d097bc39babf4560af12fbb6293f65e36c4',
+    tableNames: [],
+    indexNames: [],
+    triggerNames: MIGRATION_11_TRIGGER_NAMES,
+    postgresOverrides: MIGRATION_11_POSTGRES_OVERRIDES,
   },
 ];
 

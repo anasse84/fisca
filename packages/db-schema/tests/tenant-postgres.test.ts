@@ -38,6 +38,7 @@ import {
   posTicketRow,
   posZClosureRow,
   postParams,
+  sealOn,
   purchaseOrderRow,
   SHA_A,
   SHA_B,
@@ -508,7 +509,7 @@ describe('grand livre CGNC : mêmes refus, mêmes textes d\'erreur sur SQLite et
   }
 
   async function postOn(engine: Engine, id: string): Promise<void> {
-    await engine.run(POST_ENTRY_SQL, postParams(id));
+    await sealOn(engine, id);
   }
 
   async function postBoth(id: string): Promise<void> {
@@ -734,7 +735,7 @@ describe('grand livre CGNC : la vue v_cgnc_trial_balance_6col rend les mêmes mo
     ];
     for (const [id, sequence, journal, debit, credit, amount, overrides] of entries) {
       await insertAll(engine, simpleEntry(id, sequence, journal, debit, credit, amount, overrides));
-      await engine.run(POST_ENTRY_SQL, postParams(id));
+      await sealOn(engine, id);
     }
     await insertAll(
       engine,
@@ -744,7 +745,7 @@ describe('grand livre CGNC : la vue v_cgnc_trial_balance_6col rend les mêmes mo
         { account: 'acc-4455', credit: 20000 },
       ]),
     );
-    await engine.run(POST_ENTRY_SQL, postParams('je-vte'));
+    await sealOn(engine, 'je-vte');
     await insertAll(engine, simpleEntry('je-draft', 4, 'jrn-cai', 'acc-6111', 'acc-5161', 99900));
     await insertAll(engine, simpleEntry('je-revise', 5, 'jrn-cai', 'acc-6111', 'acc-5161', 88800, { status: 'REVISEE_CYCLE' }));
   }
