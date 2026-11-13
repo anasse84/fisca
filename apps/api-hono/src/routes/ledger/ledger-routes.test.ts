@@ -59,11 +59,11 @@ describe('pipeline complet sur les routes du socle', () => {
     expect((await problem(response, 401)).errorCode).toBe('AUTH_REQUIRED');
   });
 
-  it('dossier : en-tête absent 400, UUID invalide 400, dossier étranger ou inconnu 403 identique', async () => {
+  it('dossier : en-tête absent 400, identifiant hors alphabet 400, dossier étranger ou inconnu 403 identique', async () => {
     const kit = await buildKit();
     const path = POST_PATH('018f3b5e-7c2a-7d3e-8a1b-000000000001');
     expect((await problem(await kit.call('POST', path, { company: null, body: { action: 'SEAL' } }), 400)).errorCode).toBe('COMPANY_ID_REQUIRED');
-    expect((await problem(await kit.call('POST', path, { company: 'soc-alpha', body: { action: 'SEAL' } }), 400)).errorCode).toBe('COMPANY_ID_INVALID');
+    expect((await problem(await kit.call('POST', path, { company: 'soc alpha', body: { action: 'SEAL' } }), 400)).errorCode).toBe('COMPANY_ID_INVALID');
     const foreign = await problem(await kit.call('POST', path, { company: COMPANY_B, body: { action: 'SEAL' } }), 403);
     const unknown = await problem(await kit.call('POST', path, { company: COMPANY_C, body: { action: 'SEAL' } }), 403);
     expect(foreign.errorCode).toBe('ABAC_TENANT_OUT_OF_SCOPE');

@@ -162,7 +162,7 @@ describe('migration v6 : forme, immuabilité de v1 à v5, objets créés', () =>
   const v6 = TENANT_MIGRATIONS[5];
 
   it('est la sixième migration ; les empreintes de v1 à v5 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(v6?.name).toBe('tenant_part6_pii_flag_monotone_all_tables');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];

@@ -196,7 +196,7 @@ describe('migration v9 : forme, immuabilité de v1 à v8, objets créés', () =>
   const v9 = TENANT_MIGRATIONS[8];
 
   it('est la neuvième migration ; les empreintes de v1 à v8 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(v9?.name).toBe('tenant_part9_ledger_cash_balance_closed_year_source_types');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -216,7 +216,7 @@ describe('migration v9 : forme, immuabilité de v1 à v8, objets créés', () =>
     expect(v9?.postgresConstraintNames).toEqual(['cgnc_accounts_cash_5161_nonnegative_check']);
     expect(v9?.tableNames).toEqual([]);
     expect(v9?.indexNames).toEqual([]);
-    expect(TENANT_INDEX_NAMES.at(-1)).toBe('uq_journal_entries_reversal_of');
+    expect(TENANT_INDEX_NAMES.at(-2)).toBe('uq_journal_entries_reversal_of');
   });
 
   it('la traduction PostgreSQL garde une instruction par instruction SQLite, pose la colonne BIGINT et nomme la contrainte du type source', () => {
@@ -327,7 +327,7 @@ describe('mise à niveau d\'une base v8 contenant des pièces POSTED (backfill, 
       fake.sqlite.prepare(POST_ENTRY_SQL).run(...postParams(id));
     }
     expect(all(fake.sqlite, `SELECT COUNT(*) AS n FROM pragma_table_info('cgnc_accounts') WHERE name = 'posted_balance_cents'`)).toEqual([{ n: 0 }]);
-    const result = await ensureTenantSchemaUpToDate(null, driver, 'soc-upgrade', TENANT_MIGRATIONS);
+    const result = await ensureTenantSchemaUpToDate(null, driver, 'soc-upgrade', TENANT_MIGRATIONS.slice(0, 9));
     expect(result).toEqual({ currentVersion: 9, appliedCount: 1 });
     const db = fake.sqlite;
     expect(all(db, 'SELECT id, posted_balance_cents FROM cgnc_accounts ORDER BY id').map((row) => ({ ...row }))).toEqual(EXPECTED_BALANCES);

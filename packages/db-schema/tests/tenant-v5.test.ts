@@ -192,7 +192,7 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
 
   it('est la cinquième migration ; les empreintes de v1 à v4 sont inchangées (recalculées)', () => {
     // La v6 (correction du pilote sur pii_restricted_flag) s'ajoute après la v5 sans la toucher.
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(v5?.name).toBe('tenant_part5_subledgers_payroll_9421_archival_worm');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];

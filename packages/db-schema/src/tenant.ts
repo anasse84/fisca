@@ -71,6 +71,10 @@ export interface TenantMigration {
   readonly tableNames: readonly string[];
   /** Index nommés créés par CETTE migration (hors index automatiques des contraintes). */
   readonly indexNames: readonly string[];
+  /** Tables RETIRÉES par CETTE migration (DROP TABLE) ; elles sortent de `TENANT_TABLE_NAMES` (registre des tables vivantes). */
+  readonly droppedTableNames?: readonly string[];
+  /** Index nommés RETIRÉS par CETTE migration (DROP INDEX) ; ils sortent de `TENANT_INDEX_NAMES`. */
+  readonly droppedIndexNames?: readonly string[];
   /**
    * Triggers créés par CETTE migration, dans leur ordre de création ; absent des migrations v1 et v2 (aucun trigger).
    * Un trigger REMPLACÉ (DROP puis CREATE du même nom, v4) figure ici et dans la migration qui l'a créé d'abord.
@@ -2094,6 +2098,62 @@ const MIGRATION_9_TRIGGER_NAMES: readonly string[] = MIGRATION_9_ITEMS.flatMap((
 
 const MIGRATION_9_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(MIGRATION_9_ITEMS.map((item, index): [number, string] => [index, item.postgres]));
 
+// ---------------------------------------------------------------------------
+// Migration v10 (T-S1B-11, arbitrages du propriétaire) : table `idempotency_records` (TENANT_DB) ; RETRAIT de `idempotency_keys`.
+// La v7 (qui a créé `idempotency_keys`) reste INTACTE (empreinte figée) : la v10 crée la nouvelle table puis retire l'ancienne
+// (DROP INDEX puis DROP TABLE). Aucune donnée de production avant v1.0.0 (ERRATA B-11) : aucune reprise de lignes.
+// Schéma fixé par le propriétaire : idempotency_key TEXT PRIMARY KEY (clé de stockage SHA-256 de société, utilisateur, méthode,
+// chemin et clé client, jamais la clé client en clair), actor_id (utilisateur auteur de la requête, NOT NULL), request_sha256,
+// status ('IN_FLIGHT' | 'COMPLETED'), response_status, response_body_json, expires_at (TTL 259 200 s = 72 h).
+// Colonne ajoutée, strictement nécessaire au port : `content_type` TEXT NULL (type de contenu de la réponse mémorisée, à rejouer
+// tel quel ; `StoredIdempotentResponse.contentType` est nullable). Elle est NULL tant que la ligne est IN_FLIGHT.
+// CHECK de cohérence : COMPLETED ⇔ response_status ET response_body_json renseignés ; IN_FLIGHT ⇒ response_status,
+// response_body_json et content_type NULL ; response_status entre 100 et 599 ; entier strict côté SQLite (comme les autres
+// colonnes entières) ; expires_at au format UTC `AAAA-MM-JJThh:mm:ss.mmmZ` (largeur fixe de `toISOString`, comparable comme du
+// texte). SQLite : GLOB ; PostgreSQL : expression régulière équivalente (override de l'instruction de rang 0).
+// Index `idx_idempotency_records_expires_at` : purge des expirés (`DELETE … WHERE expires_at <= ?`).
+// ---------------------------------------------------------------------------
+const UTC_INSTANT_GLOB = "'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'";
+const UTC_INSTANT_REGEX = "'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$'";
+
+function createIdempotencyRecords(utcCheck: string): string {
+  return `CREATE TABLE idempotency_records (
+    idempotency_key TEXT PRIMARY KEY,
+    actor_id TEXT NOT NULL,
+    request_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('IN_FLIGHT', 'COMPLETED')),
+    response_status INTEGER CHECK (response_status >= 100 AND response_status <= 599) ${integerCheck('response_status')},
+    response_body_json TEXT,
+    content_type TEXT,
+    expires_at TEXT NOT NULL CHECK (${utcCheck}),
+    CHECK (
+      (status = 'COMPLETED' AND response_status IS NOT NULL AND response_body_json IS NOT NULL)
+      OR (status = 'IN_FLIGHT' AND response_status IS NULL AND response_body_json IS NULL AND content_type IS NULL)
+    )
+)`;
+}
+
+const MIGRATION_10_INDEXES: readonly (readonly [string, string])[] = [
+  ['idx_idempotency_records_expires_at', 'CREATE INDEX idx_idempotency_records_expires_at ON idempotency_records (expires_at)'],
+];
+
+const MIGRATION_10_TABLES: readonly string[] = ['idempotency_records'];
+const MIGRATION_10_DROPPED_TABLES: readonly string[] = ['idempotency_keys'];
+const MIGRATION_10_DROPPED_INDEXES: readonly string[] = ['idx_idempotency_keys_expires_at'];
+
+const MIGRATION_10_STATEMENTS: readonly string[] = [
+  createIdempotencyRecords(`expires_at GLOB ${UTC_INSTANT_GLOB}`),
+  ...MIGRATION_10_INDEXES.map(([, sql]) => sql),
+  'DROP INDEX idx_idempotency_keys_expires_at',
+  'DROP TABLE idempotency_keys',
+];
+
+const MIGRATION_10_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = {
+  0: createIdempotencyRecords(`expires_at ~ ${UTC_INSTANT_REGEX}`)
+    .replace(/ CHECK \((\w+) = CAST\(\1 AS INTEGER\)\)/g, '')
+    .replace(/\bINTEGER\b/g, 'BIGINT'),
+};
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
@@ -2103,7 +2163,9 @@ const MIGRATION_9_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
  * la v8 (corrections G1 du grand livre : injection de ligne, exercice CLOSED, verrou de caisse, contre-passation unique, compte
  * porté par une pièce POSTED) est AJOUTÉE sans toucher aux versions 1 à 7 ;
  * la v9 (arbitrages du propriétaire : ligne immobile, exercice CLOSED étanche, solde de caisse 5161 en colonne, cible de
- * contre-passation POSTED, types de pièce source étendus) est AJOUTÉE sans toucher aux versions 1 à 8.
+ * contre-passation POSTED, types de pièce source étendus) est AJOUTÉE sans toucher aux versions 1 à 8 ;
+ * la v10 (arbitrages du propriétaire : table `idempotency_records`, retrait de `idempotency_keys`) est AJOUTÉE sans toucher
+ * aux versions 1 à 9 (la v7 reste intacte).
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -2195,13 +2257,31 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     postgresConstraintNames: [CASH_5161_CHECK_CONSTRAINT],
     postgresOverrides: MIGRATION_9_POSTGRES_OVERRIDES,
   },
+  {
+    version: 10,
+    name: 'tenant_part10_idempotency_records',
+    upSqlStatements: MIGRATION_10_STATEMENTS,
+    expectedSha256Hex: 'e58f870734fa070fc821dc8901350582d7ca45bd22ad111ae094d1682e255f4d',
+    tableNames: MIGRATION_10_TABLES,
+    indexNames: MIGRATION_10_INDEXES.map(([name]) => name),
+    droppedTableNames: MIGRATION_10_DROPPED_TABLES,
+    droppedIndexNames: MIGRATION_10_DROPPED_INDEXES,
+    postgresOverrides: MIGRATION_10_POSTGRES_OVERRIDES,
+  },
 ];
 
-/** Tables de TENANT_DB dans leur ordre de création (les parents précèdent les enfants), toutes migrations confondues. */
-export const TENANT_TABLE_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.tableNames);
+const TENANT_DROPPED_TABLE_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.droppedTableNames ?? []);
+const TENANT_DROPPED_INDEX_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.droppedIndexNames ?? []);
 
-/** Index nommés créés par les migrations de TENANT_DB, dans leur ordre de création. */
-export const TENANT_INDEX_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.indexNames);
+/** Tables VIVANTES de TENANT_DB dans leur ordre de création (les parents précèdent les enfants) : les tables retirées (v10) en sortent. */
+export const TENANT_TABLE_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.tableNames).filter(
+  (name) => !TENANT_DROPPED_TABLE_NAMES.includes(name),
+);
+
+/** Index nommés VIVANTS de TENANT_DB dans leur ordre de création : les index retirés (v10) en sortent. */
+export const TENANT_INDEX_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.indexNames).filter(
+  (name) => !TENANT_DROPPED_INDEX_NAMES.includes(name),
+);
 
 /** Triggers de TENANT_DB dans leur ordre de première création, sans doublon (la v4 remplace deux triggers de la v3 sous le même nom). */
 export const TENANT_TRIGGER_NAMES: readonly string[] = TENANT_MIGRATIONS.flatMap((migration) => migration.triggerNames ?? []).filter(

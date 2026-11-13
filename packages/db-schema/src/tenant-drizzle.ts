@@ -565,16 +565,18 @@ export const fecAuditRuns = sqliteTable('fec_audit_runs', {
   createdAt: text('created_at').notNull(),
 });
 
-export const idempotencyKeys = sqliteTable(
-  'idempotency_keys',
+/** Migration v10 : remplace `idempotency_keys` (v7, retirée). */
+export const idempotencyRecords = sqliteTable(
+  'idempotency_records',
   {
     idempotencyKey: text('idempotency_key').primaryKey(),
+    actorId: text('actor_id').notNull(),
     requestSha256: text('request_sha256').notNull(),
+    status: text('status', { enum: ['IN_FLIGHT', 'COMPLETED'] }).notNull(),
     responseStatus: integer('response_status'),
     responseBodyJson: text('response_body_json'),
     contentType: text('content_type'),
-    createdAt: text('created_at').notNull(),
     expiresAt: text('expires_at').notNull(),
   },
-  (table) => [index('idx_idempotency_keys_expires_at').on(table.expiresAt)],
+  (table) => [index('idx_idempotency_records_expires_at').on(table.expiresAt)],
 );

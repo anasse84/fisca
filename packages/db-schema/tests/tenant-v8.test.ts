@@ -156,7 +156,7 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
   const v8 = TENANT_MIGRATIONS[7];
 
   it('est la huitième migration ; les empreintes de v1 à v7 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(v8?.name).toBe('tenant_part8_g1_corrections_ledger_integrity');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -179,7 +179,7 @@ describe('migration v8 : forme, immuabilité de v1 à v7, objets créés', () =>
     // La v9 ajoute ensuite 6 triggers au registre SQLite (4 sous PostgreSQL) : les trois nouveaux de la v8 les précèdent.
     expect(TENANT_TRIGGER_NAMES.slice(-9, -6)).toEqual(V8_TRIGGERS.slice(2));
     expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-7, -4)).toEqual(V8_TRIGGERS.slice(2));
-    expect(TENANT_INDEX_NAMES.at(-1)).toBe(REVERSAL_INDEX);
+    expect(TENANT_INDEX_NAMES.at(-2)).toBe(REVERSAL_INDEX);
   });
 
   it('la traduction PostgreSQL garde une instruction par instruction SQLite et pose le verrou consultatif de transaction', () => {

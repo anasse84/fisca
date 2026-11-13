@@ -15,10 +15,10 @@ import type { EntitlementRows, EntitlementSource, FastKv } from './entitlement-g
 import type { MandateAccess, MandateResolver } from './mandate-resolver.ts';
 import type { MembershipAccess, MembershipResolver, TenantDatabaseProvider } from './tenant-router.ts';
 
-/** Doc_07 § 01 : `X-Fisca-Company-Id` est un UUIDv7 (validé à la frontière HTTP). */
-export const COMPANY_A = '018f3b5e-7c2a-7d3e-8a1b-00000000a001';
-export const COMPANY_B = '018f3b5e-7c2a-7d3e-8a1b-00000000b002';
-export const COMPANY_C = '018f3b5e-7c2a-7d3e-8a1b-00000000c003';
+/** Décision du propriétaire : `X-Fisca-Company-Id` suit le format large [A-Za-z0-9_-]{1,64} (écart assumé avec Doc_07 § 01 : UUIDv7). */
+export const COMPANY_A = 'societe-a001';
+export const COMPANY_B = 'societe-b002';
+export const COMPANY_C = 'societe-c003';
 export const ORG_1 = 'org-1';
 export const USER_1 = 'user-1';
 export const USER_2 = 'user-2';

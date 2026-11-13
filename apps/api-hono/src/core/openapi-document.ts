@@ -53,8 +53,9 @@ function headerParameters(contract: ApiRouteContract): readonly JsonObject[] {
       name: COMPANY_ID_HEADER,
       in: 'header',
       required: true,
-      description: 'UUIDv7 du dossier, vérifié côté serveur contre les appartenances et les mandats (ERRATA D-16).',
-      schema: { type: 'string', format: 'uuid' },
+      description:
+        'Identifiant du dossier, format [A-Za-z0-9_-]{1,64} (décision du propriétaire, écart avec Doc_07 § 01 : UUIDv7), vérifié côté serveur contre les appartenances et les mandats (ERRATA D-16).',
+      schema: { type: 'string', pattern: '^[A-Za-z0-9_-]{1,64}$', minLength: 1, maxLength: 64 },
     });
   }
   if (contract.idempotencyKey) {

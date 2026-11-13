@@ -31,7 +31,7 @@ export interface ApiRouteContract {
   readonly tag: string;
   /** `BEARER` : JWT de session ; `NONE` : route publique (sondes externes). */
   readonly auth: 'BEARER' | 'NONE';
-  /** Exige `X-Fisca-Company-Id` (UUIDv7) ; false pour l'annuaire du plan de contrôle et la santé. */
+  /** Exige `X-Fisca-Company-Id` ([A-Za-z0-9_-]{1,64} : décision du propriétaire, écart avec Doc_07 § 01 UUIDv7) ; false pour l'annuaire du plan de contrôle et la santé. */
   readonly companyHeader: boolean;
   /** Exige `Idempotency-Key` (UUIDv7, 72 h) : toute écriture. */
   readonly idempotencyKey: boolean;

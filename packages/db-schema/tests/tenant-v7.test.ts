@@ -21,6 +21,7 @@ const FROZEN_SHA256 = [
   'b6c338fcb3808b9cc210fd73981a3f628e8d7148910de8a2d0c12a77ec1de295',
   '6750637f3351826b8cf4ecf816f46b232b41aad00bb7026c82c99ae86cd5b25f',
 ] as const;
+const V7_VERSION = 7;
 const V7_SHA256 = 'ac8e45e9e121ebd8a6a0d804688389ec037248f3f9fc5446e8b6c43c4f2e98dd';
 
 const KEY_HASH = 'k'.repeat(64);
@@ -43,12 +44,13 @@ beforeAll(async () => {
   await client.connect();
   await client.query(`CREATE SCHEMA ${SCHEMA}`);
   await client.query(`SET search_path TO ${SCHEMA}`);
-  for (const migration of TENANT_MIGRATIONS) {
+  // La v10 retire idempotency_keys : le comportement de la v7 se prouve sur la base telle qu'elle est APRÈS la v7.
+  for (const migration of TENANT_MIGRATIONS.filter((candidate) => candidate.version <= V7_VERSION)) {
     for (const statement of tenantMigrationPostgresStatements(migration)) {
       await client.query(statement);
     }
   }
-  dual = new DualEngines(client, openTenant);
+  dual = new DualEngines(client, () => openTenant(V7_VERSION));
 });
 
 afterAll(async () => {
@@ -73,7 +75,7 @@ describe('migration v7 : forme et immuabilité de v1 à v6', () => {
   const v7 = TENANT_MIGRATIONS[6];
 
   it('est la septième migration ; les empreintes de v1 à v6 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(v7?.name).toBe('tenant_part7_idempotency_keys');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -92,12 +94,15 @@ describe('migration v7 : forme et immuabilité de v1 à v6', () => {
     expect(v7?.indexNames).toEqual(['idx_idempotency_keys_expires_at']);
     expect(v7?.triggerNames ?? []).toEqual([]);
     expect(v7?.viewNames ?? []).toEqual([]);
-    expect(TENANT_TABLE_NAMES.at(-1)).toBe('idempotency_keys');
-    expect(TENANT_INDEX_NAMES.at(-2)).toBe('idx_idempotency_keys_expires_at');
+    // Retirée par la v10 : elle n'est plus dans le registre vivant, mais la v7 la crée toujours (métadonnée immuable).
+    expect(TENANT_TABLE_NAMES).not.toContain('idempotency_keys');
+    expect(TENANT_INDEX_NAMES).not.toContain('idx_idempotency_keys_expires_at');
+    expect(TENANT_MIGRATIONS[9]?.droppedTableNames).toEqual(['idempotency_keys']);
+    expect(TENANT_MIGRATIONS[9]?.droppedIndexNames).toEqual(['idx_idempotency_keys_expires_at']);
   });
 
   it('colonnes, nullités et clé primaire identiques sur SQLite et PostgreSQL', async () => {
-    const lite = all(openTenant(), `SELECT name, "notnull" AS not_null, pk FROM pragma_table_info('idempotency_keys') ORDER BY cid`).map(
+    const lite = all(openTenant(V7_VERSION), `SELECT name, "notnull" AS not_null, pk FROM pragma_table_info('idempotency_keys') ORDER BY cid`).map(
       (row) => [String(row['name']), Number(row['not_null']), Number(row['pk'])] as const,
     );
     expect(lite).toEqual([
@@ -183,7 +188,7 @@ describe('idempotency_keys : contraintes (mêmes refus sur les deux moteurs)', (
   });
 
   it("l'index sur expires_at sert la purge (SQLite : EXPLAIN QUERY PLAN)", () => {
-    const plan = all(openTenant(), `EXPLAIN QUERY PLAN DELETE FROM idempotency_keys WHERE expires_at <= ?`, CREATED)
+    const plan = all(openTenant(V7_VERSION), `EXPLAIN QUERY PLAN DELETE FROM idempotency_keys WHERE expires_at <= ?`, CREATED)
       .map((row) => String(row['detail']))
       .join(' ');
     expect(plan).toContain('idx_idempotency_keys_expires_at');

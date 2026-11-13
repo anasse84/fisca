@@ -4,6 +4,7 @@ import { ProblemDetailsSchema, type TenantSqlDriver } from '@fisca/shared-types'
 import {
   IDEMPOTENCY_KEY_HEADER,
   IDEMPOTENCY_TTL_MS,
+  IDEMPOTENCY_TTL_SECONDS,
   IDEMPOTENT_REPLAY_HEADER,
   createIdempotencyMiddleware,
   createInMemoryIdempotencyStore,
@@ -63,7 +64,7 @@ describe.each(KINDS)('port IdempotencyStore : %s', (kind) => {
       store: createSqlIdempotencyStore(driver),
       entries: async () => {
         const rows = await driver.query<SqlRow>({
-          sql: 'SELECT idempotency_key, request_sha256, response_status, response_body_json, content_type FROM idempotency_keys',
+          sql: 'SELECT idempotency_key, request_sha256, response_status, response_body_json, content_type FROM idempotency_records',
           params: [],
         });
         return rows.map((row): SnapshotEntry => {
@@ -89,7 +90,7 @@ describe.each(KINDS)('port IdempotencyStore : %s', (kind) => {
     if (pgBackend === null) {
       throw new Error('PostgreSQL non initialisé.');
     }
-    await pgBackend.driver.executeBatchAtomically([{ sql: 'TRUNCATE idempotency_keys', params: [] }]);
+    await pgBackend.driver.executeBatchAtomically([{ sql: 'TRUNCATE idempotency_records', params: [] }]);
     return sqlBacking(pgBackend.driver);
   }
 
@@ -269,6 +270,11 @@ describe.each(KINDS)('port IdempotencyStore : %s', (kind) => {
     it('le TTL vaut exactement 72 heures', () => {
       expect(IDEMPOTENCY_TTL_MS).toBe(72 * 60 * 60 * 1000);
     });
+
+    it('le TTL en secondes vaut 259 200 et égale le TTL en millisecondes', () => {
+      expect(IDEMPOTENCY_TTL_SECONDS).toBe(259_200);
+      expect(IDEMPOTENCY_TTL_SECONDS * 1000).toBe(IDEMPOTENCY_TTL_MS);
+    });
   });
 
   describe('Idempotency-Key : portée (société, utilisateur, méthode + chemin)', () => {
@@ -292,6 +298,25 @@ describe.each(KINDS)('port IdempotencyStore : %s', (kind) => {
       const { app, executions } = await setup(undefined, 'NONE');
       await write(app);
       await write(app, { headers: { 'x-test-user': USER_2 } });
+      expect(executions).toHaveLength(2);
+    });
+
+    it("port : une clé de stockage réutilisée par un AUTRE acteur ne rejoue jamais la réponse d'un autre (ACTOR_MISMATCH)", async () => {
+      const { store } = await createBacking();
+      const base = { storeKey: 'c'.repeat(64), fingerprint: 'd'.repeat(64), nowMs: 0, expiresAtMs: IDEMPOTENCY_TTL_MS };
+      expect(await store.reserve({ ...base, actorId: USER_1 })).toEqual({ outcome: 'RESERVED' });
+      expect(await store.reserve({ ...base, actorId: USER_2 })).toEqual({ outcome: 'ACTOR_MISMATCH' });
+      await store.complete({ storeKey: base.storeKey, fingerprint: base.fingerprint, response: { status: 201, contentType: null, bodyBase64: 'e30=' } });
+      expect(await store.reserve({ ...base, actorId: USER_2 })).toEqual({ outcome: 'ACTOR_MISMATCH' });
+      expect(await store.reserve({ ...base, actorId: USER_1 })).toMatchObject({ outcome: 'COMPLETED' });
+    });
+
+    it('un autre utilisateur avec la même clé client exécute sa propre requête, sans rejeu de la réponse du premier', async () => {
+      const { app, executions } = await setup();
+      const first = await write(app);
+      const other = await write(app, { headers: { 'x-test-user': USER_2 } });
+      expect(other.headers.get(IDEMPOTENT_REPLAY_HEADER)).toBeNull();
+      expect(first.headers.get(IDEMPOTENT_REPLAY_HEADER)).toBeNull();
       expect(executions).toHaveLength(2);
     });
 

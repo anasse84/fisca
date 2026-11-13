@@ -137,12 +137,12 @@ async function rejection(action: () => Promise<unknown>): Promise<unknown> {
 describe.each(BACKENDS)('ensureTenantSchemaUpToDate sur $name', (backend) => {
   const tenantOptions = { statementsFor: backend.tenantStatements };
 
-  it('applique de zéro les 9 migrations tenant (triggers BEGIN…END compris) et enregistre l\'empreinte du DDL SQLite', async () => {
+  it('applique de zéro les 10 migrations tenant (triggers BEGIN…END compris) et enregistre l\'empreinte du DDL SQLite', async () => {
     const driver = await backend.fresh();
     const result = await ensureTenantSchemaUpToDate(null, driver, 'soc-test', TENANT_MIGRATIONS, tenantOptions);
-    expect(result).toEqual({ currentVersion: 9, appliedCount: 9 });
+    expect(result).toEqual({ currentVersion: 10, appliedCount: 10 });
     const rows = await stored(driver);
-    expect(rows.map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(rows.map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(rows.map((r) => r.name)).toEqual(TENANT_MIGRATIONS.map((m) => m.name));
     expect(rows.map((r) => r.sha256)).toEqual(TENANT_MIGRATIONS.map((m) => m.expectedSha256Hex));
     expect(rows.every((r) => !Number.isNaN(Date.parse(r.applied_at)))).toBe(true);
@@ -163,21 +163,21 @@ describe.each(BACKENDS)('ensureTenantSchemaUpToDate sur $name', (backend) => {
     const before = await stored(driver);
     driver.batches = 0;
     const second = await ensureTenantSchemaUpToDate(null, driver, 'soc-test', TENANT_MIGRATIONS, tenantOptions);
-    expect(second).toEqual({ currentVersion: 9, appliedCount: 0 });
+    expect(second).toEqual({ currentVersion: 10, appliedCount: 0 });
     expect(driver.batches).toBe(1); // CREATE TABLE IF NOT EXISTS seulement
     expect(await stored(driver)).toEqual(before);
   });
 
-  it('reprise après arrêt à mi-chemin : versions 1-3 déjà appliquées, puis seulement 4-9', async () => {
+  it('reprise après arrêt à mi-chemin : versions 1-3 déjà appliquées, puis seulement 4-10', async () => {
     const driver = await backend.fresh();
     const first = await ensureTenantSchemaUpToDate(null, driver, 'soc-test', TENANT_MIGRATIONS.slice(0, 3), tenantOptions);
     expect(first).toEqual({ currentVersion: 3, appliedCount: 3 });
     const early = await stored(driver);
     const resumed = await ensureTenantSchemaUpToDate(null, driver, 'soc-test', TENANT_MIGRATIONS, tenantOptions);
-    expect(resumed).toEqual({ currentVersion: 9, appliedCount: 6 });
+    expect(resumed).toEqual({ currentVersion: 10, appliedCount: 7 });
     const rows = await stored(driver);
     expect(rows.slice(0, 3)).toEqual(early);
-    expect(rows.map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(rows.map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
   it('empreinte stockée altérée : refus avec le message exact de l\'ERRATA C, sans ré-application', async () => {
@@ -362,9 +362,9 @@ describe('ensureTenantSchemaUpToDate : concurrence', () => {
       ensureTenantSchemaUpToDate(null, a, 'soc-test', TENANT_MIGRATIONS),
       ensureTenantSchemaUpToDate(null, b, 'soc-test', TENANT_MIGRATIONS),
     ]);
-    expect(ra.currentVersion).toBe(9);
-    expect(rb.currentVersion).toBe(9);
-    expect(ra.appliedCount + rb.appliedCount).toBe(9);
-    expect((await stored(a)).map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(ra.currentVersion).toBe(10);
+    expect(rb.currentVersion).toBe(10);
+    expect(ra.appliedCount + rb.appliedCount).toBe(10);
+    expect((await stored(a)).map((r) => r.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 });

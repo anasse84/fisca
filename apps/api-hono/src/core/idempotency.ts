@@ -18,7 +18,9 @@ import type { PipelineEnv } from './tenant-router.ts';
 export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key' as const;
 /** Nom d'en-tête de rejeu (convention usuelle ; la spécification n'en désigne pas) : voir le rapport du ticket. */
 export const IDEMPOTENT_REPLAY_HEADER = 'Idempotent-Replayed' as const;
-export const IDEMPOTENCY_TTL_MS = 72 * 60 * 60 * 1000;
+/** TTL de 72 h en secondes (259 200 s, valeur fixée par le propriétaire pour `idempotency_records.expires_at`). */
+export const IDEMPOTENCY_TTL_SECONDS = 259_200;
+export const IDEMPOTENCY_TTL_MS = IDEMPOTENCY_TTL_SECONDS * 1000;
 /** Doc_07 § 01 : « UUIDv7 unique ». */
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WRITE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -33,21 +35,25 @@ export interface StoredIdempotentResponse {
 
 export type IdempotencyReservation =
   | { readonly outcome: 'RESERVED' }
+  /** La clé de stockage existe, non expirée, pour un AUTRE acteur : jamais de rejeu de sa réponse. */
+  | { readonly outcome: 'ACTOR_MISMATCH' }
   | { readonly outcome: 'IN_PROGRESS'; readonly fingerprint: string }
   | { readonly outcome: 'COMPLETED'; readonly fingerprint: string; readonly response: StoredIdempotentResponse };
 
 /**
  * Port de stockage. `reserve` DOIT être atomique (test-and-set) : de deux appels simultanés sur la même `storeKey`, un seul
- * obtient RESERVED. Une entrée dont `expiresAtMs` est atteint est considérée absente.
+ * obtient RESERVED. Une entrée dont `expiresAtMs` est atteint est considérée absente. `actorId` est l'utilisateur de la requête :
+ * une entrée vivante posée par un autre acteur donne ACTOR_MISMATCH (ni rejeu, ni empreinte divulguée).
  */
 export interface IdempotencyStore {
-  reserve(request: { readonly storeKey: string; readonly fingerprint: string; readonly nowMs: number; readonly expiresAtMs: number }): Promise<IdempotencyReservation>;
+  reserve(request: { readonly storeKey: string; readonly actorId: string; readonly fingerprint: string; readonly nowMs: number; readonly expiresAtMs: number }): Promise<IdempotencyReservation>;
   complete(request: { readonly storeKey: string; readonly fingerprint: string; readonly response: StoredIdempotentResponse }): Promise<void>;
   release(request: { readonly storeKey: string; readonly fingerprint: string }): Promise<void>;
 }
 
 export interface InMemoryIdempotencyEntry {
   readonly key: string;
+  readonly actorId: string;
   readonly fingerprint: string;
   readonly state: 'IN_PROGRESS' | 'COMPLETED';
   readonly expiresAtMs: number;
@@ -62,14 +68,17 @@ export interface InMemoryIdempotencyStore extends IdempotencyStore {
 export function createInMemoryIdempotencyStore(): InMemoryIdempotencyStore {
   const entries = new Map<string, InMemoryIdempotencyEntry>();
   return {
-    reserve: async ({ storeKey, fingerprint, nowMs, expiresAtMs }) => {
+    reserve: async ({ storeKey, actorId, fingerprint, nowMs, expiresAtMs }) => {
       const existing = entries.get(storeKey);
       if (existing !== undefined && nowMs < existing.expiresAtMs) {
+        if (existing.actorId !== actorId) {
+          return { outcome: 'ACTOR_MISMATCH' };
+        }
         return existing.state === 'COMPLETED' && existing.response !== undefined
           ? { outcome: 'COMPLETED', fingerprint: existing.fingerprint, response: existing.response }
           : { outcome: 'IN_PROGRESS', fingerprint: existing.fingerprint };
       }
-      entries.set(storeKey, { key: storeKey, fingerprint, state: 'IN_PROGRESS', expiresAtMs });
+      entries.set(storeKey, { key: storeKey, actorId, fingerprint, state: 'IN_PROGRESS', expiresAtMs });
       return { outcome: 'RESERVED' };
     },
     complete: async ({ storeKey, fingerprint, response }) => {
@@ -206,9 +215,12 @@ export function createIdempotencyMiddleware(deps: IdempotencyDeps) {
     const nowMs = deps.nowMs();
     let reservation: IdempotencyReservation;
     try {
-      reservation = await deps.store.reserve({ storeKey, fingerprint, nowMs, expiresAtMs: nowMs + IDEMPOTENCY_TTL_MS });
+      reservation = await deps.store.reserve({ storeKey, actorId: userId, fingerprint, nowMs, expiresAtMs: nowMs + IDEMPOTENCY_TTL_MS });
     } catch {
       return respondProblem(c, STORE_UNAVAILABLE);
+    }
+    if (reservation.outcome === 'ACTOR_MISMATCH') {
+      return respondProblem(c, KEY_REUSED);
     }
     if (reservation.outcome !== 'RESERVED') {
       if (reservation.fingerprint !== fingerprint) {

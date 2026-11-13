@@ -255,12 +255,24 @@ describe('TenantRouter : sélection et résolution du dossier', () => {
     expect(text).not.toContain('tenant_key_grants');
   });
 
-  it("refuse à la frontière HTTP un X-Fisca-Company-Id qui n'est pas un UUIDv7 (400, base jamais ouverte)", async () => {
+  it("accepte à la frontière HTTP tout X-Fisca-Company-Id de format [A-Za-z0-9_-]{1,64} (décision du propriétaire : format large, pas d'UUIDv7)", async () => {
+    const { app, memberships } = harness();
+    for (const wide of [COMPANY_A, COMPANY_B, 'soc-alpha', 'a', 'A_b-9', 'x'.repeat(64), '018f3b5e-7c2a-7d3e-8a1b-00000000a001', '018f3b5e-7c2a-4d3e-8a1b-00000000a001', '018f3b5e7c2a7d3e8a1b00000000a001']) {
+      const response = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: wide } });
+      // Le format est valide : si l'identifiant est inconnu, la réponse est le 403 d'appartenance, jamais un 400 de format.
+      expect(response.status, wide).not.toBe(400);
+    }
+    expect(memberships.calls.length).toBeGreaterThan(0);
+    const known = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: COMPANY_A } });
+    expect(known.status).toBe(200);
+  });
+
+  it('refuse en 400 COMPANY_ID_INVALID un X-Fisca-Company-Id vide, hors alphabet ou de plus de 64 caractères (base jamais ouverte)', async () => {
     const { app, tenants, memberships } = harness();
-    for (const bad of ['soc-alpha', '018f3b5e-7c2a-4d3e-8a1b-00000000a001', '018f3b5e7c2a7d3e8a1b00000000a001']) {
+    for (const bad of ['', 'soc alpha', 'soc.alpha', 'soc/alpha', 'soc-é', 'soc*', 'x'.repeat(65), 'control-plane']) {
       const response = await app.request('/api/x', { headers: { ...(await bearer()), [COMPANY_ID_HEADER]: bad } });
-      expect(response.status).toBe(400);
-      expect((await problemOf(response)).errorCode).toBe('COMPANY_ID_INVALID');
+      expect(response.status, bad).toBe(400);
+      expect((await problemOf(response)).errorCode, bad).toBe('COMPANY_ID_INVALID');
     }
     expect(tenants.requested).toHaveLength(0);
     expect(memberships.calls).toHaveLength(0);

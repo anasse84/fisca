@@ -21,8 +21,11 @@ import {
 } from './problem-details.ts';
 
 export const COMPANY_ID_HEADER = 'X-Fisca-Company-Id' as const;
-/** Doc_07 § 01 : `X-Fisca-Company-Id` est l'UUIDv7 du dossier, validé à la frontière HTTP (shared-types garde son format large en interne). */
-const COMPANY_ID_UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/**
+ * ÉCART ASSUMÉ AVEC Doc_07 § 01 (qui dit UUIDv7) — DÉCISION DU PROPRIÉTAIRE (annule le choix UUIDv7 précédent) : `X-Fisca-Company-Id`
+ * suit le format large `[A-Za-z0-9_-]{1,64}`, validé UNE SEULE FOIS par `assertValidCompanyId` de `@fisca/shared-types` (règle non
+ * redéfinie ici ; `control-plane` y est réservé). L'`Idempotency-Key` du client reste, elle, un UUIDv7 (Doc_07 § 01).
+ */
 const BEARER_PATTERN = /^Bearer\s+(\S+)$/i;
 /** Préfixe des mfa_challenge_token (packages/auth-rbac/src/auth-2fa.ts) : jamais une session. */
 const MFA_CHALLENGE_PREFIX = 'fmc1';
@@ -306,9 +309,6 @@ export function createTenantRouter(deps: TenantRouterDeps) {
       companyId = header;
     }
     try {
-      if (policy.audience !== 'AI_MCP' && !COMPANY_ID_UUID_V7.test(companyId)) {
-        return respondProblem(c, COMPANY_ID_INVALID);
-      }
       assertValidCompanyId(companyId);
     } catch {
       return respondProblem(c, policy.audience === 'AI_MCP' ? TENANT_OUT_OF_SCOPE_PROBLEM : COMPANY_ID_INVALID);
