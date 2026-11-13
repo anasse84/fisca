@@ -47,13 +47,15 @@ Ce fil est piloté : tu n'y programmes aucun rappel et tu n'ouvres aucun autre f
 ## 4. Le tick
 
 ```bash
-# 1. Backlog : appelle GetTable (mode full) sur fisca_master_backlog et enregistre le résultat tel quel
-#    dans /agent/workspace/backlog.json (si le résultat a été écrit dans un fichier, donne ce chemin).
+# 1. Backlog : appelle GetTable (mode full) sur fisca_master_backlog. Le résultat, volumineux, est écrit
+#    automatiquement dans un fichier : BACKLOG=$(ls -t /agent/large_tool_results/GetTable-* | head -1)
+#    S'il t'est rendu directement, écris avec Write un tableau JSON des 132 lignes réduites aux champs
+#    task_id, session_id, assigned_agent, status, depends_on dans /agent/workspace/backlog.json.
 # 2. Branches réellement fusionnées (la vérité vient de git, pas des statuts) :
 git fetch --prune origin   # par le skill fisca-github-repo-access
 MERGED=$(git branch -r --merged origin/main | sed 's# *origin/##' | grep '^feat/' | paste -sd, -)
 # 3. Plan :
-node docs/orchestration/reference/pilot-status.mjs --backlog /agent/workspace/backlog.json \
+node docs/orchestration/reference/pilot-status.mjs --backlog "$BACKLOG" \
   --scopes .meta/session-scopes.json --merged-branches "$MERGED" \
   --running "<sessions dont la voie travaille encore>" --completed "<sessions dont la voie vient de finir un tour>" \
   --state /agent/workspace/.fisca-pilot-state.json   # ajoute --s5 seulement si le lancement dit RELEASE S5 : OUI
@@ -77,7 +79,9 @@ Exécute ensuite chaque ligne `ACTION`, dans l'ordre :
 | `STOP_OWNER reason=…` | Section 7. |
 | `COMPLETE` | Rapport final (section 7). |
 
-**Attendre.** Après les envois, attends les voies avec WaitForAgentThread, par appels répétés, tant que ton tour a moins de 40 minutes (`date +%s` noté au début du tour). Dès qu'une voie rend son tour, lis sa dernière ligne (`ETAT …` ou `VERDICT …`) et fais un nouveau tick en la citant dans `--completed`. À 40 minutes : complète l'échelle de rappels si l'outil est appelable, écris l'état dans `01_Current_Wave_Status`, et termine ton tour par la ligne `ETAT PILOTE` (section 7). Le tour suivant commence par un tick.
+**Attendre.** Après les envois, attends les voies avec WaitForAgentThread, par appels répétés, tant que ton tour a moins de 40 minutes (`date +%s` noté au début du tour). Dès qu'une voie rend son tour, lis sa dernière ligne (`ETAT …` ou `VERDICT …`) et fais un nouveau tick en la citant dans `--completed`. À 40 minutes : complète l'échelle de rappels si l'outil est appelable, écris l'état dans `01_Current_Wave_Status`, et termine ton tour par la ligne `ETAT PILOTE` (section 7). Le tour suivant commence par un tick. Si la note rendue par un envoi dit que ce fil reprendra automatiquement à la fin de la voie, tu peux terminer ton tour plus tôt : la reprise fera le tick.
+
+**Relais refusé.** Sur un tour repris automatiquement (rappel, fin d'une voie), il se peut qu'un outil de relais soit refusé pour une voie ouverte à un tour précédent (WaitForAgentThread ou SendThreadMessage). N'ouvre alors jamais une voie de remplacement : elle n'aurait ni l'accord npm ni le clone, et deux fils travailleraient sur la même branche. Écris l'état dans `01_Current_Wave_Status` et termine par `ETAT PILOTE … — RELAIS REFUSÉ : écris CONTINUE`. Le message du propriétaire rouvre un tour où ces outils sont disponibles.
 
 **Ne fais jamais à la place d'une voie.** Si une voie échoue, relance-la ou arrête-toi ; ne code pas ses tickets et ne modifie pas ses verdicts.
 
