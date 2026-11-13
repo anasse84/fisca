@@ -209,7 +209,7 @@ describe('POST /api/v1/auth/password/reset (CTR-API-41)', () => {
       verificationTokens: ctx.lifecycle.resetTokens,
       newUserId: () => 'u-1',
     });
-    await post(registerApp, REGISTER, { email: 'nadia@example.ma', password: PASSWORD });
+    await post(registerApp, REGISTER, { email: 'nadia@example.ma', password: PASSWORD, full_name: 'Nadia El Idrissi' });
     const mail = ctx.mails.find((entry) => entry.kind === 'verification');
     expect(mail).toBeDefined();
     const response = await post(ctx.app, RESET, { token: mail?.token, newPassword: NEW_PASSWORD });

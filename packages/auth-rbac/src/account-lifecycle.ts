@@ -26,6 +26,10 @@ const TOKEN_BYTES = 32;
 const MAX_TOKEN_LENGTH = 256;
 const MAX_EMAIL_LENGTH = 254;
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Longueur maximale (points de code, après rognage) du nom complet collecté à l'inscription (`users.full_name`). */
+export const FULL_NAME_MAX_LENGTH = 200;
+/** Caractères de contrôle (Cc) et séparateurs de ligne ou de paragraphe Unicode (Zl, Zp). */
+const FULL_NAME_FORBIDDEN = /[\p{Cc}\p{Zl}\p{Zp}]/u;
 
 export interface OneTimeTokenRecord {
   /** Empreinte SHA-256 base64url du jeton ; le jeton en clair n'est jamais stocké. */
@@ -51,6 +55,8 @@ export interface NewUnverifiedAccount {
   readonly userId: string;
   readonly emailNormalized: string;
   readonly passwordHash: string;
+  /** Nom complet rogné et validé (users.full_name NOT NULL, Doc_06). */
+  readonly fullName: string;
   readonly createdAtEpochSec: number;
 }
 
@@ -155,13 +161,24 @@ async function sendVerification(deps: AccountLifecycleDeps, user: { readonly use
   await deliver(deps, 'verification', { emailNormalized: user.emailNormalized, token });
 }
 
+/** Nom complet rogné, ou null s'il est vide, trop long ou contient un caractère de contrôle. */
+function normalizeFullName(fullName: string): string | null {
+  const trimmed = fullName.trim();
+  if (trimmed.length === 0 || Array.from(trimmed).length > FULL_NAME_MAX_LENGTH || FULL_NAME_FORBIDDEN.test(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
+
 /**
- * Inscription. Lève AccountLifecycleError REGISTRATION_INPUT_INVALID si l'e-mail ou le mot de passe (12 à 128
- * caractères) est invalide ; sinon retourne sans rien révéler de l'existence du compte.
+ * Inscription. Lève AccountLifecycleError REGISTRATION_INPUT_INVALID si l'e-mail, le mot de passe (12 à 128
+ * caractères) ou le nom complet (non vide après rognage, au plus FULL_NAME_MAX_LENGTH, sans caractère de contrôle)
+ * est invalide ; sinon retourne sans rien révéler de l'existence du compte. Toute la validation précède le
+ * hachage et le stockage : elle ne dépend que de la requête, jamais de l'état du compte (anti-énumération).
  */
 export async function registerAccount(
   deps: AccountLifecycleDeps,
-  input: { readonly email: string; readonly password: string },
+  input: { readonly email: string; readonly password: string; readonly fullName: string },
 ): Promise<void> {
   const emailNormalized = normalizeEmail(input.email);
   if (!isEmailShaped(emailNormalized)) {
@@ -170,12 +187,17 @@ export async function registerAccount(
   if (input.password.length < PASSWORD_MIN_LENGTH || input.password.length > PASSWORD_MAX_LENGTH) {
     throw new AccountLifecycleError('REGISTRATION_INPUT_INVALID', `le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères.`);
   }
+  const fullName = normalizeFullName(input.fullName);
+  if (fullName === null) {
+    throw new AccountLifecycleError('REGISTRATION_INPUT_INVALID', `le nom complet doit contenir de 1 à ${FULL_NAME_MAX_LENGTH} caractères, sans caractère de contrôle.`);
+  }
   const passwordHash = await hashPasswordWorkerSafe(input.password, deps.pepper);
   const userId = (deps.newUserId ?? (() => crypto.randomUUID()))();
   const result = await deps.accounts.createUnverifiedAccount({
     userId,
     emailNormalized,
     passwordHash,
+    fullName,
     createdAtEpochSec: deps.nowEpochSec(),
   });
   if (result.kind === 'CREATED') {
