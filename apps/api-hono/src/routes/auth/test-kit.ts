@@ -23,6 +23,7 @@ import type {
   PasswordAccount,
   PasswordAccountStore,
   RefreshTokenRecord,
+  RefreshTokenStore,
   SessionService,
 } from '@fisca/auth-rbac';
 
@@ -43,6 +44,8 @@ export interface Kit {
   readonly accountRows: Map<string, { email: string; account: PasswordAccount }>;
   readonly issuedSessions: string[];
   readonly refreshRows: Map<string, RefreshTokenRecord>;
+  /** Le magasin de refresh qui alimente `sessions` : même table mémoire, pour révoquer par famille. */
+  readonly refreshStore: RefreshTokenStore;
   now(): number;
   advance(seconds: number): void;
   enrollTotp(userId: string): Promise<string>;
@@ -65,6 +68,27 @@ export async function buildKit(): Promise<Kit> {
     throw new Error('génération Ed25519 impossible');
   }
   const privateJwk = JSON.stringify(await crypto.subtle.exportKey('jwk', pair.privateKey));
+  const refreshStore: RefreshTokenStore = {
+    insert: async (record) => {
+      refreshRows.set(record.tokenHash, record);
+    },
+    findByHash: async (hash) => refreshRows.get(hash) ?? null,
+    markRotated: async (hash, at) => {
+      const row = refreshRows.get(hash);
+      if (row === undefined || row.rotatedAtEpochSec !== null) {
+        return false;
+      }
+      refreshRows.set(hash, { ...row, rotatedAtEpochSec: at });
+      return true;
+    },
+    revokeFamily: async (familyId, at) => {
+      for (const [hash, row] of refreshRows) {
+        if (row.familyId === familyId) {
+          refreshRows.set(hash, { ...row, revokedAtEpochSec: at });
+        }
+      }
+    },
+  };
   const sessions = await createSessionService({
     privateJwk,
     issuer: 'https://api.fisca.ma',
@@ -73,27 +97,7 @@ export async function buildKit(): Promise<Kit> {
     refresh: {
       ttlSec: 30 * 24 * 3600,
       nowEpochSec: () => now,
-      store: {
-        insert: async (record) => {
-          refreshRows.set(record.tokenHash, record);
-        },
-        findByHash: async (hash) => refreshRows.get(hash) ?? null,
-        markRotated: async (hash, at) => {
-          const row = refreshRows.get(hash);
-          if (row === undefined || row.rotatedAtEpochSec !== null) {
-            return false;
-          }
-          refreshRows.set(hash, { ...row, rotatedAtEpochSec: at });
-          return true;
-        },
-        revokeFamily: async (familyId, at) => {
-          for (const [hash, row] of refreshRows) {
-            if (row.familyId === familyId) {
-              refreshRows.set(hash, { ...row, revokedAtEpochSec: at });
-            }
-          }
-        },
-      },
+      store: refreshStore,
     },
   });
   const recording: SessionService = {
@@ -179,6 +183,7 @@ export async function buildKit(): Promise<Kit> {
     accountRows,
     issuedSessions,
     refreshRows,
+    refreshStore,
     now: () => now,
     advance: (seconds) => {
       now += seconds;

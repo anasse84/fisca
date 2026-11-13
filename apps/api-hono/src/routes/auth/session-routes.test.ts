@@ -105,7 +105,7 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(await errorCode(expired)).toBe('REFRESH_TOKEN_EXPIRED');
   });
 
-  it('limitation de débit (429) puis Turnstile (403) avant toute rotation', async () => {
+  it('limitation de débit (429) avant toute rotation, avec la clé par IP', async () => {
     const limited = await build({ rateOk: false });
     const cookie = await login(limited.kit);
     const rows = JSON.stringify([...limited.kit.refreshRows.values()]);
@@ -115,14 +115,28 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(limited.turnstileCalls).toEqual([]);
     expect(limited.rateKeys[0]).toContain('203.0.113.7');
     expect(JSON.stringify([...limited.kit.refreshRows.values()])).toBe(rows);
+  });
 
-    const blocked = await build({ turnstileOk: false });
-    const blockedCookie = await login(blocked.kit);
-    const denied = await blocked.app.request(post(REFRESH, blockedCookie, 'jeton-xyz'));
-    expect(denied.status).toBe(403);
-    expect(await errorCode(denied)).toBe('TURNSTILE_REQUIRED');
-    expect(blocked.turnstileCalls).toEqual([{ token: 'jeton-xyz', remoteIp: '203.0.113.7' }]);
-    expect([...blocked.kit.refreshRows.values()].every((row) => row.rotatedAtEpochSec === null)).toBe(true);
+  it('refresh fonctionne sans jeton Turnstile et n’appelle jamais le vérificateur, mais reste limité en débit', async () => {
+    const open = await build({ turnstileOk: false });
+    const cookie = await login(open.kit);
+    const headers = { 'CF-Connecting-IP': '203.0.113.7', Cookie: cookie };
+    const response = await open.app.request(`https://fisca.test${REFRESH}`, { method: 'POST', headers });
+    expect(response.status).toBe(200);
+    expect(open.turnstileCalls).toEqual([]);
+    expect(open.rateKeys).toEqual(['auth:refresh:203.0.113.7']);
+    const body = (await response.json()) as { status: string };
+    expect(body.status).toBe('AUTHENTICATED');
+
+    const limited = await build({ rateOk: false });
+    const limitedCookie = await login(limited.kit);
+    const denied = await limited.app.request(`https://fisca.test${REFRESH}`, {
+      method: 'POST',
+      headers: { 'CF-Connecting-IP': '203.0.113.7', Cookie: limitedCookie },
+    });
+    expect(denied.status).toBe(429);
+    expect(limited.turnstileCalls).toEqual([]);
+    expect([...limited.kit.refreshRows.values()].every((row) => row.rotatedAtEpochSec === null)).toBe(true);
   });
 
   it('ne répond qu’en POST', async () => {

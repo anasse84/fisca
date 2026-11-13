@@ -6,7 +6,8 @@
  *   répond 401 et efface le cookie ; le rejeu d'un jeton déjà tourné révoque la famille (moteur refresh-session).
  * - logout : révoque la famille et efface le cookie. Idempotent : sans cookie valide, il n'y a rien à révoquer et
  *   le cookie est quand même effacé (réponse 200, aucune information sur l'existence d'un jeton).
- * Ordre : limitation de débit, Turnstile, puis moteur. Aucune session JWT n'est exigée : le cookie fait foi.
+ * Ordre : limitation de débit, puis moteur. Turnstile n'est exigé que sur logout, jamais sur refresh (voir ci-dessous).
+ * Aucune session JWT n'est exigée : le cookie fait foi.
  */
 
 import { Hono } from 'hono';
@@ -14,7 +15,7 @@ import { problemResponse } from './first-factor-response.ts';
 import type { ProblemSpec } from './first-factor-response.ts';
 import { RefreshError, buildClearRefreshCookie } from './refresh-session.ts';
 import type { RefreshErrorCode } from './refresh-session.ts';
-import { guardRequest, internalErrorResponse } from './route-guard.ts';
+import { guardRateOnly, guardRequest, internalErrorResponse } from './route-guard.ts';
 import type { EdgeGuardDeps } from './route-guard.ts';
 import type { SessionService } from './session-service.ts';
 
@@ -37,8 +38,11 @@ export function createSessionRouter(deps: SessionRouterDeps): Hono {
   const app = new Hono();
   app.onError(() => internalErrorResponse());
 
+  // Pas de Turnstile sur refresh : un refresh silencieux (arrière-plan, expiration du JWT de 15 minutes) ne peut
+  // présenter aucun défi. La protection est le cookie __Host- HttpOnly SameSite=Strict, la rotation avec détection
+  // de rejeu, et la limitation de débit par IP, seule garde conservée ici. logout garde Turnstile + débit.
   app.post(REFRESH_PATH, async (c) => {
-    const blocked = await guardRequest(deps, c, 'refresh');
+    const blocked = await guardRateOnly(deps, c, 'refresh');
     if (blocked !== null) {
       return blocked;
     }

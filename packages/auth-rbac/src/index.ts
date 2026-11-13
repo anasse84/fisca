@@ -19,3 +19,6 @@ export * from './passkey-routes.ts';
 export * from './policy-engine.ts';
 export * from './account-lifecycle.ts';
 export * from './account-lifecycle-routes.ts';
+export * from './password-reset.ts';
+export * from './password-reset-routes.ts';
+export * from './google-link-routes.ts';

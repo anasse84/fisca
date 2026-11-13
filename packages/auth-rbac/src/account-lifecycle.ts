@@ -7,7 +7,7 @@
  * - verify-email : consomme un jeton à usage unique et expirant. Seule l'empreinte SHA-256 (préfixée par l'usage)
  *   est stockée ; un jeton de réinitialisation ne vérifie jamais un e-mail.
  * - password/forgot : émet un jeton de réinitialisation à usage unique (15 minutes, Doc_07 § 02) pour un compte
- *   existant, sans rien révéler. La route qui CONSOMME ce jeton n'existe pas au registre : elle n'est pas créée ici.
+ *   existant, sans rien révéler. Le jeton est consommé par password-reset.ts (CTR-API-41, DRAFT).
  * Tous les stockages et l'envoi d'e-mail sont des ports : tables `users` et jetons (S1B), envoi SES (P3-C).
  * Aucun envoi réel, aucune horloge lue ici.
  */
@@ -107,11 +107,12 @@ export class AccountLifecycleError extends Error {
   }
 }
 
-type TokenPurpose = 'email-verify' | 'password-reset';
+export type TokenPurpose = 'email-verify' | 'password-reset';
 
 const textEncoder = new TextEncoder();
 
-async function hashToken(purpose: TokenPurpose, token: string): Promise<string> {
+/** Empreinte stockée d'un jeton à usage unique : le préfixe d'usage empêche d'utiliser un jeton pour un autre usage. */
+export async function hashOneTimeToken(purpose: TokenPurpose, token: string): Promise<string> {
   return encodeBase64Url(await sha256Bytes(textEncoder.encode(`fisca:${purpose}:${token}`)));
 }
 
@@ -133,7 +134,7 @@ async function issueToken(
 ): Promise<string> {
   const token = encodeBase64Url((deps.randomBytes ?? secureRandomBytes)(TOKEN_BYTES));
   await store.save({
-    tokenHash: await hashToken(purpose, token),
+    tokenHash: await hashOneTimeToken(purpose, token),
     userId: user.userId,
     emailNormalized: user.emailNormalized,
     expiresAtEpochSec: deps.nowEpochSec() + ttlSec,
@@ -191,7 +192,7 @@ export async function verifyEmailToken(deps: AccountLifecycleDeps, token: string
   if (token.length === 0 || token.length > MAX_TOKEN_LENGTH) {
     throw new AccountLifecycleError('VERIFICATION_TOKEN_INVALID', 'jeton invalide.');
   }
-  const record = await deps.verificationTokens.consume(await hashToken('email-verify', token));
+  const record = await deps.verificationTokens.consume(await hashOneTimeToken('email-verify', token));
   if (record === null) {
     throw new AccountLifecycleError('VERIFICATION_TOKEN_INVALID', 'jeton invalide ou déjà utilisé.');
   }

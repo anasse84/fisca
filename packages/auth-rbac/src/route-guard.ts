@@ -44,6 +44,15 @@ export async function guardRequest(deps: EdgeGuardDeps, c: Context, routeKey: st
   return verified ? null : problemResponse('TURNSTILE_REQUIRED', TURNSTILE_REQUIRED);
 }
 
+/**
+ * Limitation de débit seule, sans Turnstile : pour une route appelée en arrière-plan qui ne peut pas présenter de
+ * défi (refresh silencieux). Renvoie une réponse 429 ou null.
+ */
+export async function guardRateOnly(deps: Pick<EdgeGuardDeps, 'rateLimiter'>, c: Context, routeKey: string): Promise<Response | null> {
+  const ip = clientIp(c.req.raw.headers);
+  return (await deps.rateLimiter.allow(`auth:${routeKey}:${ip ?? UNKNOWN_CLIENT}`)) ? null : problemResponse('RATE_LIMITED', RATE_LIMITED);
+}
+
 /** Corps JSON sous forme d'objet ; null si le corps est absent, illisible ou n'est pas un objet. */
 export async function readJsonObject(c: Context): Promise<Record<string, unknown> | null> {
   let parsed: unknown;

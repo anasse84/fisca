@@ -4,7 +4,7 @@
  * apps/api-hono/src/routes/auth ne contient que la colle.
  * Ordre : limitation de débit, Turnstile (jeton `cf-turnstile-response` en paramètre de requête), corps, moteur.
  * register et password/forgot répondent 202 avec un corps identique quel que soit l'état du compte.
- * Il n'existe volontairement aucune route de consommation du jeton de réinitialisation : elle n'est pas au registre.
+ * Le jeton de réinitialisation est consommé par password-reset-routes.ts (CTR-API-41, DRAFT).
  */
 
 import { Hono } from 'hono';
