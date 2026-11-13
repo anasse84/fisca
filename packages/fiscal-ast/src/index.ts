@@ -14,3 +14,6 @@ export const FISCAL_RULE_CODES = {
   AUTO_ENTREPRENEUR: 'AE_CLIENT_THRESHOLD',
   PAYMENT_DELAY: 'PAYMENT_DELAY_LAW_69_21',
 } as const;
+export * from './wiki-compiler-errors.ts';
+export { canonicalJson, parseStrictJson, sha256Hex, type StrictJsonValue } from './wiki-json.ts';
+export * from './wiki-to-ast-compiler.ts';
