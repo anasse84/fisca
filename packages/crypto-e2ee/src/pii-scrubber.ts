@@ -130,19 +130,89 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-function randomNonceHex(): string {
+/** Source d'aléa : remplit le tampon fourni en place. Par défaut `crypto.getRandomValues`. */
+export type PiiRandomSource = (buffer: Uint8Array<ArrayBuffer>) => void;
+
+/** Options de l'anonymiseur : `randomSource` permet d'injecter un générateur (tests déterministes). */
+export interface PiiScrubberOptions {
+  readonly randomSource?: PiiRandomSource;
+}
+
+const defaultRandomSource: PiiRandomSource = (buffer) => {
+  crypto.getRandomValues(buffer);
+};
+
+function randomNonceHex(randomSource: PiiRandomSource): string {
   const bytes = new Uint8Array(NONCE_BYTES);
-  crypto.getRandomValues(bytes);
+  randomSource(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Séparateurs tolérés entre les chiffres d'un identifiant (RIB, ICE) : espace ou tabulation (les espaces
+ * insécables, fins et larges sont ramenés à l'espace par NFKC), point, tiret ASCII, traits d'union et tirets
+ * typographiques U+2010..U+2015, signe moins U+2212, barre oblique. Les invisibles sont déjà retirés.
+ */
+const SEP = '[ \\t.\\-\\u2010-\\u2015\\u2212/]';
+
+const SEPARATED_RUN = new RegExp(`\\d+(?:${SEP}\\d+)*`, 'gu');
+const RIB_DIGITS = 24;
+const ICE_DIGITS = 15;
+
+/**
+ * RIB (24 chiffres) et ICE (15 chiffres), avec ou sans séparateurs. On isole d'abord chaque suite maximale
+ * de blocs de chiffres reliés par un seul séparateur, puis on la découpe aux frontières de blocs : à chaque
+ * bloc, le plus court préfixe de blocs totalisant exactement 24 chiffres (RIB) ou, à défaut, 15 chiffres (ICE)
+ * est masqué en entier. Une suite de 14 ou 16 chiffres séparés, ou un bloc qui enjambe ces totaux, n'est pas
+ * un identifiant : rien n'est masqué et aucun fragment n'est jamais laissé (pas de coupe au milieu d'un bloc).
+ * Deux identifiants consécutifs séparés par une espace restent donc deux jetons.
+ */
+function collectSeparatedIdentifiers(text: string, ribPriority: number, icePriority: number, into: Detection[]): void {
+  for (const run of text.matchAll(SEPARATED_RUN)) {
+    const base = run.index;
+    if (base === undefined) continue;
+    const blocks: { start: number; end: number }[] = [];
+    for (const block of run[0].matchAll(/\d+/gu)) {
+      const offset = block.index ?? 0;
+      blocks.push({ start: base + offset, end: base + offset + block[0].length });
+    }
+    let i = 0;
+    while (i < blocks.length) {
+      let total = 0;
+      let ribEnd = -1;
+      let iceEnd = -1;
+      for (let j = i; j < blocks.length && total < RIB_DIGITS; j += 1) {
+        const block = blocks[j];
+        if (block === undefined) break;
+        total += block.end - block.start;
+        if (total === RIB_DIGITS) ribEnd = j;
+        else if (total === ICE_DIGITS) iceEnd = j;
+      }
+      const first = blocks[i];
+      const lastIndex = ribEnd >= 0 ? ribEnd : iceEnd;
+      const last = blocks[lastIndex];
+      if (first !== undefined && last !== undefined) {
+        into.push({
+          start: first.start,
+          end: last.end,
+          kind: ribEnd >= 0 ? 'RIB24' : 'ICE15',
+          priority: ribEnd >= 0 ? ribPriority : icePriority,
+        });
+        i = lastIndex + 1;
+      } else {
+        i += 1;
+      }
+    }
+  }
+}
+
 /** Motifs génériques, par priorité décroissante en cas d'égalité (indice le plus petit gagne). */
-const GENERIC_PATTERNS: readonly { readonly kind: PiiKind; readonly pattern: RegExp }[] = [
+const GENERIC_PATTERNS: readonly { readonly kind: PiiKind; readonly pattern: RegExp | null }[] = [
   { kind: 'IBAN_MA', pattern: /(?<![\p{L}\p{N}])MA\d{2}(?:[ .-]?\d){24}(?!\d)/giu },
   { kind: 'EMAIL', pattern: /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/gu },
   { kind: 'PHONE_MA', pattern: /(?<![\d+])(?:(?:\+|00)212[ .-]?(?:\(0\)[ .-]?)?[5-7]|0[5-7])(?:[ .-]?\d){8}(?!\d)/gu },
-  { kind: 'RIB24', pattern: /(?<!\d)\d(?:[ .-]?\d){23}(?!\d)/gu },
-  { kind: 'ICE15', pattern: /(?<!\d)\d{15}(?!\d)/gu },
+  { kind: 'RIB24', pattern: null },
+  { kind: 'ICE15', pattern: null },
   { kind: 'NUM_LONG', pattern: /(?<!\d)\d{16,}(?!\d)/gu },
   { kind: 'CIN', pattern: /(?<![\p{L}\p{N}])[A-Z]{1,2}\d{5,7}(?![\p{L}\p{N}])/gu },
 ];
@@ -182,12 +252,19 @@ export class EphemeralRamPiiScrubber {
   private readonly entries: TableEntry[] = [];
   private readonly tokenToEntry = new Map<string, TableEntry>();
   private readonly counters = new Map<PiiKind, number>();
-  private readonly nonce = randomNonceHex();
+  private readonly nonce: string;
   private destroyed = false;
 
+  public constructor(options: PiiScrubberOptions = {}) {
+    this.nonce = randomNonceHex(options.randomSource ?? defaultRandomSource);
+  }
+
   /** Exécute `work` avec un anonymiseur neuf et le détruit toujours, même en cas d'erreur. */
-  public static async withRequest<T>(work: (scrubber: EphemeralRamPiiScrubber) => Promise<T>): Promise<T> {
-    const scrubber = new EphemeralRamPiiScrubber();
+  public static async withRequest<T>(
+    work: (scrubber: EphemeralRamPiiScrubber) => Promise<T>,
+    options: PiiScrubberOptions = {},
+  ): Promise<T> {
+    const scrubber = new EphemeralRamPiiScrubber(options);
     try {
       return await work(scrubber);
     } finally {
@@ -224,7 +301,9 @@ export class EphemeralRamPiiScrubber {
       priority += 1;
     }
     for (const { kind, pattern } of GENERIC_PATTERNS) {
-      collect(text, kind, pattern, priority, found);
+      if (pattern !== null) collect(text, kind, pattern, priority, found);
+      // RIB24 et ICE15 (pattern null) sont détectés ensemble : leur priorité est celle de leur rang dans la liste
+      if (kind === 'RIB24') collectSeparatedIdentifiers(text, priority, priority + 1, found);
       priority += 1;
     }
     found.sort((a, b) => a.start - b.start || b.end - a.end || a.priority - b.priority);
