@@ -1,0 +1,12 @@
+---
+import { formatCentsMad } from '../lib/money.ts';
+import { wrapLtrIsolated } from '../lib/numeric.ts';
+
+interface Props {
+  cents: number;
+}
+
+const { cents } = Astro.props;
+const isolated = wrapLtrIsolated(formatCentsMad(cents));
+---
+<span dir={isolated.dir} class={isolated.class}>{isolated.text}</span>

@@ -1,5 +1,5 @@
 import { EDITORIAL_PAGES, findEditorialPageByMirrorPath, findEditorialPageByPath } from '../content/pages.ts';
-import { PRICING_PLANS } from '../content/pricing.ts';
+import { PRICING_CATALOG_OFFERS, PRICING_PLANS } from '../content/pricing.ts';
 import { buildLlmsFullTxt, buildLlmsTxt } from './llms.ts';
 import { buildMcpManifest } from './mcp-manifest.ts';
 import { markdownResponse } from './mirror.ts';
@@ -16,11 +16,11 @@ function textResponse(body: string, contentType: string, extra: Readonly<Record<
 }
 
 export function handleLlmsTxt(): Response {
-  return textResponse(buildLlmsTxt(PRICING_PLANS, EDITORIAL_PAGES), TEXT);
+  return textResponse(buildLlmsTxt(PRICING_PLANS, EDITORIAL_PAGES, PRICING_CATALOG_OFFERS), TEXT);
 }
 
 export function handleLlmsFullTxt(): Response {
-  return textResponse(buildLlmsFullTxt(PRICING_PLANS, EDITORIAL_PAGES), TEXT);
+  return textResponse(buildLlmsFullTxt(PRICING_PLANS, EDITORIAL_PAGES, PRICING_CATALOG_OFFERS), TEXT);
 }
 
 export function handleRobotsTxt(): Response {

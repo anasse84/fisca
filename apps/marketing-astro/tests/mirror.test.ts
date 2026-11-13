@@ -14,8 +14,9 @@ function req(path: string, accept?: string, method = 'GET'): Request {
 }
 
 describe('registre des pages éditoriales', () => {
-  it('contient l’accueil des 6 langues', () => {
-    expect(EDITORIAL_PAGES).toHaveLength(6);
+  it('contient l’accueil des 6 langues (T-P2C-03 y ajoute tarifs et confidentialité : 18 pages)', () => {
+    expect(EDITORIAL_PAGES.filter((p) => p.slug === '')).toHaveLength(6);
+    expect(EDITORIAL_PAGES).toHaveLength(18);
     for (const loc of MARKETING_LOCALES) {
       expect(findEditorialPage(loc, '')).toBeDefined();
     }

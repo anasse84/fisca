@@ -1,4 +1,8 @@
 import { getHomeCopy, isFallbackCopy } from '../i18n/home-copy.ts';
+import { getSiteCopy } from '../i18n/site-copy.ts';
+import { buildPricingView, pricingMarkdownSections } from './pricing-view.ts';
+import { buildPrivacyView, privacyMarkdownSections } from './privacy-view.ts';
+import type { FaqPair } from '../seo/jsonld.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES, localeFromPrefix } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { buildCanonicalUrl } from '../i18n/hreflang.ts';
@@ -20,7 +24,13 @@ export interface EditorialPage {
   /** Langue réelle du texte (repli français tant que la rédaction IRCAM n'est pas livrée). */
   readonly contentLanguage: 'fr' | 'ar' | 'ary' | 'en';
   readonly sections: readonly EditorialSection[];
+  /** Questions fréquentes de la page : source du JSON-LD FAQPage et du miroir Markdown. */
+  readonly faqs?: readonly FaqPair[];
 }
+
+/** Slugs des pages enregistrées (identiques dans les 6 langues, Doc_18 S11 `buildMultilingualAlternates`). */
+export const PRICING_SLUG = 'tarifs';
+export const PRIVACY_SLUG = 'confidentialite';
 
 function contentLanguageOf(locale: MarketingLocale): EditorialPage['contentLanguage'] {
   if (isFallbackCopy(locale)) return 'fr';
@@ -40,6 +50,7 @@ function contentLanguageOf(locale: MarketingLocale): EditorialPage['contentLangu
 
 function homePage(locale: MarketingLocale): EditorialPage {
   const copy = getHomeCopy(locale);
+  const site = getSiteCopy(locale);
   return {
     locale,
     slug: '',
@@ -48,12 +59,56 @@ function homePage(locale: MarketingLocale): EditorialPage {
     heading: copy.heading,
     lead: copy.lead,
     contentLanguage: contentLanguageOf(locale),
-    sections: [],
+    sections: [
+      { heading: copy.benefits.heading, body: copy.benefits.items.map((i) => `- **${i.title}** : ${i.body}`).join('\n') },
+      { heading: copy.simulated.heading, body: copy.simulated.paragraphs.join('\n\n') },
+      {
+        heading: copy.sovereignty.heading,
+        body: [copy.sovereignty.intro, '', ...copy.sovereignty.items.map((i) => `- **${i.title}** : ${i.body}`)].join('\n'),
+      },
+      {
+        heading: copy.pricingTeaser.heading,
+        body: `${copy.pricingTeaser.body}\n\n- ${site.navPricing} : /${LOCALE_URL_PREFIX[locale]}/${PRICING_SLUG}\n- ${site.navPrivacy} : /${LOCALE_URL_PREFIX[locale]}/${PRIVACY_SLUG}`,
+      },
+    ],
   };
 }
 
-/** T-P2C-02 : l'accueil des 6 langues ; les silos s'ajoutent aux tickets suivants. */
-export const EDITORIAL_PAGES: readonly EditorialPage[] = MARKETING_LOCALES.map(homePage);
+function pricingPage(locale: MarketingLocale): EditorialPage {
+  const view = buildPricingView(locale);
+  return {
+    locale,
+    slug: PRICING_SLUG,
+    title: view.copy.title,
+    description: view.copy.description,
+    heading: view.copy.heading,
+    lead: view.copy.lead,
+    contentLanguage: contentLanguageOf(locale),
+    sections: pricingMarkdownSections(view),
+    faqs: view.faq.map((f) => ({ question: f.question, answer: f.answer })),
+  };
+}
+
+function privacyPage(locale: MarketingLocale): EditorialPage {
+  const view = buildPrivacyView(locale);
+  return {
+    locale,
+    slug: PRIVACY_SLUG,
+    title: view.copy.title,
+    description: view.copy.description,
+    heading: view.copy.heading,
+    lead: view.copy.lead,
+    contentLanguage: contentLanguageOf(locale),
+    sections: privacyMarkdownSections(view),
+  };
+}
+
+/** T-P2C-03 : accueil, tarifs et confidentialité dans les 6 langues ; les silos s'ajoutent aux tickets suivants. */
+export const EDITORIAL_PAGES: readonly EditorialPage[] = [
+  ...MARKETING_LOCALES.map(homePage),
+  ...MARKETING_LOCALES.map(pricingPage),
+  ...MARKETING_LOCALES.map(privacyPage),
+];
 
 export function findEditorialPage(locale: MarketingLocale, slug: string): EditorialPage | undefined {
   const clean = slug.replace(/^\/+|\/+$/g, '');

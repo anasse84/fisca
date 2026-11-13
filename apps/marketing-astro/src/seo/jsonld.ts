@@ -1,6 +1,6 @@
 import { PUBLISHER } from '../content/identity.ts';
 import { PRICING_CURRENCY, PRICING_PLANS } from '../content/pricing.ts';
-import type { PricingPlan } from '../content/pricing.ts';
+import type { CatalogOffer, PricingPlan } from '../content/pricing.ts';
 import { getLocaleMeta } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { SITE_ORIGIN } from '../i18n/hreflang.ts';
@@ -39,6 +39,8 @@ export interface JsonLdInput {
   readonly faqs?: readonly FaqPair[];
   /** Grille tarifaire ; défaut : src/content/pricing.ts. */
   readonly plans?: readonly PricingPlan[];
+  /** Catalogue complet des 4 familles (T-P2C-03) : remplace `plans` dans les offres du logiciel. */
+  readonly catalogOffers?: readonly CatalogOffer[];
 }
 
 export type JsonLdNode = Readonly<Record<string, unknown>>;
@@ -85,6 +87,40 @@ function offerOf(plan: PricingPlan): JsonLdNode {
   };
 }
 
+function catalogOfferNode(offer: CatalogOffer): JsonLdNode {
+  const base = {
+    '@type': 'Offer',
+    '@id': `${SITE_ORIGIN}/#offer-${offer.code.toLowerCase()}`,
+    name: offer.name,
+    sku: offer.code,
+    priceCurrency: PRICING_CURRENCY,
+    seller: { '@id': ORGANIZATION_ID },
+  };
+  const headline = offer.monthly_ht_cents ?? offer.annual_ht_cents ?? offer.one_off_ht_cents ?? 0;
+  const specs: JsonLdNode[] = [];
+  if (offer.monthly_ht_cents !== null) {
+    specs.push({
+      '@type': 'UnitPriceSpecification',
+      price: centsToDecimalString(offer.monthly_ht_cents),
+      priceCurrency: PRICING_CURRENCY,
+      unitCode: 'MON',
+      valueAddedTaxIncluded: false,
+    });
+  }
+  if (offer.annual_ht_cents !== null) {
+    specs.push({
+      '@type': 'UnitPriceSpecification',
+      price: centsToDecimalString(offer.annual_ht_cents),
+      priceCurrency: PRICING_CURRENCY,
+      unitCode: 'ANN',
+      valueAddedTaxIncluded: false,
+    });
+  }
+  return specs.length === 0
+    ? { ...base, price: centsToDecimalString(headline) }
+    : { ...base, price: centsToDecimalString(headline), priceSpecification: specs };
+}
+
 function organizationNode(): JsonLdNode {
   return {
     '@type': 'Organization',
@@ -103,7 +139,7 @@ function organizationNode(): JsonLdNode {
   };
 }
 
-function softwareNode(plans: readonly PricingPlan[]): JsonLdNode {
+function softwareNode(plans: readonly PricingPlan[], catalogOffers: readonly CatalogOffer[] | undefined): JsonLdNode {
   return {
     '@type': 'SoftwareApplication',
     '@id': SOFTWARE_ID,
@@ -113,7 +149,7 @@ function softwareNode(plans: readonly PricingPlan[]): JsonLdNode {
     operatingSystem: 'Web, iOS, Android',
     url: SITE_ORIGIN,
     provider: { '@id': ORGANIZATION_ID },
-    offers: plans.map(offerOf),
+    offers: catalogOffers === undefined ? plans.map(offerOf) : catalogOffers.map(catalogOfferNode),
   };
 }
 
@@ -140,7 +176,7 @@ export function buildFiscaJsonLdObject(input: JsonLdInput): JsonLdDocument {
   };
   if (input.dateModifiedIso !== undefined) page['dateModified'] = input.dateModifiedIso;
 
-  const graph: JsonLdNode[] = [organizationNode(), softwareNode(plans), page];
+  const graph: JsonLdNode[] = [organizationNode(), softwareNode(plans, input.catalogOffers), page];
 
   if (input.legislation !== undefined) {
     const leg: Record<string, unknown> = {

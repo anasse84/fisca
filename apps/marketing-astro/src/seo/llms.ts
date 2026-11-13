@@ -2,11 +2,13 @@ import { MCP_MANIFEST_PATH, MCP_SERVER_URL, NON_INDEXABLE_HOSTS, OAUTH_PROTOCOL_
 import { DATED_FISCAL_PARAMETER_SLOTS } from '../content/fiscal-reference.ts';
 import { mirrorPathOf } from '../content/pages.ts';
 import type { EditorialPage } from '../content/pages.ts';
-import { PRICING_CURRENCY, headlinePriceCents } from '../content/pricing.ts';
-import type { PricingPlan } from '../content/pricing.ts';
+import { FIDUCIARY_METER, PRICING_CURRENCY, headlinePriceCents } from '../content/pricing.ts';
+import type { CatalogOffer, PricingPlan } from '../content/pricing.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES } from '../i18n/locales.ts';
 import { SITE_ORIGIN } from '../i18n/hreflang.ts';
 import { formatCentsMad } from '../lib/money.ts';
+
+const NON_PME_FAMILIES: readonly CatalogOffer['family'][] = ['POS', 'OEC', 'CORPORATE_SOUVERAIN'];
 
 const BAREMES_POINTER =
   'Les barèmes, taux et plafonds fiscaux ne sont pas publiés dans ce fichier : ce sont des règles datées tenues dans les tables D1 (dynamic_fiscal_rules) et le Wiki Fisca. Chaque guide cite l’article de loi et la règle datée applicable.';
@@ -25,6 +27,26 @@ function priceLine(plan: PricingPlan): string {
     return `- ${plan.name} (${plan.audience}) : ${formatCentsMad(plan.monthly_ht_cents)} HT par mois`;
   }
   return `- ${plan.name} (${plan.audience}) : ${formatCentsMad(headlinePriceCents(plan))} HT, paiement unique`;
+}
+
+function catalogPriceLine(offer: CatalogOffer): string {
+  const parts: string[] = [];
+  if (offer.monthly_ht_cents !== null) {
+    parts.push(offer.monthly_ht_cents === 0 ? 'inclus (0,00 MAD)' : `${formatCentsMad(offer.monthly_ht_cents)} HT par mois`);
+  }
+  if (offer.annual_ht_cents !== null && offer.annual_ht_cents > 0) parts.push(`${formatCentsMad(offer.annual_ht_cents)} HT par an`);
+  if (offer.one_off_ht_cents !== null) parts.push(`${formatCentsMad(offer.one_off_ht_cents)} HT, paiement unique`);
+  return `- ${offer.name} [${offer.family}] (${offer.audience}) : ${parts.join(' ; ')}`;
+}
+
+function catalogLines(catalog: readonly CatalogOffer[] | undefined): string[] {
+  if (catalog === undefined) return [];
+  const lines = catalog.filter((o) => NON_PME_FAMILIES.includes(o.family)).map(catalogPriceLine);
+  const d = FIDUCIARY_METER.volumeDiscount;
+  lines.push(
+    `- Remise de volume cabinet : ${String(d.discount_bps)} bps sur les lignes de dossiers dès ${String(d.minActiveDossiers)} dossiers actifs (socle non remisé)`,
+  );
+  return lines;
 }
 
 function pagesByLocale(pages: readonly EditorialPage[]): string[] {
@@ -66,7 +88,7 @@ function baremesLines(detailed: boolean): string[] {
 }
 
 /** /llms.txt : index court (Doc_18 S03). Barèmes absents par construction (ADR-04). */
-export function buildLlmsTxt(plans: readonly PricingPlan[], pages: readonly EditorialPage[]): string {
+export function buildLlmsTxt(plans: readonly PricingPlan[], pages: readonly EditorialPage[], catalog?: readonly CatalogOffer[]): string {
   return [
     `# ${PUBLISHER.brand} (fisca.ma)`,
     '',
@@ -77,6 +99,7 @@ export function buildLlmsTxt(plans: readonly PricingPlan[], pages: readonly Edit
     '',
     `## Tarifs publics (${PRICING_CURRENCY}, hors taxes)`,
     ...plans.map(priceLine),
+    ...catalogLines(catalog),
     '',
     '## Guides et pages (miroirs Markdown)',
     ...pagesByLocale(pages),
@@ -102,7 +125,7 @@ function detailedPlanLines(plan: PricingPlan): string[] {
 }
 
 /** /llms-full.txt : version détaillée (identité, grille complète, arbre des guides). */
-export function buildLlmsFullTxt(plans: readonly PricingPlan[], pages: readonly EditorialPage[]): string {
+export function buildLlmsFullTxt(plans: readonly PricingPlan[], pages: readonly EditorialPage[], catalog?: readonly CatalogOffer[]): string {
   return [
     `# ${PUBLISHER.brand} (fisca.ma) — version détaillée`,
     '',
@@ -114,6 +137,7 @@ export function buildLlmsFullTxt(plans: readonly PricingPlan[], pages: readonly 
     '',
     `## Grille tarifaire (${PRICING_CURRENCY}, hors taxes)`,
     ...plans.flatMap(detailedPlanLines),
+    ...(catalog === undefined ? [] : ['### Autres familles (POS, cabinets, grands comptes)', ...catalogLines(catalog), '']),
     '## Arbre des guides',
     ...pagesByLocale(pages),
     '## Barèmes fiscaux',

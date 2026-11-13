@@ -16,6 +16,8 @@
   --status-danger-bg: #FCE8E6;
   --status-danger-text: #A51D24;
   --text-on-brand: #FFFFFF;
+  /* Texte de lien et anneau de focus : l'indigo de marque, éclairci en sombre pour rester AA sur les fonds sombres. */
+  --link-text: #4F46E5;
   --table-row-height: 44px;
 }
 
@@ -36,6 +38,7 @@
     --status-danger-bg: #311114;
     --status-danger-text: #F87171;
     --text-on-brand: #0B0E14;
+    --link-text: #818CF8;
   }
 }
 

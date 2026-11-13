@@ -1,8 +1,15 @@
 ---
 import '../styles/tokens.css';
 import '../styles/base.css';
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import { CNDP_REFERENCES, DATA_CONTROLLER, hasCndpNumber } from '../content/cndp.ts';
+import type { CatalogOffer } from '../content/pricing.ts';
+import { PRICING_SLUG, PRIVACY_SLUG } from '../content/pages.ts';
+import { usesFrenchFallback } from '../i18n/copy-locale.ts';
 import { buildPageHead } from '../i18n/head.ts';
+import { LOCALE_URL_PREFIX } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
+import { FALLBACK_NOTICE, getSiteCopy } from '../i18n/site-copy.ts';
 import { buildFiscaJsonLdGraph } from '../seo/jsonld.ts';
 import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
 
@@ -14,10 +21,14 @@ interface Props {
   legislation?: LegislationRef;
   howTo?: HowToInput;
   faqs?: readonly FaqPair[];
+  catalogOffers?: readonly CatalogOffer[];
 }
 
-const { locale, slug, title, description, legislation, howTo, faqs } = Astro.props;
+const { locale, slug, title, description, legislation, howTo, faqs, catalogOffers } = Astro.props;
 const head = buildPageHead(locale, slug, { title, description });
+const site = getSiteCopy(locale);
+const prefix = LOCALE_URL_PREFIX[locale];
+const fallback = usesFrenchFallback(locale);
 const jsonLd = buildFiscaJsonLdGraph({
   pageUrl: head.canonical,
   locale,
@@ -26,7 +37,15 @@ const jsonLd = buildFiscaJsonLdGraph({
   ...(legislation === undefined ? {} : { legislation }),
   ...(howTo === undefined ? {} : { howTo }),
   ...(faqs === undefined ? {} : { faqs }),
+  ...(catalogOffers === undefined ? {} : { catalogOffers }),
 });
+const cndpNumbers = CNDP_REFERENCES.filter(hasCndpNumber);
+const current = slug.replace(/^\/+|\/+$/g, '');
+const navItems = [
+  { href: `/${prefix}/`, label: site.navHome, active: current === '' },
+  { href: `/${prefix}/${PRICING_SLUG}`, label: site.navPricing, active: current === PRICING_SLUG },
+  { href: `/${prefix}/${PRIVACY_SLUG}`, label: site.navPrivacy, active: current === PRIVACY_SLUG },
+];
 ---
 <html lang={head.htmlLang} dir={head.dir}>
   <head>
@@ -44,10 +63,49 @@ const jsonLd = buildFiscaJsonLdGraph({
     <meta property="og:locale" content={head.htmlLang} />
     <script type="application/ld+json" set:html={jsonLd} />
   </head>
-  <body>
-    <header class="site-header"><span class="brand">Fisca</span></header>
-    <main class="container">
+  <body lang={fallback ? 'fr' : undefined}>
+    <a class="skip-link" href="#contenu">{site.skipLink}</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href={`/${prefix}/`} aria-label={site.brandLabel}>Fisca</a>
+        <nav aria-label={site.navLabel}>
+          <ul class="nav-list">
+            {navItems.map((item) => (
+              <li><a href={item.href} aria-current={item.active ? 'page' : undefined}>{item.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+        <LanguageSwitcher current={locale} slug={slug} label={site.languageLabel} />
+      </div>
+    </header>
+    <main id="contenu" class="container">
+      {fallback && (
+        <div class="notice" role="note">
+          <p lang="fr">{FALLBACK_NOTICE.fr}</p>
+          <p lang="ar" dir="rtl">{FALLBACK_NOTICE.ar}</p>
+        </div>
+      )}
       <slot />
     </main>
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p><strong>Fisca</strong> · {site.footerPublisherLabel} : {DATA_CONTROLLER.legalName}, {DATA_CONTROLLER.locality}</p>
+        <p>
+          {site.footerContactLabel} : <a href={`mailto:${DATA_CONTROLLER.contactEmail}`} dir="ltr">{DATA_CONTROLLER.contactEmail}</a>
+          · {site.footerLawLabel} : {site.footerLawValue}
+        </p>
+        <p>
+          {site.cndpReferenceLabel} :
+          {cndpNumbers.length === 0
+            ? <span class="pending">{site.cndpPending}</span>
+            : cndpNumbers.map((ref) => <span class="fisca-tabular-num" dir="ltr"> {ref.form} {ref.number} </span>)}
+        </p>
+        <p>{site.footerNoTracking}</p>
+        <p>{site.footerPriceNote}</p>
+        <ul class="footer-links">
+          {navItems.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+        </ul>
+      </div>
+    </footer>
   </body>
 </html>

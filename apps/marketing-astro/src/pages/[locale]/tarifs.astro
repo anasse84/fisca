@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AmountText from '../../components/AmountText.astro';
+import Money from '../../components/Money.astro';
+import { buildPricingView, cellToPlainText } from '../../content/pricing-view.ts';
+import type { CardView } from '../../content/pricing-view.ts';
+import { PRICING_CATALOG_OFFERS } from '../../content/pricing.ts';
+import { localeFromPrefix } from '../../i18n/locales.ts';
+
+const locale = localeFromPrefix(Astro.params.locale);
+if (locale === null) {
+  return new Response(null, { status: 404 });
+}
+const view = buildPricingView(locale);
+const { copy } = view;
+const faqs = view.faq.map((f) => ({ question: f.question, answer: f.answer }));
+const familyHeadingId = (id: string): string => `famille-${id.toLowerCase().replace(/_/g, '-')}`;
+const cardHeadingId = (card: CardView): string => `offre-${card.code.toLowerCase().replace(/_/g, '-')}`;
+---
+<BaseLayout
+  locale={locale}
+  slug="tarifs"
+  title={copy.title}
+  description={copy.description}
+  faqs={faqs}
+  catalogOffers={PRICING_CATALOG_OFFERS}
+>
+  <h1>{copy.heading}</h1>
+  <p class="lead">{copy.lead}</p>
+  {view.notes.map((note) => <p class="note">{note}</p>)}
+
+  <div class="billing-scope">
+    <input class="billing-input" type="radio" name="billing" id="billing-monthly" value="monthly" checked />
+    <input class="billing-input" type="radio" name="billing" id="billing-annual" value="annual" />
+    <div class="billing-toggle" role="group" aria-label={copy.billing.legend}>
+      <label for="billing-monthly">{copy.billing.monthly}</label>
+      <label for="billing-annual">{copy.billing.annual}</label>
+    </div>
+    <p class="billing-legend">{copy.billing.appliesTo}</p>
+
+    <div class="families">
+      {view.families.map((family) => (
+        <section class="section" aria-labelledby={familyHeadingId(family.id)}>
+          <h2 id={familyHeadingId(family.id)}>{family.heading}</h2>
+          <p class="section-intro">{family.intro}</p>
+          <ul class="grid">
+            {family.cards.map((card) => (
+              <li>
+                <article class="card" aria-labelledby={cardHeadingId(card)}>
+                  <h3 id={cardHeadingId(card)}>{card.name}</h3>
+                  <p class="card-audience">{card.audience}</p>
+                  <div class="price">
+                    {card.price.included && <p class="price-main">{copy.labels.included}</p>}
+                    {!card.price.included && card.price.togglesBilling && card.price.monthlyCents !== null && (
+                      <p class="price-main when-monthly">
+                        <Money cents={card.price.monthlyCents} />
+                        <span class="price-unit">{card.price.monthlyUnit}</span>
+                      </p>
+                    )}
+                    {!card.price.included && card.price.togglesBilling && card.price.annualCents !== null && (
+                      <p class="price-main when-annual">
+                        <Money cents={card.price.annualCents} />
+                        <span class="price-unit">{copy.labels.perYear}</span>
+                        <span class="badge">{copy.labels.annualFree}</span>
+                      </p>
+                    )}
+                    {!card.price.togglesBilling && card.price.monthlyCents !== null && (
+                      <p class="price-main">
+                        <Money cents={card.price.monthlyCents} />
+                        <span class="price-unit">{card.price.monthlyUnit}</span>
+                      </p>
+                    )}
+                    {!card.price.togglesBilling && card.price.annualCents !== null && (
+                      <p class="price-main">
+                        <Money cents={card.price.annualCents} />
+                        <span class="price-unit">{copy.labels.perYear}</span>
+                      </p>
+                    )}
+                    {card.price.oneOffCents !== null && (
+                      <p class="price-main">
+                        <Money cents={card.price.oneOffCents} />
+                        <span class="price-unit">{copy.labels.oneOff}</span>
+                      </p>
+                    )}
+                  </div>
+                  {card.inclusions.length > 0 && (
+                    <ul class="card-list">
+                      {card.inclusions.map((inclusion) => <li><AmountText text={inclusion} /></li>)}
+                    </ul>
+                  )}
+                  {card.facts.length > 0 && (
+                    <ul class="card-facts">
+                      {card.facts.map((fact) => (
+                        <li>
+                          {fact.before}{fact.cents !== null && <Money cents={fact.cents} />}{fact.after}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {card.trialCta && (
+                    <p class="card-cta">
+                      <a class="button" href="https://app.fisca.ma/" rel="noopener">{copy.labels.ctaTrial}</a>
+                    </p>
+                  )}
+                </article>
+              </li>
+            ))}
+          </ul>
+          {family.notes.map((note) => <p class="note">{note}</p>)}
+        </section>
+      ))}
+    </div>
+  </div>
+
+  <section class="section" aria-labelledby="comparatifs">
+    <h2 id="comparatifs">{view.tablesHeading}</h2>
+    {view.tables.map((table) => (
+      <div class="table-scroll" role="region" aria-label={table.caption} tabindex="0">
+        <table class="data-table">
+          <caption>{table.caption}</caption>
+          <thead>
+            <tr>
+              {table.columns.map((column) => <th scope="col">{column}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => (
+              <tr>
+                <th scope="row">{row.header}</th>
+                {row.cells.map((cell) => (
+                  <td>
+                    {cell.kind === 'money' ? <Money cents={cell.cents} /> : cellToPlainText(cell)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ))}
+  </section>
+
+  <section class="section faq" aria-labelledby="faq">
+    <h2 id="faq">{view.faqHeading}</h2>
+    {view.faq.map((item) => (
+      <details>
+        <summary>{item.question}</summary>
+        <p>{item.answer}</p>
+      </details>
+    ))}
+  </section>
+</BaseLayout>
