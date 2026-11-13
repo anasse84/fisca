@@ -43,6 +43,7 @@ const V1_SHA256 = 'a554a3477c4d1e3561b81e72e243fc72e2be519d155a3120a497ef0d93a04
 const V2_SHA256 = 'bfb09b92f078d2796cc62c0604bbc50d9bf3b5f7dffc3539704b564dca15b581';
 const V3_SHA256 = '71c6a880b7c231ff3d005d2d1edcee5ca7956e5c9dcf9e2af44a18c8ef7a1138';
 
+const MSG_PII_DOWNGRADE = 'VIOLATION_CNDP_LOI_09_08_ART_211: Restriction fiscale irréversible : pii_restricted_flag ne peut pas redescendre de 1 à 0.';
 const MSG_ENTRY_UPDATE = 'VIOLATION_PAF_CGI_ART_145: Écriture validée immuable. Utilisez une contre-passation.';
 const MSG_ENTRY_DELETE = 'VIOLATION_PAF_CGI_ART_145: Suppression interdite sur le Grand Livre.';
 const MSG_LINE_UPDATE = 'VIOLATION_PAF_CGI_ART_145: Modification de ligne interdite sur pièce POSTED.';
@@ -160,6 +161,14 @@ function expectSame(results: readonly [Failure, Failure], message: string): void
   expect(results[1].code).toBe(RAISED);
 }
 
+/** Cumul 1 vers 0 + règle POSTED/scellé : l'un ou l'autre des deux textes déterministes (l'ordre d'exécution des triggers dépend du moteur). */
+function expectEither(results: readonly [Failure, Failure], messages: readonly string[]): void {
+  expect(messages).toContain(results[0].message);
+  expect(messages).toContain(results[1].message);
+  expect(results[0].code).toBeNull();
+  expect(results[1].code).toBe(RAISED);
+}
+
 /** Même texte sur les deux moteurs, SQLSTATE 23514 côté PostgreSQL (CHECK) : le texte est celui de PostgreSQL, SQLite le reprend. */
 function expectSameCheck(results: readonly [Failure, Failure], message: string): void {
   expect(results[0].message).toBe(message);
@@ -200,11 +209,18 @@ describe('migration v4 : forme, immuabilité de v1, v2 et v3, objets créés', (
     expect(v4?.tableNames).toEqual([]);
     expect(v4?.indexNames).toEqual([]);
     expect(v4?.viewNames ?? []).toEqual([]);
-    // La v5 (T-S1B-05) ajoute deux triggers : la liste complète est celle de v3, v4 puis v5.
+    // La v5 (T-S1B-05) ajoute deux triggers, la v6 cinq autres : la liste complète est celle de v3, v4, v5 puis v6.
     const V5_TRIGGERS = ['enforce_10year_worm_retention_delete', 'enforce_10year_worm_retention_update'] as const;
-    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS])].sort());
+    const V6_TRIGGERS = [
+      'prevent_pii_flag_downgrade_invoices',
+      'prevent_pii_flag_downgrade_payroll',
+      'prevent_pii_flag_downgrade_journal_entries',
+      'prevent_pii_flag_downgrade_journal_entry_lines',
+      'prevent_pii_flag_downgrade_archival_packages',
+    ] as const;
+    expect([...TENANT_TRIGGER_NAMES].sort()).toEqual([...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS])].sort());
     expect([...TENANT_POSTGRES_TRIGGER_NAMES].sort()).toEqual(
-      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
+      [...new Set([...V3_TRIGGERS, ...V4_TRIGGERS, ...V5_TRIGGERS, ...V6_TRIGGERS])].filter((n) => !(SQLITE_ONLY_TRIGGERS as readonly string[]).includes(n)).sort(),
     );
   });
 
@@ -335,7 +351,7 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
     for (const engine of dual.engines()) {
       await engine.run(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-1'`);
     }
-    expectSame(await dual.onBoth((e) => e.fail(`UPDATE journal_entries SET pii_restricted_flag = 0 WHERE id = 'je-1'`)), MSG_ENTRY_UPDATE);
+    expectEither(await dual.onBoth((e) => e.fail(`UPDATE journal_entries SET pii_restricted_flag = 0 WHERE id = 'je-1'`)), [MSG_PII_DOWNGRADE, MSG_ENTRY_UPDATE]);
     expect((await flags())[0][0]?.['pii_restricted_flag']).toBe(1);
   });
 
@@ -378,13 +394,13 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
     expectSame(await dual.onBoth((e) => e.fail(`DELETE FROM journal_entries WHERE id = 'je-1'`)), MSG_ENTRY_DELETE);
   });
 
-  it('pièce non POSTED : le drapeau est libre dans les deux sens, sur les deux moteurs', async () => {
+  it('pièce non POSTED : le drapeau est monotone (0 vers 1 accepté, 1 vers 0 refusé), le reste de la pièce reste libre, sur les deux moteurs', async () => {
     await seedBoth(simpleEntry('je-d', 2, 'jrn-vte', 'acc-3421', 'acc-7111', 700));
     for (const engine of dual.engines()) {
       await engine.run(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-d'`);
-      await engine.run(`UPDATE journal_entries SET pii_restricted_flag = 0, entry_date = '2026-11-20' WHERE id = 'je-d'`);
-      await engine.run(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-d'`);
+      await engine.run(`UPDATE journal_entries SET entry_date = '2026-11-20' WHERE id = 'je-d'`);
     }
+    expectSame(await dual.onBoth((e) => e.fail(`UPDATE journal_entries SET pii_restricted_flag = 0, entry_date = '2026-11-21' WHERE id = 'je-d'`)), MSG_PII_DOWNGRADE);
     const [lite, pg] = await dual.onBoth((e) => e.rows(`SELECT pii_restricted_flag, entry_date FROM journal_entries WHERE id = 'je-d'`));
     expect(lite).toEqual([{ pii_restricted_flag: 1, entry_date: '2026-11-20' }]);
     expect(pg).toEqual(lite);
@@ -400,7 +416,7 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
       { id: 'je-1-l2', pii_restricted_flag: 0 },
     ]);
     expect(pg).toEqual(lite);
-    expectSame(await dual.onBoth((e) => e.fail(`UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE id = 'je-1-l1'`)), MSG_LINE_UPDATE);
+    expectEither(await dual.onBoth((e) => e.fail(`UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE id = 'je-1-l1'`)), [MSG_PII_DOWNGRADE, MSG_LINE_UPDATE]);
     const changes: readonly string[] = [
       `description_enc = 'v1:a:z'`,
       'debit_cents = 120001',
@@ -422,18 +438,18 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
     expectSame(await dual.onBoth((e) => e.fail(`DELETE FROM journal_entry_lines WHERE id = 'je-1-l1'`)), MSG_LINE_DELETE);
   });
 
-  it('ligne d\'une pièce non POSTED : drapeau libre', async () => {
+  it('ligne d\'une pièce non POSTED : drapeau monotone (0 vers 1 accepté, 1 vers 0 refusé)', async () => {
     await seedBoth(simpleEntry('je-d', 2, 'jrn-vte', 'acc-3421', 'acc-7111', 700));
     for (const engine of dual.engines()) {
       await engine.run(`UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE id = 'je-d-l1'`);
-      await engine.run(`UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE id = 'je-d-l1'`);
     }
+    expectSame(await dual.onBoth((e) => e.fail(`UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE id = 'je-d-l1'`)), MSG_PII_DOWNGRADE);
     const [lite, pg] = await dual.onBoth((e) => e.rows(`SELECT pii_restricted_flag FROM journal_entry_lines WHERE id = 'je-d-l1'`));
-    expect(lite).toEqual([{ pii_restricted_flag: 0 }]);
+    expect(lite).toEqual([{ pii_restricted_flag: 1 }]);
     expect(pg).toEqual(lite);
   });
 
-  it('invoices : aucun trigger d\'immuabilité n\'existe sur cette table, donc aucun n\'est modifié ; pii_restricted_flag y reste libre', async () => {
+  it('invoices : la v4 n\'y ajoute aucun trigger d\'immuabilité (seul le trigger monotone de la v6 y existe) ; pii_restricted_flag peut être levé', async () => {
     await seedBoth([['fiscal_partners', partnerRow()], ['invoices', invoiceRow()]]);
     for (const engine of dual.engines()) {
       await engine.run(`UPDATE invoices SET pii_restricted_flag = 1 WHERE id = 'inv-1'`);
@@ -443,7 +459,7 @@ describe('2. pii_restricted_flag : montée monotone 0 vers 1, seule modification
        WHERE n.nspname = $1 AND NOT t.tgisinternal AND c.relname = 'invoices'`,
       [SCHEMA],
     );
-    expect(triggers.rows).toEqual([]);
+    expect(triggers.rows).toEqual([{ tgname: 'prevent_pii_flag_downgrade_invoices' }]);
   });
 });
 

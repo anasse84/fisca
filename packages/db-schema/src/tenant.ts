@@ -1496,10 +1496,60 @@ const MIGRATION_5_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.
 
 const MIGRATION_5_TRIGGER_NAMES: readonly string[] = MIGRATION_5_TRIGGERS.flatMap((trigger) => (trigger.trigger === undefined ? [] : [trigger.trigger]));
 
+// ---------------------------------------------------------------------------
+// Migration v6 (T-S1B-05 et T-S1B-03) : correction du pilote, pii_restricted_flag MONOTONE sur toutes les tables porteuses
+// (Doc_11 § 06 : un drapeau levé par erreur ou par malveillance ne doit jamais faire perdre la restriction fiscale décennale).
+// Les migrations v1 à v5 restent intactes (empreintes figées par test).
+//
+// 1. Tables porteuses : invoices (v1), journal_entries et journal_entry_lines (v3), payroll_annual_subledger et archival_packages
+//    (v5). La règle du pilote est la montée monotone PARTOUT : 0 vers 1 seulement, que la ligne soit POSTED, scellée ou libre.
+// 2. Cinq triggers BEFORE UPDATE `prevent_pii_flag_downgrade_*` (invoices, payroll, journal_entries, journal_entry_lines,
+//    archival_packages) : refus de 1 vers 0 seul, sans condition de statut. 0 vers 1 et 1 vers 1 passent, y compris combinés à
+//    une autre modification : le reste de la ligne reste régi par ses règles propres (celles de v4 et v5 sur POSTED et scellé,
+//    aucune sur la paie ni sur les lignes libres). Texte commun aux cinq tables, identique sur SQLite (RAISE(ABORT)) et
+//    PostgreSQL (RAISE EXCEPTION, SQLSTATE P0001).
+// 3. Les triggers de v4 et v5 ne sont pas retouchés : sur une ligne POSTED ou scellée, un UPDATE qui cumule 1 vers 0 et une autre
+//    violation reçoit le texte du premier trigger exécuté (ordre propre à chaque moteur, voir tests/tenant-v6.test.ts).
+// 4. Option (b) POS : la couverture colonne par colonne (tests/tenant-v6.test.ts) n'a révélé aucune colonne non comparée dans
+//    `prevent_pos_ticket_update` ni `prevent_pos_z_closure_update` ; la v6 ne les remplace donc pas.
+// ---------------------------------------------------------------------------
+export const TENANT_V6_TRIGGER_MESSAGES = {
+  piiFlagDowngrade: 'VIOLATION_CNDP_LOI_09_08_ART_211: Restriction fiscale irréversible : pii_restricted_flag ne peut pas redescendre de 1 à 0.',
+} as const;
+
+/** Refus de la seule descente 1 vers 0 (colonne NOT NULL : `IS NOT` côté SQLite, `IS DISTINCT FROM` côté PostgreSQL). */
+function piiFlagDowngradeTrigger(name: string, table: string): MigrationStatement {
+  return createGuardedTrigger(
+    name,
+    'UPDATE',
+    table,
+    'OLD.pii_restricted_flag = 1 AND NEW.pii_restricted_flag IS NOT 1',
+    'OLD.pii_restricted_flag = 1 AND NEW.pii_restricted_flag IS DISTINCT FROM 1',
+    TENANT_V6_TRIGGER_MESSAGES.piiFlagDowngrade,
+  );
+}
+
+const MIGRATION_6_TRIGGERS: readonly MigrationStatement[] = [
+  piiFlagDowngradeTrigger('prevent_pii_flag_downgrade_invoices', 'invoices'),
+  piiFlagDowngradeTrigger('prevent_pii_flag_downgrade_payroll', 'payroll_annual_subledger'),
+  piiFlagDowngradeTrigger('prevent_pii_flag_downgrade_journal_entries', 'journal_entries'),
+  piiFlagDowngradeTrigger('prevent_pii_flag_downgrade_journal_entry_lines', 'journal_entry_lines'),
+  piiFlagDowngradeTrigger('prevent_pii_flag_downgrade_archival_packages', 'archival_packages'),
+];
+
+const MIGRATION_6_STATEMENTS: readonly string[] = MIGRATION_6_TRIGGERS.map((trigger) => trigger.sqlite);
+
+const MIGRATION_6_POSTGRES_OVERRIDES: Readonly<Record<number, string>> = Object.fromEntries(
+  MIGRATION_6_TRIGGERS.map((trigger, index): [number, string] => [index, trigger.postgres]),
+);
+
+const MIGRATION_6_TRIGGER_NAMES: readonly string[] = MIGRATION_6_TRIGGERS.flatMap((trigger) => (trigger.trigger === undefined ? [] : [trigger.trigger]));
+
 /**
  * Migrations versionnées de TENANT_DB, dans l'ordre d'application.
  * IMMUABLES une fois appliquées : la v3 (T-S1B-04, grand livre) a été AJOUTÉE sans toucher aux versions 1 et 2 ;
- * la v5 (T-S1B-05, sous-livres, paie 9421, coffre AIP) est AJOUTÉE sans toucher aux versions 1 à 4.
+ * la v5 (T-S1B-05, sous-livres, paie 9421, coffre AIP) est AJOUTÉE sans toucher aux versions 1 à 4 ;
+ * la v6 (drapeau pii_restricted_flag monotone sur les 5 tables porteuses) est AJOUTÉE sans toucher aux versions 1 à 5.
  */
 export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
   {
@@ -1550,6 +1600,16 @@ export const TENANT_MIGRATIONS: readonly TenantMigration[] = [
     indexNames: MIGRATION_5_INDEXES.map(([name]) => name),
     triggerNames: MIGRATION_5_TRIGGER_NAMES,
     postgresOverrides: MIGRATION_5_POSTGRES_OVERRIDES,
+  },
+  {
+    version: 6,
+    name: 'tenant_part6_pii_flag_monotone_all_tables',
+    upSqlStatements: MIGRATION_6_STATEMENTS,
+    expectedSha256Hex: '6750637f3351826b8cf4ecf816f46b232b41aad00bb7026c82c99ae86cd5b25f',
+    tableNames: [],
+    indexNames: [],
+    triggerNames: MIGRATION_6_TRIGGER_NAMES,
+    postgresOverrides: MIGRATION_6_POSTGRES_OVERRIDES,
   },
 ];
 

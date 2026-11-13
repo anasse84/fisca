@@ -53,6 +53,7 @@ const FROZEN_SHA256 = [
 /** Empreinte figée de la v5 : toute modification de son DDL est une nouvelle migration, pas une retouche. */
 const V5_SHA256 = 'b6c338fcb3808b9cc210fd73981a3f628e8d7148910de8a2d0c12a77ec1de295';
 
+const MSG_PII_DOWNGRADE = 'VIOLATION_CNDP_LOI_09_08_ART_211: Restriction fiscale irréversible : pii_restricted_flag ne peut pas redescendre de 1 à 0.';
 const MSG_WORM_DELETE = 'VIOLATION_SAE_CGI_ART_211: Destruction interdite avant expiration des 10 ans.';
 const MSG_WORM_UPDATE = 'VIOLATION_SAE_ISO_14641: Altération interdite sur une unité d archive scellée.';
 
@@ -169,6 +170,14 @@ function expectSame(results: readonly [Failure, Failure], message: string): void
   expect(results[1].code).toBe(RAISED);
 }
 
+/** Cumul 1 vers 0 + règle POSTED/scellé : l'un ou l'autre des deux textes déterministes (l'ordre d'exécution des triggers dépend du moteur). */
+function expectEither(results: readonly [Failure, Failure], messages: readonly string[]): void {
+  expect(messages).toContain(results[0].message);
+  expect(messages).toContain(results[1].message);
+  expect(results[0].code).toBeNull();
+  expect(results[1].code).toBe(RAISED);
+}
+
 async function bothCount(sql: string): Promise<readonly [number, number]> {
   const [lite, pg] = await dual.onBoth((e) => e.rows(sql));
   return [Number(lite[0]?.['n']), Number(pg[0]?.['n'])];
@@ -182,7 +191,8 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
   const v5 = TENANT_MIGRATIONS[4];
 
   it('est la cinquième migration ; les empreintes de v1 à v4 sont inchangées (recalculées)', () => {
-    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5]);
+    // La v6 (correction du pilote sur pii_restricted_flag) s'ajoute après la v5 sans la toucher.
+    expect(TENANT_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(v5?.name).toBe('tenant_part5_subledgers_payroll_9421_archival_worm');
     for (const [index, expected] of FROZEN_SHA256.entries()) {
       const migration = TENANT_MIGRATIONS[index];
@@ -204,8 +214,9 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
     expect(v5?.viewNames ?? []).toEqual([]);
     expect(TENANT_TABLE_NAMES.slice(-8)).toEqual([...V5_TABLES]);
     expect(TENANT_INDEX_NAMES.slice(-2)).toEqual([...V5_INDEXES]);
-    expect(TENANT_TRIGGER_NAMES.slice(-2)).toEqual([...V5_TRIGGERS]);
-    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-2)).toEqual([...V5_TRIGGERS]);
+    // Les cinq triggers de la v6 suivent ceux de la v5 dans le registre.
+    expect(TENANT_TRIGGER_NAMES.slice(-7, -5)).toEqual([...V5_TRIGGERS]);
+    expect(TENANT_POSTGRES_TRIGGER_NAMES.slice(-7, -5)).toEqual([...V5_TRIGGERS]);
   });
 
   it('la v4 ne crée toujours aucune table ; payroll_annual_subledger et archival_packages naissent en v5', () => {
@@ -273,7 +284,7 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
     }
     const pgTriggers = await client.query(
       `SELECT t.tgname, c.relname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
-       WHERE n.nspname = $1 AND NOT t.tgisinternal AND c.relname = ANY($2) ORDER BY t.tgname`,
+       WHERE n.nspname = $1 AND NOT t.tgisinternal AND c.relname = ANY($2) AND t.tgname LIKE 'enforce\\_10year%' ORDER BY t.tgname`,
       [SCHEMA, [...V5_TABLES]],
     );
     expect(pgTriggers.rows).toEqual([
@@ -285,7 +296,7 @@ describe('migration v5 : forme, immuabilité de v1 à v4, objets créés', () =>
       'enforce_10year_worm_retention_delete@archival_packages',
       'enforce_10year_worm_retention_update@archival_packages',
     ]);
-    const others = all(openTenant(), `SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND tbl_name IN (${V5_TABLES.filter((t) => t !== 'archival_packages').map(() => '?').join(', ')})`, ...V5_TABLES.filter((t) => t !== 'archival_packages'));
+    const others = all(openTenant(), `SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND name NOT LIKE 'prevent\\_pii\\_flag%' ESCAPE '\\' AND tbl_name IN (${V5_TABLES.filter((t) => t !== 'archival_packages').map(() => '?').join(', ')})`, ...V5_TABLES.filter((t) => t !== 'archival_packages'));
     expect(others).toEqual([{ n: 0 }]);
   });
 });
@@ -542,7 +553,7 @@ describe('archival_packages : rétention décennale WORM (DELETE) et scellement 
 
   it('descente 1 vers 0 refusée sur une ligne scellée, même texte ; le drapeau reste à 1', async () => {
     await seedBoth([['archival_packages', sealedArchivalRow({ pii_restricted_flag: 1 })]]);
-    expectSame(await dual.onBoth((e) => e.fail(`UPDATE archival_packages SET pii_restricted_flag = 0 WHERE aip_id = 'aip-1'`)), MSG_WORM_UPDATE);
+    expectEither(await dual.onBoth((e) => e.fail(`UPDATE archival_packages SET pii_restricted_flag = 0 WHERE aip_id = 'aip-1'`)), [MSG_PII_DOWNGRADE, MSG_WORM_UPDATE]);
     expect((await flags('aip-1'))[0][0]?.['pii_restricted_flag']).toBe(1);
     expect((await flags('aip-1'))[1][0]?.['pii_restricted_flag']).toBe(1);
   });
@@ -580,16 +591,19 @@ describe('archival_packages : rétention décennale WORM (DELETE) et scellement 
     expect(pg.code).toBe(CHECK_VIOLATION);
   });
 
-  it('ligne non scellée (merkle_batch_id NULL) : toute modification admise (Doc_06), drapeau libre dans les deux sens ; le scellement lui-même est un UPDATE', async () => {
+  it('ligne non scellée (merkle_batch_id NULL) : toute modification admise (Doc_06) hors drapeau, monotone (1 vers 0 refusé) ; le scellement lui-même est un UPDATE', async () => {
     await seedBoth([['archival_packages', archivalRow()]]);
     for (const engine of dual.engines()) {
       await engine.run(`UPDATE archival_packages SET pii_restricted_flag = 1 WHERE aip_id = 'aip-1'`);
-      await engine.run(`UPDATE archival_packages SET pii_restricted_flag = 0, document_ref = 'DOC-BIS' WHERE aip_id = 'aip-1'`);
+      await engine.run(`UPDATE archival_packages SET pii_restricted_flag = 1, document_ref = 'DOC-BIS' WHERE aip_id = 'aip-1'`);
       await engine.run(`UPDATE archival_packages SET payload_sha256 = '${'c'.repeat(64)}' WHERE aip_id = 'aip-1'`);
+    }
+    expectSame(await dual.onBoth((e) => e.fail(`UPDATE archival_packages SET pii_restricted_flag = 0 WHERE aip_id = 'aip-1'`)), MSG_PII_DOWNGRADE);
+    for (const engine of dual.engines()) {
       await engine.run(`UPDATE archival_packages SET merkle_batch_id = 'batch-9', merkle_leaf_index = 3, merkle_proof_json = '[]' WHERE aip_id = 'aip-1'`);
     }
     const [lite, pg] = await flags('aip-1');
-    expect(lite).toEqual([{ pii_restricted_flag: 0, payload_sha256: 'c'.repeat(64), merkle_batch_id: 'batch-9', document_ref: 'DOC-BIS' }]);
+    expect(lite).toEqual([{ pii_restricted_flag: 1, payload_sha256: 'c'.repeat(64), merkle_batch_id: 'batch-9', document_ref: 'DOC-BIS' }]);
     expect(pg).toEqual(lite);
     expectSame(await dual.onBoth((e) => e.fail(`UPDATE archival_packages SET payload_sha256 = '${'d'.repeat(64)}' WHERE aip_id = 'aip-1'`)), MSG_WORM_UPDATE);
   });

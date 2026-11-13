@@ -65,6 +65,7 @@ const TRIGGERS = [
 ] as const;
 
 /** Textes de RAISE de Doc_06 § 05 (les cinq premiers) et du trigger D-03 ; identiques sous PostgreSQL (tenant-postgres.test.ts). */
+const MSG_PII_DOWNGRADE = 'VIOLATION_CNDP_LOI_09_08_ART_211: Restriction fiscale irréversible : pii_restricted_flag ne peut pas redescendre de 1 à 0.';
 const MSG_ENTRY_UPDATE = 'VIOLATION_PAF_CGI_ART_145: Écriture validée immuable. Utilisez une contre-passation.';
 const MSG_ENTRY_DELETE = 'VIOLATION_PAF_CGI_ART_145: Suppression interdite sur le Grand Livre.';
 const MSG_LINE_UPDATE = 'VIOLATION_PAF_CGI_ART_145: Modification de ligne interdite sur pièce POSTED.';
@@ -258,10 +259,10 @@ describe('pii_restricted_flag sur le grand livre (ERRATA D-19, Doc_11 § 06)', (
     insertRows(db, simpleEntry('je-a', 1, 'jrn-vte', 'acc-3421', 'acc-7111', 5000));
     db.prepare(`UPDATE journal_entries SET pii_restricted_flag = 1 WHERE id = 'je-a'`).run();
     post(db, 'je-a');
-    expect(messageOf(db, `UPDATE journal_entries SET pii_restricted_flag = 0 WHERE id = 'je-a'`, [])).toBe(MSG_ENTRY_UPDATE);
+    expect([MSG_PII_DOWNGRADE, MSG_ENTRY_UPDATE]).toContain(messageOf(db, `UPDATE journal_entries SET pii_restricted_flag = 0 WHERE id = 'je-a'`, []));
     // Migration v4 (décision du pilote) : la montée 0 vers 1 d'une ligne POSTED est admise (DSAR), la descente reste refusée.
     db.prepare(`UPDATE journal_entry_lines SET pii_restricted_flag = 1 WHERE entry_id = 'je-a'`).run();
-    expect(messageOf(db, `UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE entry_id = 'je-a'`, [])).toBe(MSG_LINE_UPDATE);
+    expect([MSG_PII_DOWNGRADE, MSG_LINE_UPDATE]).toContain(messageOf(db, `UPDATE journal_entry_lines SET pii_restricted_flag = 0 WHERE entry_id = 'je-a'`, []));
     expect(all(db, `SELECT pii_restricted_flag AS f FROM journal_entries WHERE id = 'je-a'`)).toEqual([{ f: 1 }]);
   });
 });
