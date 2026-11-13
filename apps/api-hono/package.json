@@ -29,5 +29,9 @@
     "@fisca/pra-reversibility": "workspace:*",
     "@fisca/ui-mercury": "workspace:*",
     "@fisca/i18n": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
   }
 }

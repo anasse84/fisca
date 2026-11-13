@@ -89,6 +89,13 @@ importers:
       '@fisca/vault-merkle':
         specifier: workspace:*
         version: link:../../packages/vault-merkle
+    devDependencies:
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
 
   apps/marketing-astro: {}
 
