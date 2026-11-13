@@ -7,41 +7,14 @@
  * d'évaluation, un ensemble explicite `permissionCeiling`. Une action absente de cet ensemble est refusée quelle que soit la
  * décision de `evaluateAccessPolicy` ; le refus porte le MÊME code que le refus RBAC. Appartenance directe : `null`, aucun plafond.
  *
- * SEAM_REQUEST (auth-rbac, non modifié ici) : `packages/auth-rbac/src/policy-engine.ts` n'exporte pas `ROLE_PERMISSIONS`. Les
- * permissions d'un rôle sont donc dérivées par sondage de `evaluateAccessPolicy` (contexte neutre satisfaisant l'ABAC). Export voulu :
- * `ROLE_PERMISSIONS` (ou `permissionsOfRole(role)`).
+ * Les permissions d'un rôle viennent de `permissionsOfRole` (auth-rbac, jonction livrée par S1A) : plus de sondage.
  */
-import { evaluateAccessPolicy, PERMISSION_ACTIONS, type AuthorizationContext, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
+import { permissionsOfRole, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
 import { LedgerError } from './ledger-errors.ts';
 
-/** Contexte neutre : tous les contrôles ABAC / SoD sont satisfaits, seule la matrice RBAC du rôle décide. */
-function probeContext(role: RoleCode): AuthorizationContext {
-  return {
-    actorId: 'permission-probe',
-    role,
-    companyId: 'probe-company',
-    assignedCompanyIds: ['probe-company'],
-    orgPlanSegment: 'FIDUCIAIRE',
-    activeHumanMembersCount: 5,
-    subscriptionReadOnly: false,
-    fiscalYearClosed: false,
-    canAccessPayrollPii: true,
-    mfaVerifiedAtEpochSec: 1000,
-    nowEpochSec: 1000,
-  };
-}
-
-const probed = new Map<RoleCode, ReadonlySet<PermissionAction>>();
-
-/** Permissions d'un rôle, par sondage de `evaluateAccessPolicy` (mémorisé). */
+/** Permissions d'un rôle (lecture directe de la matrice d'auth-rbac). */
 export function probeRolePermissions(role: RoleCode): ReadonlySet<PermissionAction> {
-  const known = probed.get(role);
-  if (known !== undefined) {
-    return known;
-  }
-  const permissions: ReadonlySet<PermissionAction> = new Set(PERMISSION_ACTIONS.filter((action) => evaluateAccessPolicy(action, probeContext(role)).allowed));
-  probed.set(role, permissions);
-  return permissions;
+  return permissionsOfRole(role);
 }
 
 /** Intersection des permissions de deux rôles. */
