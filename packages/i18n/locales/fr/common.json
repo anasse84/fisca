@@ -200,6 +200,119 @@
           "generic": "Valeur invalide."
         }
       }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "Trésorerie et TVA"
+      },
+      "chart": {
+        "title": "Courbe de trésorerie et TVA sur 90 jours",
+        "summary": "Courbe du {from} au {to}. Point le plus bas : {min} le {minDate}. Point le plus haut : {max} le {maxDate}.",
+        "settledLegend": "Encaissements bancaires lettrés",
+        "forecastLegend": "Prévision à 90 jours (pointillés)",
+        "vatLegend": "TVA à provisionner",
+        "cursorLabel": "Date affichée dans la lecture",
+        "cursorReadout": "{date} — encaissé : {settled} ; prévision : {forecast} ; TVA : {vat}",
+        "noValue": "Aucune valeur",
+        "asOf": "Situation au {date}",
+        "table": {
+          "summary": "Afficher le tableau de données",
+          "caption": "Trésorerie et TVA, jour par jour",
+          "date": "Date",
+          "settled": "Encaissé (lettré)",
+          "forecast": "Prévision",
+          "vat": "TVA provisionnée"
+        }
+      },
+      "vatDue": {
+        "title": "Échéances de TVA prévues"
+      },
+      "severity": {
+        "info": "Information",
+        "warning": "Attention",
+        "danger": "Alerte critique"
+      },
+      "banner": {
+        "region": "Règles fiscales applicables",
+        "rule": "Règle",
+        "effective": "En vigueur depuis le",
+        "reference": "Référence"
+      },
+      "rule": {
+        "cashCeiling": "Paiement en espèces : au-delà du plafond de {threshold}, l’écriture d’achat doit être scindée.",
+        "rasTvaExpired": "L’attestation de retenue à la source de TVA est expirée.",
+        "autoEntrepreneurThreshold": "Votre chiffre d’affaires approche le seuil de {threshold} du régime auto-entrepreneur.",
+        "cashLowBalance": "Le solde de caisse est proche de zéro : {balance} disponible."
+      },
+      "invoice": {
+        "title": "Nouvelle facture",
+        "invoiceDate": "Date de la facture",
+        "customerSection": "Client",
+        "customerNameFr": "Raison sociale du client (français)",
+        "customerNameAr": "Raison sociale du client (arabe)",
+        "customerIce": "ICE du client",
+        "linesSection": "Lignes de la facture",
+        "line": {
+          "title": "Ligne {n}",
+          "designationFr": "Désignation (français)",
+          "designationAr": "Désignation (arabe)",
+          "quantity": "Quantité",
+          "unitPrice": "Prix unitaire HT (MAD)",
+          "vatRate": "Taux de TVA",
+          "total": "Total HT de la ligne"
+        },
+        "ratePlaceholder": "Choisir un taux",
+        "ratesUnavailable": "La liste des taux de TVA est indisponible : l’enregistrement est bloqué.",
+        "addLine": "Ajouter une ligne",
+        "removeLine": "Supprimer la ligne {n}",
+        "totals": {
+          "title": "Totaux",
+          "totalHt": "Total HT",
+          "totalVat": "Total TVA",
+          "totalTtc": "Total TTC",
+          "byRate": "Ventilation par taux",
+          "baseHt": "Base HT"
+        },
+        "saveDraft": "Enregistrer le brouillon",
+        "saved": "Brouillon enregistré (non validé)",
+        "saveFailed": "L’enregistrement du brouillon a échoué. Réessayez.",
+        "errors": {
+          "designation": "Saisissez une désignation en français ou en arabe.",
+          "quantity": "Quantité invalide : nombre positif, trois décimales au plus.",
+          "unitPrice": "Prix invalide : montant en dirhams, deux décimales au plus.",
+          "rate": "Choisissez un taux de TVA dans la liste.",
+          "ice": "L’ICE doit comporter exactement 15 chiffres.",
+          "noLines": "Ajoutez au moins une ligne complète."
+        }
+      },
+      "preview": {
+        "title": "Aperçu bilingue (français / arabe)",
+        "invoice": "Facture",
+        "number": "N° de facture",
+        "numberPending": "Numéro attribué à la validation",
+        "date": "Date",
+        "seller": "Émetteur",
+        "customer": "Client",
+        "name": "Raison sociale",
+        "legalForm": "Forme juridique",
+        "capital": "Capital social",
+        "address": "Adresse",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "Désignation",
+        "quantity": "Quantité",
+        "unitPrice": "Prix unitaire HT",
+        "vatRate": "Taux TVA",
+        "lineTotal": "Total HT",
+        "baseHt": "Base HT",
+        "vat": "TVA",
+        "totalHt": "Total HT",
+        "totalVat": "Total TVA",
+        "totalTtc": "Total TTC",
+        "legalReason": "Motif légal",
+        "arrete": "Arrêtée la présente facture à la somme de :"
+      }
     }
   }
 }

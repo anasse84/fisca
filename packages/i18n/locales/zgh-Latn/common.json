@@ -200,6 +200,119 @@
           "generic": "Azal ɣalaṭ."
         }
       }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "Idrimen d TVA"
+      },
+      "chart": {
+        "title": "Azrar n yidrimen d TVA deg 90 n wussan",
+        "summary": "Azrar seg {from} ar {to}. Tanqeṭt taddayt: {min} deg {minDate}. Tanqeṭt n ufella: {max} deg {maxDate}.",
+        "settledLegend": "Idrimen n ubanka yettwaqqnen",
+        "forecastLegend": "Tamuɣli n zdat n 90 n wussan",
+        "vatLegend": "TVA ara yettwaḥḍen",
+        "cursorLabel": "Azemz yettwaskan",
+        "cursorReadout": "{date} — yettwaḥṣel: {settled} ; tamuɣli: {forecast} ; TVA: {vat}",
+        "noValue": "Ulac azal",
+        "asOf": "Addad deg {date}",
+        "table": {
+          "summary": "Sken tafelwit n yisefka",
+          "caption": "Idrimen d TVA, ass s ass",
+          "date": "Azemz",
+          "settled": "Yettwaḥṣel (yettwaqqen)",
+          "forecast": "Tamuɣli n zdat",
+          "vat": "TVA yettwaḥḍen"
+        }
+      },
+      "vatDue": {
+        "title": "Izemzen n TVA i d-iteddun"
+      },
+      "severity": {
+        "info": "Talɣut",
+        "warning": "Ɣur-k",
+        "danger": "Ugur ameqqran"
+      },
+      "banner": {
+        "region": "Ilugan n CGI i yettwaseqdacen",
+        "rule": "Alugan",
+        "effective": "Yettwaseqdac seg",
+        "reference": "Aɣbalu"
+      },
+      "rule": {
+        "cashCeiling": "Asellek s idrimen n ufus: ma yeɛda {threshold}, ilaq ad yettwabḍu unaruz n uchat.",
+        "rasTvaExpired": "Tazmilt n RAS-TVA tekfa.",
+        "autoEntrepreneurThreshold": "Amatu n yidrimen-nnek yeqreb ɣer {threshold} n unagraw n umeskar-iman.",
+        "cashLowBalance": "Ujeddig n tqasa yeqreb ɣer ulac: {balance} i yellan."
+      },
+      "invoice": {
+        "title": "Tafaturt tamaynut",
+        "invoiceDate": "Azemz n tfaturt",
+        "customerSection": "Aklyan",
+        "customerNameFr": "Isem n uklyan (s tefransist)",
+        "customerNameAr": "Isem n uklyan (s taɛrabt)",
+        "customerIce": "ICE n uklyan",
+        "linesSection": "Izirigen n tfaturt",
+        "line": {
+          "title": "Izirig {n}",
+          "designationFr": "Aglam (s tefransist)",
+          "designationAr": "Aglam (s taɛrabt)",
+          "quantity": "Acḥal",
+          "unitPrice": "Azal n yiwen HT (MAD)",
+          "vatRate": "Azal n TVA",
+          "total": "Amatu HT n yizirig"
+        },
+        "ratePlaceholder": "Fren azal",
+        "ratesUnavailable": "Tabdart n yizulen n TVA ulac-itt: asekles yettwagdel.",
+        "addLine": "Rnu izirig",
+        "removeLine": "Kkes izirig {n}",
+        "totals": {
+          "title": "Imatuten",
+          "totalHt": "Amatu HT",
+          "totalVat": "Amatu n TVA",
+          "totalTtc": "Amatu TTC",
+          "byRate": "Aḍraf s yizulen",
+          "baseHt": "Aɣbalu HT"
+        },
+        "saveDraft": "Ḥfeḍ arewwaq",
+        "saved": "Arewwaq yettwaḥfeḍ (ur yettwasentem ara)",
+        "saveFailed": "Asekles n warewwaq ur yeddi ara. Ɛreḍ-it i tikelt-nniḍen.",
+        "errors": {
+          "designation": "Sekcem aglam s tefransist neɣ s taɛrabt.",
+          "quantity": "Acḥal ur yelhi ara: amḍan igar ulac, kraḍ n tecrad ar aktar.",
+          "unitPrice": "Azal ur yelhi ara: amḍan s idrimen, sin n tecrad ar aktar.",
+          "rate": "Fren azal n TVA seg tebdart.",
+          "ice": "ICE ilaq ad yesɛu 15 n yimḍanen kan.",
+          "noLines": "Rnu yiwen n yizirig ummid ar aqlal."
+        }
+      },
+      "preview": {
+        "title": "Taskant s snat n tutlayin (tafransist / taɛrabt)",
+        "invoice": "Tafaturt",
+        "number": "Uṭṭun n tfaturt",
+        "numberPending": "Uṭṭun ara yettwabder deg usentem",
+        "date": "Azemz",
+        "seller": "Ameskar",
+        "customer": "Aklyan",
+        "name": "Isem n tkebbanit",
+        "legalForm": "Talɣa tasertit",
+        "capital": "Ṛṛas n lmal",
+        "address": "Tansa",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "Aglam",
+        "quantity": "Acḥal",
+        "unitPrice": "Azal n yiwen HT",
+        "vatRate": "Azal TVA",
+        "lineTotal": "Amatu HT",
+        "baseHt": "Aɣbalu HT",
+        "vat": "Amur n TVA",
+        "totalHt": "Amatu HT",
+        "totalVat": "Amatu n TVA",
+        "totalTtc": "Amatu TTC",
+        "legalReason": "Ssebba tasertit",
+        "arrete": "Tafaturt-a tettwaḥbes ɣer umur n:"
+      }
     }
   }
 }

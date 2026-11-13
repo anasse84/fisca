@@ -200,6 +200,119 @@
           "generic": "Invalid value."
         }
       }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "Cash flow and VAT"
+      },
+      "chart": {
+        "title": "90-day cash flow and VAT curve",
+        "summary": "Curve from {from} to {to}. Lowest point: {min} on {minDate}. Highest point: {max} on {maxDate}.",
+        "settledLegend": "Reconciled bank receipts",
+        "forecastLegend": "90-day forecast (dashed)",
+        "vatLegend": "VAT to provision",
+        "cursorLabel": "Selected date",
+        "cursorReadout": "{date} — received: {settled}; forecast: {forecast}; VAT: {vat}",
+        "noValue": "No value",
+        "asOf": "As of {date}",
+        "table": {
+          "summary": "Show the data table",
+          "caption": "Cash flow and VAT, day by day",
+          "date": "Date",
+          "settled": "Received (reconciled)",
+          "forecast": "Forecast",
+          "vat": "VAT provisioned"
+        }
+      },
+      "vatDue": {
+        "title": "Expected VAT due dates"
+      },
+      "severity": {
+        "info": "Notice",
+        "warning": "Warning",
+        "danger": "Critical alert"
+      },
+      "banner": {
+        "region": "Applicable tax rules",
+        "rule": "Rule",
+        "effective": "Effective since",
+        "reference": "Reference"
+      },
+      "rule": {
+        "cashCeiling": "Cash payment: above the ceiling of {threshold}, the purchase entry must be split.",
+        "rasTvaExpired": "The VAT withholding-at-source attestation has expired.",
+        "autoEntrepreneurThreshold": "Your turnover is approaching the {threshold} auto-entrepreneur threshold.",
+        "cashLowBalance": "The cash balance is close to zero: {balance} available."
+      },
+      "invoice": {
+        "title": "New invoice",
+        "invoiceDate": "Invoice date",
+        "customerSection": "Customer",
+        "customerNameFr": "Customer name (French)",
+        "customerNameAr": "Customer name (Arabic)",
+        "customerIce": "Customer ICE",
+        "linesSection": "Invoice lines",
+        "line": {
+          "title": "Line {n}",
+          "designationFr": "Description (French)",
+          "designationAr": "Description (Arabic)",
+          "quantity": "Quantity",
+          "unitPrice": "Unit price excl. VAT (MAD)",
+          "vatRate": "VAT rate",
+          "total": "Line total excl. VAT"
+        },
+        "ratePlaceholder": "Choose a rate",
+        "ratesUnavailable": "The VAT rate list is unavailable: saving is blocked.",
+        "addLine": "Add a line",
+        "removeLine": "Remove line {n}",
+        "totals": {
+          "title": "Totals",
+          "totalHt": "Total excl. VAT",
+          "totalVat": "Total VAT",
+          "totalTtc": "Total incl. VAT",
+          "byRate": "Breakdown by rate",
+          "baseHt": "Taxable base"
+        },
+        "saveDraft": "Save draft",
+        "saved": "Draft saved (not validated)",
+        "saveFailed": "Saving the draft failed. Try again.",
+        "errors": {
+          "designation": "Enter a description in French or Arabic.",
+          "quantity": "Invalid quantity: positive number, at most three decimals.",
+          "unitPrice": "Invalid price: amount in dirhams, at most two decimals.",
+          "rate": "Choose a VAT rate from the list.",
+          "ice": "The ICE must contain exactly 15 digits.",
+          "noLines": "Add at least one complete line."
+        }
+      },
+      "preview": {
+        "title": "Bilingual preview (French / Arabic)",
+        "invoice": "Invoice",
+        "number": "Invoice no.",
+        "numberPending": "Number assigned at validation",
+        "date": "Date",
+        "seller": "Issuer",
+        "customer": "Customer",
+        "name": "Company name",
+        "legalForm": "Legal form",
+        "capital": "Share capital",
+        "address": "Address",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "Description",
+        "quantity": "Quantity",
+        "unitPrice": "Unit price excl. VAT",
+        "vatRate": "VAT rate",
+        "lineTotal": "Total excl. VAT",
+        "baseHt": "Taxable base",
+        "vat": "VAT",
+        "totalHt": "Total excl. VAT",
+        "totalVat": "Total VAT",
+        "totalTtc": "Total incl. VAT",
+        "legalReason": "Legal reason",
+        "arrete": "This invoice is closed at the sum of:"
+      }
     }
   }
 }

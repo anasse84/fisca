@@ -1,0 +1,680 @@
+/* Espace PME (T-P2B-07) : variables Mercury seulement, propriétés logiques (RTL/LTR).
+   Contraste (décision du pilote) : libellés comptables = --text-primary ; --text-secondary seulement sur .fisca-pme__muted / __hint / __meta ;
+   (les dates et montants des lignes .__meta restent en texte principal : ce sont des données comptables) ;
+   --brand-indigo jamais en texte (trait, focus, curseur). */
+.fisca-pme,
+.fisca-pme *,
+.fisca-pme *::before,
+.fisca-pme *::after {
+  box-sizing: border-box;
+}
+
+.fisca-pme {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-inline-size: 0;
+  max-inline-size: 1200px;
+  margin-inline: auto;
+  padding-block: 16px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", "Noto Sans Tifinagh", sans-serif;
+  line-height: 1.5;
+}
+
+.fisca-pme__h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme__h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme__meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.fisca-pme__muted,
+.fisca-pme__hint {
+  color: var(--text-secondary);
+}
+
+.fisca-pme__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fisca-pme :focus-visible {
+  outline: 3px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+.fisca-pme__h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.fisca-pme .fisca-tabular-num {
+  white-space: nowrap;
+}
+
+/* ---- États ---- */
+.fisca-pme__state {
+  margin: 0;
+  padding-block: 12px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme__state--error {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger-text);
+}
+
+.fisca-pme__notice {
+  margin: 0;
+  padding-block: 8px;
+  padding-inline: 12px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme__badge {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 28px;
+  padding-inline: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-border);
+  border-radius: 6px;
+}
+
+/* ---- Boutons et champs : cibles de 44 px ---- */
+.fisca-pme__button {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding-inline: 16px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-pme__button--primary {
+  color: var(--bg-surface);
+  background: var(--brand-emerald);
+  border-color: var(--brand-emerald);
+}
+
+.fisca-pme__button--secondary,
+.fisca-pme__button--quiet {
+  background: var(--bg-subtle);
+}
+
+.fisca-pme__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fisca-pme__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fisca-pme__input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding-inline: 12px;
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme__input[aria-invalid="true"] {
+  border-color: var(--status-danger-text);
+  border-width: 2px;
+}
+
+.fisca-pme__error {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--status-danger-text);
+}
+
+/* ---- Formulaire ---- */
+.fisca-pme__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fisca-pme__fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  min-inline-size: 0;
+  margin: 0;
+  padding-block: 12px;
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+}
+
+.fisca-pme__legend {
+  padding-inline: 6px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.fisca-pme__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.fisca-pme__field--wide {
+  grid-column: 1 / -1;
+}
+
+.fisca-pme__field--total {
+  justify-content: flex-end;
+}
+
+.fisca-pme__line > .fisca-pme__button {
+  align-self: end;
+}
+
+.fisca-pme__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---- Libellés et valeurs comptables ---- */
+.fisca-pme__acct-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fisca-pme__acct-value {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.fisca-pme__acct-line {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.fisca-pme__totals-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block: 12px;
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+}
+
+.fisca-pme__totals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.fisca-pme__total-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.fisca-pme__total-label {
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.fisca-pme__total-value {
+  margin: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+/* ---- Tableaux ---- */
+.fisca-pme__scroll {
+  position: relative; /* contient les textes masqués .fisca-pme__sr (sinon ils débordent de la page) */
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  max-block-size: 420px;
+  overflow: auto;
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme__table {
+  inline-size: 100%;
+  min-inline-size: 480px;
+  border-collapse: collapse;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.fisca-pme__caption {
+  padding-block: 8px;
+  padding-inline: 12px;
+  font-weight: 650;
+  text-align: start;
+  color: var(--text-primary);
+}
+
+.fisca-pme__th {
+  position: sticky;
+  inset-block-start: 0;
+  padding-block: 8px;
+  padding-inline: 12px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-align: start;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border-block-end: 1px solid var(--line-border);
+}
+
+.fisca-pme__th > span {
+  display: block;
+}
+
+.fisca-pme__total-label > span {
+  display: inline-block;
+  margin-inline-end: 8px;
+}
+
+.fisca-pme__th--num {
+  text-align: end;
+}
+
+.fisca-pme__td {
+  min-block-size: 44px;
+  padding-block: 8px;
+  padding-inline: 12px;
+  text-align: start;
+  font-weight: 400;
+  color: var(--text-primary);
+  border-block-end: 1px solid var(--line-border);
+  vertical-align: top;
+}
+
+.fisca-pme__td--num {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.fisca-pme__td--date {
+  white-space: nowrap;
+}
+
+/* ---- Courbe ---- */
+.fisca-pme__chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-inline-size: 0;
+  padding-block: 16px;
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+}
+
+.fisca-pme__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fisca-pme__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fisca-pme__legend-label {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.fisca-pme__plot {
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.fisca-pme__svg {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+.fisca-pme__stroke-settled {
+  stroke: var(--text-primary);
+  stroke-width: 2.5;
+}
+
+.fisca-pme__stroke-forecast {
+  stroke: var(--brand-indigo);
+  stroke-width: 2.5;
+}
+
+.fisca-pme__stroke-vat {
+  stroke: var(--status-warning-text);
+  stroke-width: 2.5;
+}
+
+.fisca-pme__grid {
+  stroke: var(--line-border);
+  stroke-width: 1;
+}
+
+.fisca-pme__zero {
+  stroke: var(--text-primary);
+  stroke-width: 1;
+  stroke-dasharray: 1 3;
+}
+
+.fisca-pme__tick {
+  font-size: 11px;
+  color: var(--text-primary);
+  fill: currentColor;
+  stroke: var(--bg-surface);
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+.fisca-pme__due {
+  stroke: var(--status-warning-text);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.fisca-pme__due-mark {
+  fill: var(--status-warning-text);
+}
+
+.fisca-pme__cursor {
+  stroke: var(--brand-indigo);
+  stroke-width: 1;
+}
+
+.fisca-pme__dot {
+  fill: var(--bg-surface);
+  stroke: var(--text-primary);
+  stroke-width: 2;
+}
+
+.fisca-pme__cursor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.fisca-pme__range {
+  flex: 1 1 200px;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  accent-color: var(--brand-emerald);
+}
+
+.fisca-pme__readout {
+  margin: 0;
+  min-block-size: 3em;
+  color: var(--text-primary);
+}
+
+.fisca-pme__due-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-primary);
+}
+
+.fisca-pme__due-list li {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.fisca-pme__details {
+  min-inline-size: 0;
+}
+
+.fisca-pme__summary {
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* ---- Bannières CGI ---- */
+.fisca-pme__banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fisca-pme__banner {
+  display: flex;
+  gap: 12px;
+  padding-block: 12px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  border: 1px solid var(--line-border);
+  border-inline-start-width: 6px;
+  border-radius: 8px;
+}
+
+.fisca-pme__banner[data-severity="info"] {
+  background: var(--status-cleared-bg);
+  border-inline-start-color: var(--status-cleared-text);
+}
+
+.fisca-pme__banner[data-severity="warning"] {
+  background: var(--status-warning-bg);
+  border-inline-start-color: var(--status-warning-text);
+}
+
+.fisca-pme__banner[data-severity="danger"] {
+  background: var(--status-danger-bg);
+  border-inline-start-color: var(--status-danger-text);
+}
+
+.fisca-pme__banner-icon {
+  flex: none;
+  color: var(--text-primary);
+}
+
+.fisca-pme__banner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.fisca-pme__banner-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fisca-pme__banner-message {
+  margin: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme__banner-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* ---- Aperçu bilingue (gabarit Section 09) ---- */
+.fisca-pme__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.fisca-pme__guard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.fisca-pme__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-inline-size: 0;
+  padding-block: 16px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+}
+
+.fisca-pme__sheet-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.fisca-pme__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-inline-size: 0;
+  text-align: start;
+}
+
+.fisca-pme__sheet-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fisca-pme__party {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-block-start: 8px;
+  border-block-start: 1px solid var(--line-border);
+}
+
+.fisca-pme__party-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fisca-pme__party-name {
+  margin: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme__dl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.fisca-pme__dl-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme__dl-row dd {
+  margin: 0;
+}
+
+.fisca-pme__arrete {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .fisca-pme__sheet-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fisca-pme__button {
+    transition: background-color 120ms;
+  }
+}

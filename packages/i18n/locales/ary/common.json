@@ -200,6 +200,119 @@
           "generic": "القيمة ماشي صحيحة."
         }
       }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "الخزينة و TVA"
+      },
+      "chart": {
+        "title": "منحنى الخزينة و TVA فـ 90 يوم",
+        "summary": "المنحنى من {from} حتى {to}. أقل نقطة: {min} نهار {minDate}. أعلى نقطة: {max} نهار {maxDate}.",
+        "settledLegend": "المقبوضات البنكية لي تسواو",
+        "forecastLegend": "التوقع على 90 يوم (خط متقطع)",
+        "vatLegend": "TVA لي خاصها تتحط فالمخصص",
+        "cursorLabel": "التاريخ لي ظاهر",
+        "cursorReadout": "{date} — دخل: {settled} ؛ التوقع: {forecast} ؛ TVA: {vat}",
+        "noValue": "بلا قيمة",
+        "asOf": "الوضعية نهار {date}",
+        "table": {
+          "summary": "بين جدول المعطيات",
+          "caption": "الخزينة و TVA نهار بنهار",
+          "date": "التاريخ",
+          "settled": "المقبوض (مسوّى)",
+          "forecast": "التوقع",
+          "vat": "TVA لي تحطات فالمخصص"
+        }
+      },
+      "vatDue": {
+        "title": "المواعيد ديال TVA المتوقعة"
+      },
+      "severity": {
+        "info": "معلومة",
+        "warning": "تنبيه",
+        "danger": "تحذير خطير"
+      },
+      "banner": {
+        "region": "القواعد الضريبية لي كتطبق",
+        "rule": "القاعدة",
+        "effective": "كتطبق من",
+        "reference": "المرجع"
+      },
+      "rule": {
+        "cashCeiling": "الخلاص بالكاش: إلا فاتت السقف ديال {threshold} خاص يتقسم قيد الشراء.",
+        "rasTvaExpired": "شهادة الخصم من المنبع ديال TVA سالات صلاحيتها.",
+        "autoEntrepreneurThreshold": "رقم المعاملات ديالك قريب من العتبة ديال {threshold} د المقاول الذاتي.",
+        "cashLowBalance": "الرصيد د الكيس قريب من الصفر: كاين غير {balance}."
+      },
+      "invoice": {
+        "title": "فاتورة جديدة",
+        "invoiceDate": "تاريخ الفاتورة",
+        "customerSection": "الكليان",
+        "customerNameFr": "سمية الكليان (بالفرنسية)",
+        "customerNameAr": "سمية الكليان (بالعربية)",
+        "customerIce": "ICE د الكليان",
+        "linesSection": "السطور د الفاتورة",
+        "line": {
+          "title": "السطر {n}",
+          "designationFr": "البيان (بالفرنسية)",
+          "designationAr": "البيان (بالعربية)",
+          "quantity": "الكمية",
+          "unitPrice": "الثمن د الوحدة بلا TVA (MAD)",
+          "vatRate": "نسبة TVA",
+          "total": "المجموع د السطر بلا TVA"
+        },
+        "ratePlaceholder": "ختار النسبة",
+        "ratesUnavailable": "لائحة نسب TVA ما كايناش: الحفظ موقوف.",
+        "addLine": "زيد سطر",
+        "removeLine": "مسح السطر {n}",
+        "totals": {
+          "title": "المجاميع",
+          "totalHt": "المجموع بلا TVA",
+          "totalVat": "مجموع TVA",
+          "totalTtc": "المجموع مع TVA",
+          "byRate": "التوزيع على حساب النسب",
+          "baseHt": "الوعاء بلا TVA"
+        },
+        "saveDraft": "سجّل المسودة",
+        "saved": "تسجلات المسودة (ما تحققاتش)",
+        "saveFailed": "ما تسجلاتش المسودة. عاود جرب.",
+        "errors": {
+          "designation": "دخل البيان بالفرنسية ولا بالعربية.",
+          "quantity": "الكمية ما صحيحاش: رقم موجب وتلات د الأرقام من بعد الفاصلة بحد أقصى.",
+          "unitPrice": "الثمن ما صحيحش: مبلغ بالدرهم وجوج د الأرقام من بعد الفاصلة بحد أقصى.",
+          "rate": "ختار نسبة TVA من اللائحة.",
+          "ice": "ICE خاصو يكون فيه 15 رقم بالضبط.",
+          "noLines": "زيد على الأقل سطر كامل."
+        }
+      },
+      "preview": {
+        "title": "معاينة بجوج لغات (فرنسية / عربية)",
+        "invoice": "فاتورة",
+        "number": "نمرة الفاتورة",
+        "numberPending": "النمرة كتعطى فاش كيتحقق",
+        "date": "التاريخ",
+        "seller": "المُصدّر",
+        "customer": "الكليان",
+        "name": "السمية التجارية",
+        "legalForm": "الشكل القانوني",
+        "capital": "راس المال",
+        "address": "العنوان",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "البيان",
+        "quantity": "الكمية",
+        "unitPrice": "الثمن د الوحدة بلا TVA",
+        "vatRate": "نسبة TVA",
+        "lineTotal": "المجموع بلا TVA",
+        "baseHt": "الوعاء بلا TVA",
+        "vat": "الضريبة على القيمة المضافة (TVA)",
+        "totalHt": "المجموع بلا TVA",
+        "totalVat": "مجموع TVA",
+        "totalTtc": "المجموع مع TVA",
+        "legalReason": "السبب القانوني",
+        "arrete": "تحبست هاد الفاتورة فـ مبلغ:"
+      }
     }
   }
 }

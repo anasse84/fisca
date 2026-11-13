@@ -200,6 +200,119 @@
           "generic": "ⴰⵣⴰⵍ ⵖⴰⵍⴰⵟ."
         }
       }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "ⵉⴷⵔⵉⵎⵏ ⴷ TVA"
+      },
+      "chart": {
+        "title": "ⴰⵣⵔⴰⵔ ⵏ ⵢⵉⴷⵔⵉⵎⵏ ⴷ TVA ⴷⴳ 90 ⵏ ⵡⵓⵙⵙⴰⵏ",
+        "summary": "ⴰⵣⵔⴰⵔ ⵙⴳ {from} ⴰⵔ {to}. ⵜⴰⵏⵇⵟⵜ ⵜⴰⴷⴷⴰⵢⵜ: {min} ⴷⴳ {minDate}. ⵜⴰⵏⵇⵟⵜ ⵏ ⵓⴼⵍⵍⴰ: {max} ⴷⴳ {maxDate}.",
+        "settledLegend": "ⵉⴷⵔⵉⵎⵏ ⵏ ⵓⴱⴰⵏⴽⴰ ⵢⵜⵜⵡⴰⵇⵇⵏⵏ",
+        "forecastLegend": "ⵜⴰⵎⵓⵖⵍⵉ ⵏ ⵣⴷⴰⵜ ⵏ 90 ⵏ ⵡⵓⵙⵙⴰⵏ",
+        "vatLegend": "TVA ⴰⵔⴰ ⵢⵜⵜⵡⴰⵃⴹⵏ",
+        "cursorLabel": "ⴰⵣⵎⵣ ⵢⵜⵜⵡⴰⵙⴽⴰⵏ",
+        "cursorReadout": "{date} — ⵢⵜⵜⵡⴰⵃⵚⵍ: {settled} ; ⵜⴰⵎⵓⵖⵍⵉ: {forecast} ; TVA: {vat}",
+        "noValue": "ⵓⵍⴰⵛ ⴰⵣⴰⵍ",
+        "asOf": "ⴰⴷⴷⴰⴷ ⴷⴳ {date}",
+        "table": {
+          "summary": "ⵙⴽⵏ ⵜⴰⴼⵍⵡⵉⵜ ⵏ ⵢⵉⵙⴼⴽⴰ",
+          "caption": "ⵉⴷⵔⵉⵎⵏ ⴷ TVA, ⴰⵙⵙ ⵙ ⴰⵙⵙ",
+          "date": "ⴰⵣⵎⵣ",
+          "settled": "ⵢⵜⵜⵡⴰⵃⵚⵍ (ⵢⵜⵜⵡⴰⵇⵇⵏ)",
+          "forecast": "ⵜⴰⵎⵓⵖⵍⵉ ⵏ ⵣⴷⴰⵜ",
+          "vat": "TVA ⵢⵜⵜⵡⴰⵃⴹⵏ"
+        }
+      },
+      "vatDue": {
+        "title": "ⵉⵣⵎⵣⵏ ⵏ TVA ⵉ ⴷ-ⵉⵜⴷⴷⵓⵏ"
+      },
+      "severity": {
+        "info": "ⵜⴰⵍⵖⵓⵜ",
+        "warning": "ⵖⵓⵔ-ⴽ",
+        "danger": "ⵓⴳⵓⵔ ⴰⵎⵇⵇⵔⴰⵏ"
+      },
+      "banner": {
+        "region": "ⵉⵍⵓⴳⴰⵏ ⵏ CGI ⵉ ⵢⵜⵜⵡⴰⵙⵇⴷⴰⵛⵏ",
+        "rule": "ⴰⵍⵓⴳⴰⵏ",
+        "effective": "ⵢⵜⵜⵡⴰⵙⵇⴷⴰⵛ ⵙⴳ",
+        "reference": "ⴰⵖⴱⴰⵍⵓ"
+      },
+      "rule": {
+        "cashCeiling": "ⴰⵙⵍⵍⴽ ⵙ ⵉⴷⵔⵉⵎⵏ ⵏ ⵓⴼⵓⵙ: ⵎⴰ ⵢⵄⴷⴰ {threshold}, ⵉⵍⴰⵇ ⴰⴷ ⵢⵜⵜⵡⴰⴱⴹⵓ ⵓⵏⴰⵔⵓⵣ ⵏ ⵓⵛⵀⴰⵜ.",
+        "rasTvaExpired": "ⵜⴰⵣⵎⵉⵍⵜ ⵏ RAS-TVA ⵜⴽⴼⴰ.",
+        "autoEntrepreneurThreshold": "ⴰⵎⴰⵜⵓ ⵏ ⵢⵉⴷⵔⵉⵎⵏ-ⵏⵏⴽ ⵢⵇⵔⴱ ⵖⵔ {threshold} ⵏ ⵓⵏⴰⴳⵔⴰⵡ ⵏ ⵓⵎⵙⴽⴰⵔ-ⵉⵎⴰⵏ.",
+        "cashLowBalance": "ⵓⵊⴷⴷⵉⴳ ⵏ ⵜⵇⴰⵙⴰ ⵢⵇⵔⴱ ⵖⵔ ⵓⵍⴰⵛ: {balance} ⵉ ⵢⵍⵍⴰⵏ."
+      },
+      "invoice": {
+        "title": "ⵜⴰⴼⴰⵜⵓⵔⵜ ⵜⴰⵎⴰⵢⵏⵓⵜ",
+        "invoiceDate": "ⴰⵣⵎⵣ ⵏ ⵜⴼⴰⵜⵓⵔⵜ",
+        "customerSection": "ⴰⴽⵍⵢⴰⵏ",
+        "customerNameFr": "ⵉⵙⵎ ⵏ ⵓⴽⵍⵢⴰⵏ (ⵙ ⵜⴼⵔⴰⵏⵙⵉⵙⵜ)",
+        "customerNameAr": "ⵉⵙⵎ ⵏ ⵓⴽⵍⵢⴰⵏ (ⵙ ⵜⴰⵄⵔⴰⴱⵜ)",
+        "customerIce": "ICE ⵏ ⵓⴽⵍⵢⴰⵏ",
+        "linesSection": "ⵉⵣⵉⵔⵉⴳⵏ ⵏ ⵜⴼⴰⵜⵓⵔⵜ",
+        "line": {
+          "title": "ⵉⵣⵉⵔⵉⴳ {n}",
+          "designationFr": "ⴰⴳⵍⴰⵎ (ⵙ ⵜⴼⵔⴰⵏⵙⵉⵙⵜ)",
+          "designationAr": "ⴰⴳⵍⴰⵎ (ⵙ ⵜⴰⵄⵔⴰⴱⵜ)",
+          "quantity": "ⴰⵛⵃⴰⵍ",
+          "unitPrice": "ⴰⵣⴰⵍ ⵏ ⵢⵉⵡⵏ HT (MAD)",
+          "vatRate": "ⴰⵣⴰⵍ ⵏ TVA",
+          "total": "ⴰⵎⴰⵜⵓ HT ⵏ ⵢⵉⵣⵉⵔⵉⴳ"
+        },
+        "ratePlaceholder": "ⴼⵔⵏ ⴰⵣⴰⵍ",
+        "ratesUnavailable": "ⵜⴰⴱⴷⴰⵔⵜ ⵏ ⵢⵉⵣⵓⵍⵏ ⵏ TVA ⵓⵍⴰⵛ-ⵉⵜⵜ: ⴰⵙⴽⵍⵙ ⵢⵜⵜⵡⴰⴳⴷⵍ.",
+        "addLine": "ⵔⵏⵓ ⵉⵣⵉⵔⵉⴳ",
+        "removeLine": "ⴽⴽⵙ ⵉⵣⵉⵔⵉⴳ {n}",
+        "totals": {
+          "title": "ⵉⵎⴰⵜⵓⵜⵏ",
+          "totalHt": "ⴰⵎⴰⵜⵓ HT",
+          "totalVat": "ⴰⵎⴰⵜⵓ ⵏ TVA",
+          "totalTtc": "ⴰⵎⴰⵜⵓ TTC",
+          "byRate": "ⴰⴹⵔⴰⴼ ⵙ ⵢⵉⵣⵓⵍⵏ",
+          "baseHt": "ⴰⵖⴱⴰⵍⵓ HT"
+        },
+        "saveDraft": "ⵃⴼⴹ ⴰⵔⵡⵡⴰⵇ",
+        "saved": "ⴰⵔⵡⵡⴰⵇ ⵢⵜⵜⵡⴰⵃⴼⴹ (ⵓⵔ ⵢⵜⵜⵡⴰⵙⵏⵜⵎ ⴰⵔⴰ)",
+        "saveFailed": "ⴰⵙⴽⵍⵙ ⵏ ⵡⴰⵔⵡⵡⴰⵇ ⵓⵔ ⵢⴷⴷⵉ ⴰⵔⴰ. ⵄⵔⴹ-ⵉⵜ ⵉ ⵜⵉⴽⵍⵜ-ⵏⵏⵉⴹⵏ.",
+        "errors": {
+          "designation": "ⵙⴽⵛⵎ ⴰⴳⵍⴰⵎ ⵙ ⵜⴼⵔⴰⵏⵙⵉⵙⵜ ⵏⵖ ⵙ ⵜⴰⵄⵔⴰⴱⵜ.",
+          "quantity": "ⴰⵛⵃⴰⵍ ⵓⵔ ⵢⵍⵀⵉ ⴰⵔⴰ: ⴰⵎⴹⴰⵏ ⵉⴳⴰⵔ ⵓⵍⴰⵛ, ⴽⵔⴰⴹ ⵏ ⵜⵛⵔⴰⴷ ⴰⵔ ⴰⴽⵜⴰⵔ.",
+          "unitPrice": "ⴰⵣⴰⵍ ⵓⵔ ⵢⵍⵀⵉ ⴰⵔⴰ: ⴰⵎⴹⴰⵏ ⵙ ⵉⴷⵔⵉⵎⵏ, ⵙⵉⵏ ⵏ ⵜⵛⵔⴰⴷ ⴰⵔ ⴰⴽⵜⴰⵔ.",
+          "rate": "ⴼⵔⵏ ⴰⵣⴰⵍ ⵏ TVA ⵙⴳ ⵜⴱⴷⴰⵔⵜ.",
+          "ice": "ICE ⵉⵍⴰⵇ ⴰⴷ ⵢⵙⵄⵓ 15 ⵏ ⵢⵉⵎⴹⴰⵏⵏ ⴽⴰⵏ.",
+          "noLines": "ⵔⵏⵓ ⵢⵉⵡⵏ ⵏ ⵢⵉⵣⵉⵔⵉⴳ ⵓⵎⵎⵉⴷ ⴰⵔ ⴰⵇⵍⴰⵍ."
+        }
+      },
+      "preview": {
+        "title": "ⵜⴰⵙⴽⴰⵏⵜ ⵙ ⵙⵏⴰⵜ ⵏ ⵜⵓⵜⵍⴰⵢⵉⵏ (ⵜⴰⴼⵔⴰⵏⵙⵉⵙⵜ / ⵜⴰⵄⵔⴰⴱⵜ)",
+        "invoice": "ⵜⴰⴼⴰⵜⵓⵔⵜ",
+        "number": "ⵓⵟⵟⵓⵏ ⵏ ⵜⴼⴰⵜⵓⵔⵜ",
+        "numberPending": "ⵓⵟⵟⵓⵏ ⴰⵔⴰ ⵢⵜⵜⵡⴰⴱⴷⵔ ⴷⴳ ⵓⵙⵏⵜⵎ",
+        "date": "ⴰⵣⵎⵣ",
+        "seller": "ⴰⵎⵙⴽⴰⵔ",
+        "customer": "ⴰⴽⵍⵢⴰⵏ",
+        "name": "ⵉⵙⵎ ⵏ ⵜⴽⴱⴱⴰⵏⵉⵜ",
+        "legalForm": "ⵜⴰⵍⵖⴰ ⵜⴰⵙⵔⵜⵉⵜ",
+        "capital": "ⵕⵕⴰⵙ ⵏ ⵍⵎⴰⵍ",
+        "address": "ⵜⴰⵏⵙⴰ",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "ⴰⴳⵍⴰⵎ",
+        "quantity": "ⴰⵛⵃⴰⵍ",
+        "unitPrice": "ⴰⵣⴰⵍ ⵏ ⵢⵉⵡⵏ HT",
+        "vatRate": "ⴰⵣⴰⵍ TVA",
+        "lineTotal": "ⴰⵎⴰⵜⵓ HT",
+        "baseHt": "ⴰⵖⴱⴰⵍⵓ HT",
+        "vat": "ⴰⵎⵓⵔ ⵏ TVA",
+        "totalHt": "ⴰⵎⴰⵜⵓ HT",
+        "totalVat": "ⴰⵎⴰⵜⵓ ⵏ TVA",
+        "totalTtc": "ⴰⵎⴰⵜⵓ TTC",
+        "legalReason": "ⵙⵙⴱⴱⴰ ⵜⴰⵙⵔⵜⵉⵜ",
+        "arrete": "ⵜⴰⴼⴰⵜⵓⵔⵜ-ⴰ ⵜⵜⵜⵡⴰⵃⴱⵙ ⵖⵔ ⵓⵎⵓⵔ ⵏ:"
+      }
     }
   }
 }
