@@ -65,4 +65,4 @@ export type {
   ShamirShare,
 } from './shamir-escrow.ts';
 export { EphemeralRamPiiScrubber } from './pii-scrubber.ts';
-export type { PiiScrubContext } from './pii-scrubber.ts';
+export type { PiiRandomSource, PiiScrubContext, PiiScrubberOptions } from './pii-scrubber.ts';

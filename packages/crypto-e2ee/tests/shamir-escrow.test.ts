@@ -122,18 +122,66 @@ describe('Shamir 2-sur-3', () => {
     expect(await codeOf(reconstructSecretShamir2of3([pick(shares, 1), pick(shares, 1)]))).toBe('SHAMIR_DUPLICATE_SHARE');
   });
 
-  it('une part seule ne révèle rien : pour un octet de secret donné, toute valeur de part est atteignable et uniforme', async () => {
-    const secret = new Uint8Array([0xa5]);
-    const counts = new Array<number>(256).fill(0);
-    for (let n = 0; n < 25_600; n += 1) {
-      const shares = await splitSecretShamir2of3(secret);
-      const y = fromBase64Url(pick(shares, 0).data)[0] ?? 0;
-      counts[y] = (counts[y] ?? 0) + 1;
+  /*
+   * Preuve déterministe et exhaustive (aucun aléa, aucun seuil statistique) du secret parfait d'une part seule.
+   * Pour un octet, la part d'abscisse x vaut y = s XOR (a·x) dans GF(256), où a est la pente tirée uniformément.
+   * Comme x != 0, a -> a·x est une bijection de GF(256) : à secret s fixé, a -> y est donc une bijection sur les
+   * 256 valeurs (la part est uniforme sur les tirages de a), et à part y fixée, chaque secret s admet exactement
+   * une pente a = (y XOR s)·x^-1. Énumérer les 3 abscisses x 256 pentes x 256 secrets (393 216 cas, dans les deux sens) établit cela
+   * sans tirage : toute valeur de part est compatible avec tous les secrets, une part seule ne révèle rien.
+   * Le tirage statistique de 25 600 partages (>5 s sous charge) n'apportait qu'une preuve plus faible et instable.
+   */
+  it('une part seule ne révèle rien : bijection exhaustive pente -> part sur GF(256), pour chaque abscisse', () => {
+    let violations = 0;
+    let cases = 0;
+    for (const x of [1, 2, 3]) {
+      const xInverse = gf256Inverse(x);
+      for (let secret = 0; secret < 256; secret += 1) {
+        const seen = new Set<number>();
+        for (let slope = 0; slope < 256; slope += 1) seen.add(secret ^ gf256Multiply(slope, x));
+        if (seen.size !== 256) violations += 1;
+        cases += 256;
+      }
+      for (let share = 0; share < 256; share += 1) {
+        const slopes = new Set<number>();
+        for (let secret = 0; secret < 256; secret += 1) {
+          const slope = gf256Multiply(share ^ secret, xInverse);
+          if ((secret ^ gf256Multiply(slope, x)) !== share) violations += 1;
+          slopes.add(slope);
+        }
+        // chaque secret candidat impose une pente distincte : les 256 secrets sont tous compatibles avec la part
+        if (slopes.size !== 256) violations += 1;
+        cases += 256;
+      }
     }
-    expect(counts.every((c) => c > 0)).toBe(true);
-    // espérance 100 par valeur ; borne très large (~ 10 sigma) pour éviter un test instable
-    expect(Math.max(...counts)).toBeLessThan(200);
-    expect(Math.min(...counts)).toBeGreaterThan(30);
+    expect(cases).toBe(3 * 2 * 256 * 256);
+    expect(violations).toBe(0);
+  });
+
+  it("la part produite par splitSecretShamir2of3 est exactement secret XOR pente·x, pour les 256 pentes (sans aléa)", async () => {
+    const original = crypto.getRandomValues.bind(crypto);
+    for (const secretByte of [0x00, 0x01, 0xa5, 0xff]) {
+      const secret = new Uint8Array([secretByte]);
+      for (let slope = 0; slope < 256; slope += 1) {
+        let calls = 0;
+        const spy = vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
+          calls += 1;
+          if (calls === 1 && array instanceof Uint8Array) {
+            array.fill(slope);
+            return array;
+          }
+          return original(array);
+        });
+        try {
+          const shares = await splitSecretShamir2of3(secret);
+          for (const share of shares) {
+            expect(fromBase64Url(share.data)[0]).toBe(secretByte ^ gf256Multiply(slope, share.index));
+          }
+        } finally {
+          spy.mockRestore();
+        }
+      }
+    }
   });
 
   it('structurel : pour toute valeur de part et tout secret candidat, une pente unique existe', () => {

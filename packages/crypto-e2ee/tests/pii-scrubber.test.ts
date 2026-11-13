@@ -1,7 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import canary from '../../compliance-cndp/tests/golden/pentest-canaries.vectors.json';
 import { E2eeError, EphemeralRamPiiScrubber } from '../src/e2ee-engine.ts';
 import type { PiiScrubContext } from '../src/e2ee-engine.ts';
+
+/** Générateur d'aléa déterministe (xorshift32) à graine fixe : jamais Math.random. */
+function seededRandom(seed: number): (buffer: Uint8Array<ArrayBuffer>) => void {
+  let state = (seed ^ 0x9e3779b9) >>> 0 || 1;
+  return (buffer) => {
+    for (let i = 0; i < buffer.length; i += 1) {
+      state ^= state << 13;
+      state >>>= 0;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      state >>>= 0;
+      buffer[i] = state & 0xff;
+    }
+  };
+}
+
+const OBFUSCATED =
+  `RIB 011 780 0000123456 78901234 ICE ００１２３４５６７０００\u200b０８９ mail A@B.MA \u202etel\u202c`;
+const TOKEN_PATTERN = /\[[A-Za-z0-9_]+\]/g;
 
 const RIB = '011780000012345678901234';
 const ICE = '001234567000089';
@@ -40,13 +59,41 @@ describe('EphemeralRamPiiScrubber — zéro fuite', () => {
   });
 
   it('masque les valeurs obfusquées par chiffres pleine largeur, espaces et caractères invisibles', () => {
-    const out = new EphemeralRamPiiScrubber().scrubText(
-      `RIB 011 780 0000123456 78901234 ICE ００１２３４５６７０００\u200b０８９ mail A@B.MA \u202etel\u202c`,
-      [],
-    );
-    expect(out.replace(/\[[A-Z0-9_]+\]/g, '')).not.toMatch(/\d{6}/);
+    const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(1) }).scrubText(OBFUSCATED, []);
+    expect(out.replace(TOKEN_PATTERN, '')).not.toMatch(/\d{6}/);
     expect(out).not.toMatch(/[\u202A-\u202E\u200B]/u);
     expect(out).not.toContain('A@B.MA');
+  });
+
+  it('déterministe : 2 000 graines différentes, 0 faux rouge (jetons à aléa hexadécimal minuscule inclus)', () => {
+    let falseReds = 0;
+    let nonceWithSixDigits = 0;
+    for (let seed = 1; seed <= 2000; seed += 1) {
+      const out = new EphemeralRamPiiScrubber({ randomSource: seededRandom(seed) }).scrubText(OBFUSCATED, []);
+      if (/\d{6}/.test(out.replace(TOKEN_PATTERN, ''))) falseReds += 1;
+      // l'ancienne expression (majuscules seules) aurait été sensible à ces aléas : le test les exerce bien
+      if (/\d{6}/.test(out.replace(/\[[A-Z0-9_]+\]/g, ''))) nonceWithSixDigits += 1;
+    }
+    expect(falseReds).toBe(0);
+    expect(nonceWithSixDigits).toBeGreaterThan(0);
+  });
+
+  it('le générateur injecté est la seule source d’aléa : même graine => mêmes jetons ; défaut = crypto.getRandomValues', () => {
+    const a = new EphemeralRamPiiScrubber({ randomSource: seededRandom(7) }).scrubText(ICE, []);
+    const b = new EphemeralRamPiiScrubber({ randomSource: seededRandom(7) }).scrubText(ICE, []);
+    const c = new EphemeralRamPiiScrubber({ randomSource: seededRandom(8) }).scrubText(ICE, []);
+    expect(a).toBe(b);
+    expect(a).not.toBe(c);
+    const spy = vi.spyOn(crypto, 'getRandomValues');
+    const math = vi.spyOn(Math, 'random');
+    try {
+      new EphemeralRamPiiScrubber();
+      expect(spy).toHaveBeenCalled();
+      expect(math).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+      math.mockRestore();
+    }
   });
 
   it('retire les tags Unicode et les contrôles bidi comme le code de référence', () => {
@@ -148,5 +195,110 @@ describe('EphemeralRamPiiScrubber — aller-retour et destruction', () => {
     const scrubber = new EphemeralRamPiiScrubber();
     expect(Object.keys(scrubber)).not.toContain('log');
     scrubber.destroy();
+  });
+});
+
+describe('EphemeralRamPiiScrubber — ICE (15 chiffres) avec séparateurs', () => {
+  const SPELLINGS: readonly (readonly [string, string])[] = [
+    ['espaces 4-3-3-3-2', 'ICE 0012 3456 7000 089'],
+    ['espaces 3 par 3', '001 234 567 000 089'],
+    ['espaces 9-6', '001234567 000089'],
+    ['tirets', '001-234-567-000-089'],
+    ['points', '001.234.567.000.089'],
+    ['espace insécable', '001\u00a0234\u00a0567\u00a0000\u00a0089'],
+    ['espace fine', '001\u2009234\u2009567\u2009000\u2009089'],
+    ['espace fine insécable', '001\u202f234\u202f567\u202f000\u202f089'],
+    ['tiret demi-cadratin', '001\u2013234\u2013567\u2013000\u2013089'],
+    ['tiret cadratin', '001\u2014234\u2014567\u2014000\u2014089'],
+    ['trait d’union typographique', '001\u2010234\u2010567\u2010000\u2010089'],
+    ['barre oblique', '001/234/567/000/089'],
+    ['zéro-largeur entre chiffres', '001\u200b234\u200c567\u200d000\u2060089'],
+    ['zéro-largeur + espaces', '001 \u200b234 \u200b567 000 089'],
+    ['chiffres pleine largeur séparés', '００１ ２３４ ５６７ ０００ ０８９'],
+  ];
+
+  for (const [label, spelling] of SPELLINGS) {
+    it(`masque entièrement l’ICE écrit avec ${label}, sans fragment de chiffres`, () => {
+      const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(3) });
+      const out = scrubber.scrubText(`Société ${spelling} fin`, []);
+      expect(out).toMatch(/^Société (?:ICE )?\[ICE15_01_[0-9a-f]{8}\] fin$/);
+      expect(out.replace(TOKEN_PATTERN, '')).not.toMatch(/\d/);
+    });
+  }
+
+  it('toutes les graphies du même ICE reçoivent le même jeton', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(4) });
+    const tokens = SPELLINGS.map(([, spelling]) => scrubber.scrubText(spelling.replace(/^ICE /, ''), []));
+    expect(new Set(tokens).size).toBe(1);
+    expect(scrubber.tokenCount).toBe(1);
+  });
+
+  it('aller-retour : la graphie d’origine est restituée à la réhydratation', () => {
+    for (const spelling of [
+      '0012 3456 7000 089',
+      '001 234 567 000 089',
+      '001234567 000089',
+      '001-234-567-000-089',
+      '001.234.567.000.089',
+      '001/234/567/000/089',
+      '001\u00a0234\u00a0567\u00a0000\u00a0089'.normalize('NFKC'),
+      '001\u2013234\u2013567\u2013000\u2013089',
+      '001\u2014234\u2014567\u2014000\u2014089',
+    ]) {
+      const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(5) });
+      const masked = scrubber.scrubText(`avant ${spelling} après`, []);
+      expect(masked).not.toContain('001');
+      expect(scrubber.rehydrateText(masked)).toBe(`avant ${spelling} après`);
+    }
+  });
+
+  it('les graphies obfusquées sont restituées sans les caractères invisibles (comportement documenté de normalisation)', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(6) });
+    const masked = scrubber.scrubText('ICE 001\u200b234\u200b567\u200b000\u200b089 ok', []);
+    expect(masked.replace(TOKEN_PATTERN, '')).not.toMatch(/\d/);
+    expect(scrubber.rehydrateText(masked)).toBe('ICE 001234567000089 ok');
+  });
+
+  it('faux positifs : téléphone marocain, montant, date, référence, 14 et 16 chiffres séparés', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(9) });
+    const phone = scrubber.scrubText('+212 6 12 34 56 78', []);
+    expect(phone).toMatch(/^\[PHONE_MA_01_[0-9a-f]{8}\]$/);
+    const untouched = [
+      'Montant 1 234 567,89 MAD',
+      'Montant 1.234.567,89 MAD',
+      'Date 15/03/2024 et 2024-03-15',
+      'Facture FA-2024-0042 du 03.04.2024',
+      'Réf 123-456-789',
+      'Nombre 0012 3456 7000 08',
+      'Nombre 0012 3456 7000 0891 2',
+      '12 345 678 901 234',
+      '1234 5678 9012 3456',
+      '1-2-3-4-5-6-7-8-9-0-1-2-3-4',
+    ];
+    for (const text of untouched) expect(scrubber.scrubText(text, [])).toBe(text);
+  });
+
+  it('un nombre de 16 chiffres collés reste masqué (NUM_LONG) et un ICE collé à du texte n’est pas tronqué', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(10) });
+    expect(scrubber.scrubText('1234567890123456', [])).toMatch(/^\[NUM_LONG_01_[0-9a-f]{8}\]$/);
+    expect(scrubber.scrubText('ICE:001234567000089.', [])).toMatch(/^ICE:\[ICE15_01_[0-9a-f]{8}\]\.$/);
+  });
+
+  it('deux identifiants consécutifs séparés par une espace donnent deux jetons, sans fusion ni fuite', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(12) });
+    const out = scrubber.scrubText(`${ICE} 001234567000090 15/03/2024 ${ICE}`, []);
+    expect(out).toMatch(/^\[ICE15_01_[0-9a-f]{8}\] \[ICE15_02_[0-9a-f]{8}\] 15\/03\/2024 \[ICE15_01_[0-9a-f]{8}\]$/);
+  });
+
+  it('ne régresse pas : RIB, IBAN, e-mail, téléphones restent masqués', () => {
+    const scrubber = new EphemeralRamPiiScrubber({ randomSource: seededRandom(11) });
+    const out = scrubber.scrubText(
+      `RIB ${RIB} puis 0117-8000-0012-3456-7890-1234, IBAN MA64 0117 8000 0012 3456 7890 1234, a@b.ma, 0612345678, +212 661-234567`,
+      [],
+    );
+    expect(out.replace(TOKEN_PATTERN, '')).not.toMatch(/\d{3}/);
+    expect(out).not.toContain('a@b.ma');
+    expect(out).toMatch(/\[RIB24_/);
+    expect(out).toMatch(/\[IBAN_MA_/);
   });
 });
