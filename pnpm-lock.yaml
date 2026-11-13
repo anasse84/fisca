@@ -141,7 +141,14 @@ importers:
 
   packages/fec-auditor: {}
 
-  packages/fiscal-ast: {}
+  packages/fiscal-ast:
+    dependencies:
+      '@fisca/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/i18n: {}
 
