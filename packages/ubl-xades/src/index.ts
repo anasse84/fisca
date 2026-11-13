@@ -16,3 +16,4 @@ export {
   parseUblInvoiceInput,
   pihFieldsOfInvoice,
 } from './generator/generate.ts';
+export * from './known-phive-deviations.ts';

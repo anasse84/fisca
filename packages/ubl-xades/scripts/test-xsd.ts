@@ -1,18 +1,18 @@
-import { generateUblInvoiceXml, resolveSchema, type UblDocumentKind } from '../src/index.ts';
+import { generateUblInvoiceXml, resolveSchema, schemaKindOfTypeCode, type UblDocumentKind } from '../src/index.ts';
 import { buildFullInput, buildInput, TYPE_CODES } from '../tests/support/fixtures.ts';
 import { validateWithXmllint } from '../tests/support/xmllint.ts';
 
-/** Valide un document généré par type (380, 381, 383, 386, 389) contre le XSD OASIS UBL 2.1 officiel, avec xmllint. */
+/** Valide un document généré par type (380, 381, 383, 386, 389 ; le 383 est émis en Invoice) contre le XSD OASIS UBL 2.1 officiel, avec xmllint. */
 const KIND_BY_TYPE: Readonly<Record<(typeof TYPE_CODES)[number], UblDocumentKind>> = {
-  '380': 'invoice',
-  '381': 'credit-note',
-  '383': 'debit-note',
-  '386': 'invoice',
-  '389': 'invoice',
+  '380': schemaKindOfTypeCode('380'),
+  '381': schemaKindOfTypeCode('381'),
+  '383': schemaKindOfTypeCode('383'),
+  '386': schemaKindOfTypeCode('386'),
+  '389': schemaKindOfTypeCode('389'),
 };
 
 process.stdout.write(
-  'Schéma utilisé : OASIS UBL 2.1 officiel (packages/ubl-xades/xsd) ; profil : cius-ma-provisional (PROVISOIRE, non publié par la DGI)\n',
+  'Schéma utilisé : OASIS UBL 2.1 officiel (packages/ubl-xades/xsd ; 383 émis en Invoice) ; profil provisoire cius-ma-provisional, écarts PHIVE connus : BR-CL-10, BR-CL-11, BR-CO-09, BR-CL-24\n',
 );
 
 let failures = 0;
@@ -31,7 +31,7 @@ for (const code of TYPE_CODES) {
   const schema = resolveSchema(KIND_BY_TYPE[code], '2.1');
   const result = validateWithXmllint(generateUblInvoiceXml(buildFullInput(code)), schema.path);
   if (result.valid) {
-    process.stdout.write(`  type ${code} complet (débours + timbre + PIH/ICV${code === '381' || code === '383' ? '' : ' + retenue'}) : valide\n`);
+    process.stdout.write(`  type ${code} complet (débours + timbre + PIH/ICV${code === '381' ? '' : ' + retenue'}) : valide\n`);
   } else {
     failures += 1;
     process.stdout.write(`  type ${code} complet : INVALIDE\n${result.output}\n`);

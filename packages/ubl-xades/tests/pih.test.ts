@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
+  buildPihFieldsFromInvoiceRow,
   buildPihTuple,
   computeInvoicePih,
   computeUblInvoicePih,
@@ -12,6 +13,7 @@ import {
   verifyPihChain,
   type ChainedInvoicePih,
   type InvoicePihFields,
+  type InvoiceRowForPih,
 } from '../src/index.ts';
 import { buildFullInput, buildInput, PREVIOUS_HASH_HEX } from './support/fixtures.ts';
 
@@ -192,7 +194,7 @@ describe('insertion dans le XML', () => {
     ).toThrow(UblGeneratorError);
   });
 
-  it('l’empreinte de la facture = tuple tiré des totaux du générateur (HT, TVA, timbre, TTC)', async () => {
+  it('l’empreinte de la facture = tuple tiré des totaux du générateur (HT hors débours comme la base, TVA, timbre, TTC débours inclus)', async () => {
     const input = buildFullInput('380');
     const fields = pihFieldsOfInvoice(input);
     expect(fields).toMatchObject({
@@ -201,12 +203,83 @@ describe('insertion dans le XML', () => {
       icvCounter: 2,
       ublTypeCode: '380',
       buyerIdentifier: '001197530853397',
-      totalHtCents: 150000,
+      totalHtCents: 100000,
       totalVatCents: 20000,
       stampDutyCents: 425,
       totalTtcCents: 170425,
       previousPiHash: PREVIOUS_HASH_HEX,
     });
     expect(await computeUblInvoicePih(input)).toBe(independentHash(serializePihTuple(fields)));
+  });
+});
+
+/**
+ * Empreinte recalculable hors ligne depuis la base. Colonnes réelles de `invoices` (packages/db-schema/src/tenant.ts) :
+ * total_ht_cents (DÉBOURS EXCLUS), total_debours_cents, total_vat_cents, stamp_duty_cents, total_ttc_cents (CHECK : ht + débours + TVA + timbre),
+ * previous_pi_hash, icv_counter, sequential_number, ubl_type_code (`380_FACTURE`), issue_date, currency_code.
+ */
+describe('buildPihFieldsFromInvoiceRow : ligne de base = modèle UBL', () => {
+  const parties = { emitterIce15: '000970000000097', buyerIdentifier: '001197530853397' };
+  const rowOf = (overrides: Partial<InvoiceRowForPih> & { total_debours_cents?: number }): InvoiceRowForPih & { total_debours_cents: number } => ({
+    ubl_type_code: '380_FACTURE',
+    sequential_number: 'FAC-2026-000001',
+    icv_counter: 2,
+    issue_date: '2026-11-13',
+    currency_code: 'MAD',
+    total_ht_cents: 110000,
+    total_debours_cents: 0,
+    total_vat_cents: 21000,
+    stamp_duty_cents: 0,
+    total_ttc_cents: 131000,
+    previous_pi_hash: PREVIOUS_HASH_HEX,
+    ...overrides,
+  });
+  const withPih = { icvCounter: 2, previousPiHash: PREVIOUS_HASH_HEX } as const;
+
+  it('sans débours : même empreinte depuis la ligne et depuis le modèle', async () => {
+    const input = { ...buildInput('380'), pih: withPih };
+    const fromRow = buildPihFieldsFromInvoiceRow(rowOf({}), parties);
+    expect(fromRow).toEqual(pihFieldsOfInvoice(input));
+    expect(await computeInvoicePih(fromRow)).toBe(await computeUblInvoicePih(input));
+  });
+
+  it('avec débours (et timbre) : HT hors débours, TTC débours inclus, même empreinte', async () => {
+    const input = buildFullInput('380');
+    const row = rowOf({
+      total_ht_cents: 100000,
+      total_debours_cents: 50000,
+      total_vat_cents: 20000,
+      stamp_duty_cents: 425,
+      total_ttc_cents: 170425,
+    });
+    expect(row.total_ht_cents + row.total_debours_cents + row.total_vat_cents + row.stamp_duty_cents).toBe(row.total_ttc_cents);
+    const fromRow = buildPihFieldsFromInvoiceRow(row, parties);
+    expect(fromRow).toEqual(pihFieldsOfInvoice(input));
+    expect(fromRow.totalHtCents).toBe(100000);
+    expect(await computeInvoicePih(fromRow)).toBe(await computeUblInvoicePih(input));
+  });
+
+  it('le type stocké 383_NOTE_DEBIT donne le code 383 du tuple', () => {
+    expect(buildPihFieldsFromInvoiceRow(rowOf({ ubl_type_code: '383_NOTE_DEBIT', sequential_number: 'NDB-2026-000001' }), parties).ublTypeCode).toBe('383');
+  });
+
+  it('la colonne total_debours_cents n’entre pas dans le tuple : seules HT/TVA/timbre/TTC stockées comptent', async () => {
+    const base = rowOf({ total_debours_cents: 0 });
+    const other = rowOf({ total_debours_cents: 999 });
+    expect(await computeInvoicePih(buildPihFieldsFromInvoiceRow(other, parties))).toBe(await computeInvoicePih(buildPihFieldsFromInvoiceRow(base, parties)));
+    const changedTtc = rowOf({ total_ttc_cents: 131001 });
+    expect(await computeInvoicePih(buildPihFieldsFromInvoiceRow(changedTtc, parties))).not.toBe(await computeInvoicePih(buildPihFieldsFromInvoiceRow(base, parties)));
+  });
+
+  it('refuse une colonne requise NULL sans rien deviner, et les empreintes d’or restent inchangées', async () => {
+    expect(() => buildPihFieldsFromInvoiceRow(rowOf({ previous_pi_hash: null }), parties)).toThrow(UblGeneratorError);
+    expect(() => buildPihFieldsFromInvoiceRow(rowOf({ icv_counter: null }), parties)).toThrow(UblGeneratorError);
+    expect(() => buildPihFieldsFromInvoiceRow(rowOf({ sequential_number: null }), parties)).toThrow(UblGeneratorError);
+    expect(await computeInvoicePih(GOLD_FIELDS)).toBe(GOLD_HASH);
+  });
+
+  it('acheteur absent : null dans le tuple', () => {
+    const fields = buildPihFieldsFromInvoiceRow(rowOf({}), { emitterIce15: parties.emitterIce15 });
+    expect(serializePihTuple(fields)).toContain(',null,"MAD",');
   });
 });

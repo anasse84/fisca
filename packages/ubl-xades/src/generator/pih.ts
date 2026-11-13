@@ -33,6 +33,71 @@ export interface InvoicePihFields {
   readonly previousPiHash: string;
 }
 
+/**
+ * Ligne de facture au format des colonnes de `invoices` (packages/db-schema/src/tenant.ts, table `invoices`).
+ * Seules les colonnes lues par le tuple sont déclarées ; les autres colonnes de la ligne sont ignorées.
+ * `ubl_type_code` porte la valeur stockée (`380_FACTURE`, `381_AVOIR`, `383_NOTE_DEBIT`, `386_ACOMPTE`, `389_AUTOFACTURATION`).
+ * `total_ht_cents` EXCLUT les débours (`total_debours_cents` est une colonne distincte, ignorée ici) ;
+ * `total_ttc_cents` les INCLUT (CHECK de la base : total_ht + total_debours + total_vat + stamp_duty = total_ttc).
+ */
+export interface InvoiceRowForPih {
+  readonly ubl_type_code: string;
+  readonly sequential_number: string | null;
+  readonly icv_counter: number | null;
+  readonly issue_date: string;
+  readonly currency_code: string;
+  readonly total_ht_cents: number;
+  readonly total_vat_cents: number;
+  readonly stamp_duty_cents: number;
+  readonly total_ttc_cents: number;
+  readonly previous_pi_hash: string | null;
+}
+
+/**
+ * Identifiants que la ligne `invoices` ne porte pas en clair : l'ICE de l'émetteur (société) et l'identifiant de l'acheteur
+ * (`fiscal_partners.ice_enc`, chiffré, à déchiffrer par l'appelant). `buyerIdentifier` absent → null dans le tuple.
+ */
+export interface PihPartyContext {
+  readonly emitterIce15: string;
+  readonly buyerIdentifier?: string | undefined;
+}
+
+/** `380_FACTURE` → `380` (préfixe numérique de la valeur stockée) ; un code déjà nu est conservé. */
+function ublTypeCodeOfRow(stored: string): string {
+  const separator = stored.indexOf('_');
+  return separator === -1 ? stored : stored.slice(0, separator);
+}
+
+/**
+ * Champs du tuple PIH tirés d'une ligne `invoices` : les colonnes stockées, telles quelles, pour que l'empreinte soit
+ * recalculable hors ligne depuis la base. Une colonne NULL requise (numéro, ICV, empreinte précédente) est refusée : aucune valeur devinée.
+ */
+export function buildPihFieldsFromInvoiceRow(row: InvoiceRowForPih, parties: PihPartyContext): InvoicePihFields {
+  const missing: UblInputIssueDetail[] = [];
+  if (row.sequential_number === null) missing.push({ path: 'sequential_number', code: 'custom' });
+  if (row.icv_counter === null) missing.push({ path: 'icv_counter', code: 'custom' });
+  if (row.previous_pi_hash === null) missing.push({ path: 'previous_pi_hash', code: 'custom' });
+  if (row.sequential_number === null || row.icv_counter === null || row.previous_pi_hash === null) {
+    throw new UblGeneratorError('UBL_PIH_INVALID', `Colonnes requises absentes : ${missing.map((issue) => issue.path).join(', ')}.`, missing);
+  }
+  const fields: InvoicePihFields = {
+    emitterIce15: parties.emitterIce15,
+    sequentialNumber: row.sequential_number,
+    icvCounter: row.icv_counter,
+    ublTypeCode: ublTypeCodeOfRow(row.ubl_type_code),
+    issueDate: row.issue_date,
+    buyerIdentifier: parties.buyerIdentifier,
+    currencyCode: row.currency_code,
+    totalHtCents: row.total_ht_cents,
+    totalVatCents: row.total_vat_cents,
+    stampDutyCents: row.stamp_duty_cents,
+    totalTtcCents: row.total_ttc_cents,
+    previousPiHash: row.previous_pi_hash,
+  };
+  assertPihFields(fields);
+  return fields;
+}
+
 export type PihTupleItem = string | number | null;
 
 const HEX64 = /^[0-9a-f]{64}$/;

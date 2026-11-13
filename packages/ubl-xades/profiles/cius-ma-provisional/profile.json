@@ -19,8 +19,9 @@
       "billingReference": "obligatoire (UUID xHub initial)"
     },
     "383": {
-      "document": "DebitNote",
-      "element": "DebitNoteTypeCode"
+      "document": "Invoice",
+      "element": "InvoiceTypeCode",
+      "note": "Décision du pilote : 383 émis en racine Invoice (InvoiceTypeCode 383), schéma UBL-Invoice-2.1.xsd, DueDate et retenue de garantie possibles ; plus en DebitNote"
     },
     "386": {
       "document": "Invoice",
@@ -82,7 +83,7 @@
       "note": "Hors base de TVA, comptés dans TTC et PayableAmount ; mélange avec lignes taxées : BR-O-11/BR-O-12 d'EN 16931 (comportement réel, non contourné)"
     },
     "retenueGarantie": {
-      "path": "cac:WithholdingTaxTotal (Invoice uniquement ; absent de CreditNote et DebitNote : refus UBL_RETENTION_INVALID)",
+      "path": "cac:WithholdingTaxTotal (racines Invoice, donc 380, 383, 386, 389 ; absent de CreditNote : refus UBL_RETENTION_INVALID sur 381, échec fermé)",
       "taxSchemeId": "RETENUE_GARANTIE (hypothèse)",
       "effect": "réduit cbc:PayableAmount, jamais la base de TVA ; BR-CO-16 d'EN 16931 violée (comportement réel)"
     },
@@ -92,8 +93,24 @@
     },
     "pihIcv": {
       "pih": "cac:AdditionalDocumentReference/cbc:ID = PIH + cac:Attachment/cbc:EmbeddedDocumentBinaryObject (Base64 du texte de l'empreinte précédente, mimeCode text/plain, filename pih.txt)",
-      "icv": "cac:AdditionalDocumentReference/cbc:ID = ICV + cbc:UUID = compteur (hypothèse, usage ZATCA)",
-      "enReport": "BR-CL-24 d'EN 16931 : text/plain absent de la liste MIME (comportement réel)"
+      "icv": "cac:AdditionalDocumentReference/cbc:ID = ICV + cbc:UUID = compteur",
+      "enReport": "BR-CL-24 d'EN 16931 : text/plain absent de la liste MIME (écart PHIVE connu)",
+      "icvStatus": "hypothèse non officielle (convention reprise de ZATCA)",
+      "pihTuple": "totalHtCents = invoices.total_ht_cents (débours exclus) ; totalVatCents, stampDutyCents, totalTtcCents = colonnes total_vat_cents, stamp_duty_cents, total_ttc_cents (débours inclus) ; fonction buildPihFieldsFromInvoiceRow"
     }
+  },
+  "knownPhiveDeviations": {
+    "note": "Profil provisoire, écarts PHIVE connus : BR-CL-10, BR-CL-11, BR-CO-09, BR-CL-24. Source unique : src/known-phive-deviations.ts (KNOWN_PHIVE_DEVIATIONS).",
+    "rules": [
+      "BR-CL-10",
+      "BR-CL-11",
+      "BR-CO-09",
+      "BR-CL-24"
+    ],
+    "tolerateWarnings": [
+      "UBL-CR-024",
+      "UBL-CR-111",
+      "UBL-CR-652"
+    ]
   }
 }

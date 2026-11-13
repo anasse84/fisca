@@ -14,7 +14,7 @@ describe('resolveSchema', () => {
   it.each([
     ['invoice', 'UBL-Invoice-2.1.xsd'],
     ['credit-note', 'UBL-CreditNote-2.1.xsd'],
-    ['debit-note', 'UBL-DebitNote-2.1.xsd'],
+    ['debit-note', 'UBL-DebitNote-2.1.xsd'], // kind conservé (schéma OASIS officiel) ; le générateur ne l'utilise plus
   ] as const)('%s → XSD officiel OASIS vendorisé', (kind, file) => {
     const schema = resolveSchema(kind, '2.1');
     expect(schema.path.endsWith(`/xsd/maindoc/${file}`)).toBe(true);

@@ -93,9 +93,14 @@ describe('B. retenue de garantie BTP', () => {
     expect(codeOf(() => generateUblInvoiceXml(input))).toBe('UBL_RETENTION_INVALID');
   });
 
-  it('pas d’emplacement dans CreditNote ni DebitNote : refus explicite', () => {
+  it('pas d’emplacement dans CreditNote : refus explicite (échec fermé) sur 381 seulement', () => {
     expect(codeOf(() => generateUblInvoiceXml({ ...buildInput('381'), retention: retentionRule(700) }))).toBe('UBL_RETENTION_INVALID');
-    expect(codeOf(() => generateUblInvoiceXml({ ...buildInput('383'), retention: retentionRule(700) }))).toBe('UBL_RETENTION_INVALID');
+  });
+
+  it('383 émis en Invoice : la retenue de garantie est admise (WithholdingTaxTotal)', () => {
+    const xml = generateUblInvoiceXml({ ...buildInput('383'), retention: retentionRule(700) });
+    expect(xml).toContain('<cac:WithholdingTaxTotal>');
+    expect(codeOf(() => generateUblInvoiceXml({ ...buildInput('383'), retention: retentionRule(700) }))).toBe('AUCUNE_ERREUR');
   });
 
   it('les totaux déclarés de retenue sont contrôlés', () => {
@@ -130,11 +135,11 @@ describe('C. droit de timbre sur espèces', () => {
     expect(xml).toContain('<cbc:TaxExclusiveAmount currencyID="MAD">1504.25</cbc:TaxExclusiveAmount>');
   });
 
-  it('DebitNote : AllowanceCharge avant PaymentMeans (ordre du schéma)', () => {
-    const xml = generateUblInvoiceXml({ ...buildInput('383'), paymentMeansCode: '10', stampDuty: stampDutyRule(1000) });
-    expect(xml.indexOf('<cac:AllowanceCharge>')).toBeLessThan(xml.indexOf('<cac:PaymentMeans>'));
-    const invoice = generateUblInvoiceXml({ ...buildInput('380'), paymentMeansCode: '10', stampDuty: stampDutyRule(1000) });
-    expect(invoice.indexOf('<cac:AllowanceCharge>')).toBeGreaterThan(invoice.indexOf('</cac:PaymentMeans>'));
+  it('Invoice (380 et 383) : AllowanceCharge après PaymentMeans (ordre du schéma)', () => {
+    for (const code of ['380', '383'] as const) {
+      const invoice = generateUblInvoiceXml({ ...buildInput(code), paymentMeansCode: '10', stampDuty: stampDutyRule(1000) });
+      expect(invoice.indexOf('<cac:AllowanceCharge>')).toBeGreaterThan(invoice.indexOf('</cac:PaymentMeans>'));
+    }
   });
 
   it('timbre sans débours : sous-total O créé avec raison dédiée', () => {

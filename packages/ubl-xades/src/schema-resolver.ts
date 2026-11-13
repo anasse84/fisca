@@ -28,6 +28,14 @@ function isKind(value: string): value is UblDocumentKind {
 }
 
 /**
+ * Schéma à utiliser pour un code de type UBL : `invoice` pour 380, 383, 386 et 389 (le 383 est émis en racine Invoice,
+ * décision du pilote), `credit-note` pour 381. Le kind `debit-note` reste résoluble mais le générateur ne l'utilise plus.
+ */
+export function schemaKindOfTypeCode(typeCode: '380' | '381' | '383' | '386' | '389'): UblDocumentKind {
+  return typeCode === '381' ? 'credit-note' : 'invoice';
+}
+
+/**
  * Point unique de résolution du schéma : renvoie le XSD OFFICIEL OASIS UBL 2.1 vendorisé dans `xsd/`.
  * Aucun XSD marocain n'existe (ERRATA B-13) ; le profil provisoire vit dans `profiles/cius-ma-provisional/`.
  */

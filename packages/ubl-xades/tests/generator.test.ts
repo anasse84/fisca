@@ -23,20 +23,14 @@ describe('types de document', () => {
   it.each([
     ['380', 'Invoice', 'InvoiceTypeCode', 'InvoiceLine', 'LegalMonetaryTotal'],
     ['381', 'CreditNote', 'CreditNoteTypeCode', 'CreditNoteLine', 'LegalMonetaryTotal'],
-    ['383', 'DebitNote', undefined, 'DebitNoteLine', 'RequestedMonetaryTotal'],
+    ['383', 'Invoice', 'InvoiceTypeCode', 'InvoiceLine', 'LegalMonetaryTotal'],
     ['386', 'Invoice', 'InvoiceTypeCode', 'InvoiceLine', 'LegalMonetaryTotal'],
     ['389', 'Invoice', 'InvoiceTypeCode', 'InvoiceLine', 'LegalMonetaryTotal'],
   ] as const)('%s → racine %s, %s', (code, root, typeElement, lineElement, totalElement) => {
     const xml = generateUblInvoiceXml(buildInput(code));
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n')).toBe(true);
     expect(xml).toContain(`<${root} xmlns="urn:oasis:names:specification:ubl:schema:xsd:${root}-2"`);
-    if (typeElement === undefined) {
-      // OASIS UBL 2.1 DebitNote ne définit pas d'élément de code de type : le type 383 est porté par la racine et le numéro NDB.
-      expect(xml).not.toContain('TypeCode');
-      expect(xml).toContain('<cbc:ID>NDB-2026-000001</cbc:ID>');
-    } else {
-      expect(xml).toContain(`<cbc:${typeElement}>${code}</cbc:${typeElement}>`);
-    }
+    expect(xml).toContain(`<cbc:${typeElement}>${code}</cbc:${typeElement}>`);
     expect(xml).toContain(`<cac:${lineElement}>`);
     expect(xml).toContain(`<cac:${totalElement}>`);
     expect(xml).toContain('<cbc:UBLVersionID>2.1</cbc:UBLVersionID>');
@@ -53,9 +47,10 @@ describe('types de document', () => {
     expect(xml).toContain('<cbc:InvoicedQuantity unitCode="C62">2.5</cbc:InvoicedQuantity>');
   });
 
-  it('refuse buyerReference sur une note de débit (absent du schéma DebitNote)', () => {
-    const input: UblInvoiceInput = { ...buildInput('383'), buyerReference: 'REF' };
-    expectCode(() => generateUblInvoiceXml(input), 'UBL_INPUT_INVALID');
+  it('383 : buyerReference admis (racine Invoice) et DueDate émise', () => {
+    const xml = generateUblInvoiceXml({ ...buildInput('383'), buyerReference: 'REF' });
+    expect(xml).toContain('<cbc:BuyerReference>REF</cbc:BuyerReference>');
+    expect(xml).toContain('<cbc:DueDate>2026-12-13</cbc:DueDate>');
   });
 
   it('un numéro dont le préfixe ne correspond pas au type est rejeté', () => {

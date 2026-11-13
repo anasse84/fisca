@@ -23,7 +23,7 @@ export function buildInput(typeCode: (typeof TYPE_CODES)[number] = '380'): UblIn
     issueDate: '2026-11-13',
     dueDate: '2026-12-13',
     currencyCode: 'MAD',
-    ...(typeCode === '383' ? {} : { buyerReference: 'REF-ACHETEUR-TEST' }),
+    buyerReference: 'REF-ACHETEUR-TEST',
     ...(typeCode === '381'
       ? { billingReference: { originInvoiceNumber: 'FAC-2026-000001', xhubUuid: XHUB_UUID, issueDate: '2026-11-01' } }
       : {}),
@@ -87,7 +87,7 @@ export function stampDutyRule(cashSettledCents: number, rateBps = 25) {
 export const PREVIOUS_HASH_HEX = '0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797';
 
 /**
- * Document complet : service à 20 %, débours, retenue de garantie 7 %, timbre 25 bps, PIH/ICV.
+ * Document complet (retenue sauf 381, refusée en échec fermé) : service à 20 %, débours, retenue de garantie 7 %, timbre 25 bps, PIH/ICV.
  * Service 1000,00 (TVA 200,00) + débours 500,00 hors champ : HT lignes 1500,00 ; TTC avant timbre 1700,00 ; espèces 1700,00 →
  * timbre 4,25 ; TTC 1704,25 ; retenue 7 % du HT (150000 c) = 105,00 ; net à payer 1599,25. Voir EXPECTED_FULL.
  */
@@ -99,7 +99,7 @@ export function buildFullInput(typeCode: (typeof TYPE_CODES)[number] = '380'): U
       { descriptionFr: 'Travaux de test', quantityMilli: 1000, unitPriceCents: 100000, vatRateBps: 2000 },
       { descriptionFr: 'Débours de test', quantityMilli: 1000, unitPriceCents: 50000, vatRateBps: 0, isDisbursementDebours: true },
     ],
-    ...(typeCode === '380' || typeCode === '386' || typeCode === '389' ? { retention: retentionRule(700) } : {}),
+    ...(typeCode === '381' ? {} : { retention: retentionRule(700) }),
     stampDuty: stampDutyRule(170000),
     pih: { icvCounter: 2, previousPiHash: PREVIOUS_HASH_HEX },
   };

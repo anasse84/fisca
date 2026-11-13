@@ -17,17 +17,14 @@ import { element, textElement } from './xml.ts';
 interface DocumentLayout {
   readonly kind: UblDocumentKind;
   readonly root: string;
-  /** Le schéma OASIS UBL 2.1 DebitNote ne définit aucun élément de code de type : undefined (aucune balise inventée). */
-  readonly typeElement: string | undefined;
+  readonly typeElement: string;
   readonly lineElement: string;
   readonly quantityElement: string;
   readonly totalElement: string;
-  /** DueDate n'existe que dans le schéma Invoice ; sinon l'échéance passe par PaymentMeans/PaymentDueDate. */
+  /** DueDate n'existe que dans le schéma Invoice (donc aussi pour le type 383 émis en Invoice) ; sinon l'échéance passe par PaymentMeans/PaymentDueDate. */
   readonly hasDueDate: boolean;
-  /** cac:WithholdingTaxTotal n'existe que dans la racine Invoice (OASIS UBL 2.1) : pas dans CreditNote ni DebitNote. */
+  /** cac:WithholdingTaxTotal n'existe que dans la racine Invoice (OASIS UBL 2.1) : pas dans CreditNote (refus fermé sur 381). */
   readonly hasWithholdingTaxTotal: boolean;
-  /** Dans DebitNote, cac:AllowanceCharge précède cac:PaymentMeans ; dans Invoice et CreditNote il le suit. */
-  readonly allowanceBeforePayment: boolean;
 }
 
 const LAYOUT_BY_TYPE: Readonly<Record<UblTypeCode, DocumentLayout>> = {
@@ -41,19 +38,9 @@ const LAYOUT_BY_TYPE: Readonly<Record<UblTypeCode, DocumentLayout>> = {
     totalElement: 'LegalMonetaryTotal',
     hasDueDate: false,
     hasWithholdingTaxTotal: false,
-    allowanceBeforePayment: false,
   },
-  '383': {
-    kind: 'debit-note',
-    root: 'DebitNote',
-    typeElement: undefined,
-    lineElement: 'DebitNoteLine',
-    quantityElement: 'DebitedQuantity',
-    totalElement: 'RequestedMonetaryTotal',
-    hasDueDate: false,
-    hasWithholdingTaxTotal: false,
-    allowanceBeforePayment: true,
-  },
+  /** Décision du pilote : le type 383 est émis en racine Invoice (InvoiceTypeCode 383), plus en DebitNote. */
+  '383': invoiceLayout(),
   '386': invoiceLayout(),
   '389': invoiceLayout(),
 };
@@ -68,7 +55,6 @@ function invoiceLayout(): DocumentLayout {
     totalElement: 'LegalMonetaryTotal',
     hasDueDate: true,
     hasWithholdingTaxTotal: true,
-    allowanceBeforePayment: false,
   };
 }
 
@@ -346,12 +332,6 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
       `Le préfixe du numéro doit être ${INVOICE_NUMBER_PREFIX_BY_TYPE[invoice.typeCode]} pour le type ${invoice.typeCode}.`,
     );
   }
-  if (invoice.typeCode === '383' && invoice.buyerReference !== undefined) {
-    // Le schéma OASIS UBL 2.1 DebitNote ne définit pas cbc:BuyerReference : refus plutôt que perte silencieuse.
-    throw new UblGeneratorError('UBL_INPUT_INVALID', 'buyerReference n’existe pas dans le schéma DebitNote.', [
-      { path: 'buyerReference', code: 'custom' },
-    ]);
-  }
   if (invoice.typeCode === '381' && invoice.billingReference === undefined) {
     throw new UblGeneratorError(
       'UBL_BILLING_REFERENCE_REQUIRED',
@@ -360,8 +340,8 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
   }
 
   if (invoice.retention !== undefined && !layout.hasWithholdingTaxTotal) {
-    // OASIS UBL 2.1 : cac:WithholdingTaxTotal absent des racines CreditNote et DebitNote ; refus plutôt que perte silencieuse.
-    throw new UblGeneratorError('UBL_RETENTION_INVALID', 'La retenue de garantie n’a pas d’emplacement dans CreditNote ni DebitNote.', [
+    // OASIS UBL 2.1 : cac:WithholdingTaxTotal absent de la racine CreditNote ; refus (échec fermé) plutôt que perte silencieuse.
+    throw new UblGeneratorError('UBL_RETENTION_INVALID', 'La retenue de garantie n’a pas d’emplacement dans CreditNote (avoir 381).', [
       { path: 'retention', code: 'custom' },
     ]);
   }
@@ -377,7 +357,7 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
     textElement('cbc:ID', invoice.number) +
     element('cbc:IssueDate', invoice.issueDate) +
     (layout.hasDueDate && invoice.dueDate !== undefined ? element('cbc:DueDate', invoice.dueDate) : '') +
-    (layout.typeElement === undefined ? '' : element(`cbc:${layout.typeElement}`, invoice.typeCode)) +
+    element(`cbc:${layout.typeElement}`, invoice.typeCode) +
     (invoice.note === undefined ? '' : textElement('cbc:Note', invoice.note)) +
     element('cbc:DocumentCurrencyCode', invoice.currencyCode) +
     (invoice.buyerReference === undefined ? '' : textElement('cbc:BuyerReference', invoice.buyerReference)) +
@@ -385,9 +365,8 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
     pihXml(invoice) +
     element('cac:AccountingSupplierParty', partyXml(invoice.supplier)) +
     element('cac:AccountingCustomerParty', partyXml(invoice.customer)) +
-    (layout.allowanceBeforePayment ? stampDutyXml(invoice, totals) : '') +
     paymentMeansXml(layout, invoice) +
-    (layout.allowanceBeforePayment ? '' : stampDutyXml(invoice, totals)) +
+    stampDutyXml(invoice, totals) +
     taxTotalXml(totals) +
     (layout.hasWithholdingTaxTotal ? withholdingXml(invoice, totals) : '') +
     monetaryTotalXml(layout, totals);
@@ -418,7 +397,7 @@ function pihFieldsOf(invoice: ParsedUblInvoiceInput, totals: ComputedTotals): In
     issueDate: invoice.issueDate,
     buyerIdentifier: invoice.customer.ice,
     currencyCode: invoice.currencyCode,
-    totalHtCents: Number(totals.lineExtensionCents),
+    totalHtCents: Number(totals.lineExtensionCents - totals.disbursementsCents),
     totalVatCents: Number(totals.taxTotalCents),
     stampDutyCents: Number(totals.stampDutyCents),
     totalTtcCents: Number(totals.taxInclusiveCents),
@@ -430,7 +409,8 @@ function pihFieldsOf(invoice: ParsedUblInvoiceInput, totals: ComputedTotals): In
 
 /**
  * Champs du tuple PIH d'une facture, tirés de l'entrée et des totaux du générateur :
- * totalHtCents = HT des lignes (débours compris, avant droit de timbre), totalTtcCents = HT + droit de timbre + TVA.
+ * mêmes valeurs que les colonnes de `invoices` : totalHtCents = total_ht_cents (DÉBOURS EXCLUS), totalVatCents, stampDutyCents,
+ * totalTtcCents = total_ttc_cents (HT + débours + TVA + droit de timbre, débours inclus).
  */
 export function pihFieldsOfInvoice(input: UblInvoiceInput): InvoicePihFields {
   const invoice = parseUblInvoiceInput(input);
