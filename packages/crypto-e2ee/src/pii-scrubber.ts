@@ -155,16 +155,45 @@ function randomNonceHex(randomSource: PiiRandomSource): string {
  */
 const SEP = '[ \\t.\\-\\u2010-\\u2015\\u2212/]';
 
-const SEPARATED_RUN = new RegExp(`\\d+(?:${SEP}\\d+)*`, 'gu');
+const SEPARATED_RUN = new RegExp(`(?<![\\dA-Za-z])\\d+(?:${SEP}\\d+)*`, 'gu');
 const RIB_DIGITS = 24;
 const ICE_DIGITS = 15;
 
 /**
+ * Groupes de chiffres admis pour un ICE écrit avec espaces (le séparateur entre groupes est quelconque) :
+ * 4-4-4-3, 3-3-3-3-3, 9-4-2, 9-6, 3-4-4-4. Hors de ces groupes, un enchaînement ne comportant que des points,
+ * tirets (ou barres obliques) est admis quel que soit son découpage, du moment que le total fait 15 chiffres.
+ */
+const ICE_SPACED_GROUPS: readonly (readonly number[])[] = [
+  [4, 4, 4, 3],
+  [3, 3, 3, 3, 3],
+  [9, 4, 2],
+  [9, 6],
+  [3, 4, 4, 4],
+];
+
+function countDigits(value: string): number {
+  return value.replace(/\D/gu, '').length;
+}
+
+/** Contrôle du callback de masquage : exactement 15 chiffres, bornes sans lettre ni chiffre, groupes admis. */
+function isIceMatch(text: string, start: number, end: number, groups: readonly number[], separators: readonly string[]): boolean {
+  if (countDigits(text.slice(start, end)) !== ICE_DIGITS) return false;
+  if (/[\dA-Za-z]/u.test(text.charAt(start - 1)) || /[\dA-Za-z]/u.test(text.charAt(end))) return false;
+  if (groups.length === 1) return true;
+  if (separators.every((separator) => !/\s/u.test(separator))) return true;
+  return ICE_SPACED_GROUPS.some(
+    (allowed) => allowed.length === groups.length && allowed.every((size, index) => size === groups[index]),
+  );
+}
+
+/**
  * RIB (24 chiffres) et ICE (15 chiffres), avec ou sans séparateurs. On isole d'abord chaque suite maximale
  * de blocs de chiffres reliés par un seul séparateur, puis on la découpe aux frontières de blocs : à chaque
- * bloc, le plus court préfixe de blocs totalisant exactement 24 chiffres (RIB) ou, à défaut, 15 chiffres (ICE)
- * est masqué en entier. Une suite de 14 ou 16 chiffres séparés, ou un bloc qui enjambe ces totaux, n'est pas
- * un identifiant : rien n'est masqué et aucun fragment n'est jamais laissé (pas de coupe au milieu d'un bloc).
+ * bloc, le plus court préfixe de blocs totalisant exactement 24 chiffres (RIB, masqué avant l'ICE) ou, à défaut,
+ * 15 chiffres avec des groupes admis (ICE, voir ICE_SPACED_GROUPS) est masqué en entier. Une suite de 14 ou 16
+ * chiffres séparés, un groupement non admis, ou un bloc qui enjambe ces totaux n'est pas un identifiant : rien
+ * n'est masqué et aucun fragment n'est jamais laissé (pas de coupe au milieu d'un bloc).
  * Deux identifiants consécutifs séparés par une espace restent donc deux jetons.
  */
 function collectSeparatedIdentifiers(text: string, ribPriority: number, icePriority: number, into: Detection[]): void {
@@ -185,8 +214,16 @@ function collectSeparatedIdentifiers(text: string, ribPriority: number, icePrior
         const block = blocks[j];
         if (block === undefined) break;
         total += block.end - block.start;
-        if (total === RIB_DIGITS) ribEnd = j;
-        else if (total === ICE_DIGITS) iceEnd = j;
+        if (total === RIB_DIGITS) {
+          ribEnd = j;
+        } else if (total === ICE_DIGITS && iceEnd < 0) {
+          const first = blocks[i];
+          const groups = blocks.slice(i, j + 1).map((entry) => entry.end - entry.start);
+          const separators = blocks
+            .slice(i, j)
+            .map((entry, index) => text.slice(entry.end, blocks[i + index + 1]?.start ?? entry.end));
+          if (first !== undefined && isIceMatch(text, first.start, block.end, groups, separators)) iceEnd = j;
+        }
       }
       const first = blocks[i];
       const lastIndex = ribEnd >= 0 ? ribEnd : iceEnd;

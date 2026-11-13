@@ -54,35 +54,61 @@ export interface EscrowPresentation {
   readonly share: string | ShamirShare;
 }
 
-/** Multiplication dans GF(2^8) (0x11b) en temps constant : 8 tours fixes, masques sans branchement. */
-export function gf256Multiply(a: number, b: number): number {
-  let product = 0;
-  let x = a & 0xff;
-  let y = b & 0xff;
-  for (let round = 0; round < 8; round += 1) {
-    product ^= x & -(y & 1);
-    const carry = -((x >> 7) & 1);
-    x = ((x << 1) & 0xff) ^ (0x1b & carry);
-    y >>= 1;
+/** Code d'erreur typé (E2eeError) levé par l'inverse de zéro dans GF(256). */
+export const SHAMIR_GF256_ZERO_INVERSE = 'SHAMIR_GF256_ZERO_INVERSE' as const;
+
+/**
+ * Tables statiques exp/log de GF(2^8) (polynôme 0x11b, générateur 0x03), construites une seule fois au
+ * chargement du module. `GF256_EXP` est doublée (510 entrées utiles) pour éviter toute réduction modulo 255 :
+ * exp[log a + log b] avec log a + log b ≤ 508. `GF256_LOG[0]` est sans objet (0 n'a pas de logarithme).
+ */
+function buildGf256Tables(): { readonly exp: Uint8Array; readonly log: Uint8Array } {
+  const exp = new Uint8Array(512);
+  const log = new Uint8Array(256);
+  let value = 1;
+  for (let power = 0; power < 255; power += 1) {
+    exp[power] = value;
+    log[value] = power;
+    // value *= 0x03 = value XOR xtime(value)
+    const doubled = ((value << 1) & 0xff) ^ ((value & 0x80) === 0 ? 0 : 0x1b);
+    value ^= doubled;
   }
-  return product;
+  for (let power = 255; power < 512; power += 1) {
+    exp[power] = exp[power - 255] ?? 0;
+  }
+  return { exp, log };
 }
 
-/** Inverse par a^254 (Fermat) ; séquence fixe d'opérations. Zéro n'a pas d'inverse. */
-export function gf256Inverse(a: number): number {
-  if ((a & 0xff) === 0) {
-    throw new E2eeError('INVALID_INPUT');
+const GF256_TABLES = buildGf256Tables();
+export const GF256_EXP: Readonly<Uint8Array> = GF256_TABLES.exp;
+export const GF256_LOG: Readonly<Uint8Array> = GF256_TABLES.log;
+
+/**
+ * Multiplication dans GF(2^8) en O(1) par tables : exp[log a + log b], 0 si un facteur est nul.
+ * Les accès aux tables dépendent des opérandes (canal auxiliaire de cache possible), contrairement à
+ * l'ancienne boucle à masques ; les parts d'un séquestre ne sont manipulées que côté serveur de confiance.
+ */
+export function gf256Mul(a: number, b: number): number {
+  const x = a & 0xff;
+  const y = b & 0xff;
+  if (x === 0 || y === 0) {
+    return 0;
   }
-  let result = 1;
-  let base = a & 0xff;
-  for (let bit = 0; bit < 8; bit += 1) {
-    if (((254 >> bit) & 1) === 1) {
-      result = gf256Multiply(result, base);
-    }
-    base = gf256Multiply(base, base);
-  }
-  return result;
+  return GF256_EXP[(GF256_LOG[x] ?? 0) + (GF256_LOG[y] ?? 0)] ?? 0;
 }
+
+/** Inverse en O(1) : exp[255 - log a]. Zéro n'a pas d'inverse : E2eeError SHAMIR_GF256_ZERO_INVERSE. */
+export function gf256Inv(a: number): number {
+  const x = a & 0xff;
+  if (x === 0) {
+    throw new E2eeError(SHAMIR_GF256_ZERO_INVERSE);
+  }
+  return GF256_EXP[255 - (GF256_LOG[x] ?? 0)] ?? 0;
+}
+
+/** Noms historiques exportés (aucune importation existante ne casse). */
+export const gf256Multiply: typeof gf256Mul = gf256Mul;
+export const gf256Inverse: typeof gf256Inv = gf256Inv;
 
 function isShareIndex(value: number): value is ShareIndex {
   return value === 1 || value === 2 || value === 3;
