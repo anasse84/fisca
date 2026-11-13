@@ -34,7 +34,7 @@ export interface LedgerActorProfileSource {
 export interface LedgerApiDeps {
   readonly clock: LedgerClock;
   readonly ids: LedgerIdSource;
-  readonly hasher: LedgerHasher;
+  readonly hasher?: LedgerHasher;
   readonly cipher: LedgerFieldCipher;
   readonly preCloseControls: PreCloseControls;
   readonly actorProfiles: LedgerActorProfileSource;
@@ -72,7 +72,7 @@ export function createLedgerApi(deps: LedgerApiDeps): LedgerApi {
       companyId: call.tenant.companyId,
       clock: deps.clock,
       ids: deps.ids,
-      hasher: deps.hasher,
+      ...(deps.hasher === undefined ? {} : { hasher: deps.hasher }),
       cipher: deps.cipher,
       preCloseControls: deps.preCloseControls,
     });

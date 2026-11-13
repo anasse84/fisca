@@ -55,6 +55,7 @@ import {
   type VatPendingRole,
 } from './ledger-calculations.ts';
 import { LedgerError, mapDatabaseError } from './ledger-errors.ts';
+import { LEDGER_GENESIS_HASH, defaultSha256LedgerHasher } from './ledger-hasher.ts';
 
 export { LedgerError, mapDatabaseError, LEDGER_ERROR_CODES, type LedgerErrorCode } from './ledger-errors.ts';
 
@@ -146,6 +147,15 @@ export interface ClosingHashInput {
   readonly endDate: string;
   readonly postedEntryCount: number;
   readonly closedAtIso: string;
+  /** Somme de `total_debit_cents` des pièces POSTED de l'exercice (centimes entiers). */
+  readonly grandTotalDebitCents: number;
+  /** Somme de `total_credit_cents` des pièces POSTED de l'exercice (centimes entiers). */
+  readonly grandTotalCreditCents: number;
+  /**
+   * Tête de chaque journal à la clôture. `chainLength` = `journals.last_sequence_number` = rang, dans la chaîne du journal,
+   * de la dernière pièce scellée (c'est la valeur `lastSequenceNumber` hachée) ; `lastEntryHash` = `journals.last_entry_hash`
+   * (genèse et rang 0 pour un journal sans pièce scellée).
+   */
   readonly journalHeads: readonly { readonly journalId: string; readonly journalCode: string; readonly lastEntryHash: string; readonly chainLength: number }[];
 }
 
@@ -165,7 +175,8 @@ export interface LedgerEngineDeps {
   readonly companyId: string;
   readonly clock: LedgerClock;
   readonly ids: LedgerIdSource;
-  readonly hasher: LedgerHasher;
+  /** Absent : `defaultSha256LedgerHasher` (SHA-256 de JSON.stringify du tuple canonique, voir ledger-hasher.ts). */
+  readonly hasher?: LedgerHasher;
   readonly cipher: LedgerFieldCipher;
   readonly preCloseControls: PreCloseControls;
 }
@@ -507,7 +518,11 @@ function toBoolean(value: number | boolean): boolean {
 }
 
 export class ImmutableCgncLedgerEngine {
-  constructor(private readonly deps: LedgerEngineDeps) {}
+  private readonly hasher: LedgerHasher;
+
+  constructor(private readonly deps: LedgerEngineDeps) {
+    this.hasher = deps.hasher ?? defaultSha256LedgerHasher;
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // (1) Brouillon
@@ -899,7 +914,7 @@ export class ImmutableCgncLedgerEngine {
       const next = byPrevious.get(cursor);
       if (next === undefined) break;
       length += 1;
-      const recomputed = await this.deps.hasher.computeEntryHash(await this.buildHashInput(next.id, cursor, length));
+      const recomputed = await this.hasher.computeEntryHash(await this.buildHashInput(next.id, cursor, length));
       if (recomputed !== next.entry_hash) {
         return { valid: false, length, brokenAtEntryId: next.id };
       }
@@ -1201,7 +1216,7 @@ export class ImmutableCgncLedgerEngine {
     const previousEntryHash = journal.last_entry_hash;
     const chainPosition = Number(journal.last_sequence_number) + 1;
     const hashInput = await this.buildHashInput(entry.id, previousEntryHash, chainPosition, nowIso);
-    const entryHash = await this.deps.hasher.computeEntryHash(hashInput);
+    const entryHash = await this.hasher.computeEntryHash(hashInput);
     if (typeof entryHash !== 'string' || !SHA256_HEX.test(entryHash)) {
       throw new LedgerError('LEDGER_HASH_INVALID', "le LedgerHasher doit rendre un SHA-256 hexadécimal minuscule de 64 caractères.");
     }
@@ -1378,7 +1393,12 @@ export class ImmutableCgncLedgerEngine {
     const journals = await this.query<JournalRow>('SELECT id, code, journal_type, last_sequence_number, last_entry_hash FROM journals ORDER BY code', []);
     const count = await this.query<{ n: number }>(`SELECT COUNT(*) AS n FROM journal_entries WHERE fiscal_year_id = ? AND status = 'POSTED'`, [fiscalYear.id]);
     const postedEntryCount = Number(count[0]?.n ?? 0);
-    const closingHash = await this.deps.hasher.computeClosingHash({
+    const totals = await this.query<{ d: number | string; c: number | string }>(
+      `SELECT CAST(COALESCE(SUM(total_debit_cents), 0) AS BIGINT) AS d, CAST(COALESCE(SUM(total_credit_cents), 0) AS BIGINT) AS c
+         FROM journal_entries WHERE fiscal_year_id = ? AND status = 'POSTED'`,
+      [fiscalYear.id],
+    );
+    const closingHash = await this.hasher.computeClosingHash({
       companyId: this.deps.companyId,
       fiscalYearId: fiscalYear.id,
       fiscalYearCode: fiscalYear.code,
@@ -1386,6 +1406,8 @@ export class ImmutableCgncLedgerEngine {
       endDate: fiscalYear.end_date,
       postedEntryCount,
       closedAtIso: nowIso,
+      grandTotalDebitCents: Number(totals[0]?.d ?? 0),
+      grandTotalCreditCents: Number(totals[0]?.c ?? 0),
       journalHeads: journals.map((j) => ({ journalId: j.id, journalCode: j.code, lastEntryHash: j.last_entry_hash, chainLength: Number(j.last_sequence_number) })),
     });
     if (typeof closingHash !== 'string' || !SHA256_HEX.test(closingHash)) {
@@ -1520,7 +1542,7 @@ export class ImmutableCgncLedgerEngine {
       `SELECT previous_entry_hash FROM journal_entries WHERE journal_id = ? AND status = 'POSTED' AND previous_entry_hash LIKE ? LIMIT 1`,
       [journal.id, `${GENESIS_PREFIX}%`],
     );
-    return rows[0]?.previous_entry_hash ?? `${GENESIS_PREFIX}00000000000000000000000000000000`;
+    return rows[0]?.previous_entry_hash ?? LEDGER_GENESIS_HASH;
   }
 
   private async resolveAccountByVatRole(role: string): Promise<string> {
