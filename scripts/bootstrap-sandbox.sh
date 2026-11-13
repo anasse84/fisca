@@ -73,7 +73,16 @@ for opt in "$@"; do
         (redis6-server --port 63799 --daemonize yes >/dev/null 2>&1 || redis-server --port 63799 --daemonize yes >/dev/null)
       log "Redis prêt : redis://127.0.0.1:63799" ;;
     --playwright) # E2E, Lighthouse (sessions P2-B, P2-C, P4-A, G2, G4) — les bibliothèques système Chromium sont déjà présentes
-      pnpm exec playwright install chromium ;;
+      # Playwright n'est pas une dépendance de la racine : on utilise celui d'un workspace qui le déclare (apps/marketing-astro),
+      # sinon le paquet est téléchargé à la volée (registre npm et CDN Playwright joignables, accord npm du fil requis).
+      if pnpm exec playwright --version >/dev/null 2>&1; then
+        pnpm exec playwright install chromium
+      elif pnpm --filter @fisca/marketing-astro exec playwright --version >/dev/null 2>&1; then
+        pnpm --filter @fisca/marketing-astro exec playwright install chromium
+      else
+        pnpm dlx playwright install chromium
+      fi
+      log "Chromium (Playwright) prêt." ;;
     *) log "option inconnue : $opt" ;;
   esac
 done

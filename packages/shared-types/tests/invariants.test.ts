@@ -84,8 +84,9 @@ describe('contrôles repris de Doc_05 Section 14', () => {
   it('ADR-06 certificat', () => {
     const ice = '003976749000084';
     expect(() => assertCertificateMatchesEmitter(`CN=X, 2.5.4.97=${ice}`, ice, '1234567')).not.toThrow();
-    expect(() => assertCertificateMatchesEmitter('CN=X, SERIALNUMBER=1234567', ice, '1234567')).not.toThrow();
+    expect(() => assertCertificateMatchesEmitter('CN=X, SERIALNUMBER=VATMA-1234567', ice, '1234567')).not.toThrow();
     expect(() => assertCertificateMatchesEmitter('CN=X', ice, '1234567')).toThrowError(/ADR_06_LOI4320_CERT_MISMATCH/);
+    expect(() => assertCertificateMatchesEmitter(`CN=${ice}`, ice, '1234567')).toThrowError(/ADR_06_LOI4320_CERT_MISMATCH/);
   });
 
   it('ADR-02/10 schéma MCP', () => {

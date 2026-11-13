@@ -157,6 +157,9 @@ describe('constat 4b : certificat comparé à la valeur complète d\'un attribut
     ['ICE dans un attribut non identifiant (O)', `CN=Z, O=${ICE}`],
     ['valeur échappée contenant une virgule', `CN=Z\\, SERIALNUMBER=${IF}`],
     ['DN vide', ''],
+    ['CN seul égal à l\'ICE', `CN=${ICE}, O=ACME`],
+    ['CN seul égal à l\'IF', `cn = ${IF} , o=ACME`],
+    ['IF nu (sans préfixe VATMA-, IFMA-, IF:, IF-)', `C=MA,O=ACME,SERIALNUMBER=${IF}`],
   ];
   for (const [label, dn] of adverse) {
     it(`refuse : ${label}`, () => {
@@ -172,10 +175,8 @@ describe('constat 4b : certificat comparé à la valeur complète d\'un attribut
     const ok: readonly string[] = [
       `CN=Emetteur, 2.5.4.97=${ICE}`,
       `CN=Emetteur, organizationIdentifier=${ICE}, C=MA`,
-      `C=MA,O=ACME,SERIALNUMBER=${IF}`,
-      `CN=${ICE}, O=ACME`,
-      `cn = ${IF} , o=ACME`,
-      `CN=ACME\\, SARL, 2.5.4.5=${IF}`,
+      `C=MA,O=ACME,SERIALNUMBER=IFMA-${IF}`,
+      `CN=ACME\\, SARL, 2.5.4.5=IF-${IF}`,
     ];
     for (const dn of ok) {
       expect(() => FISCA_ADR_INVARIANTS.assertCertificateMatchesEmitter(dn, ICE, IF)).not.toThrow();
