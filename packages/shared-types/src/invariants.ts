@@ -29,7 +29,9 @@ export type AdrInvariantErrorCode =
   | 'ADR_04_LF2026_VAT_VIOLATION'
   | 'ADR_04_UNREADABLE_ISSUE_DATE'
   | 'ADR_06_LOI4320_CERT_MISMATCH'
-  | 'ADR_11_SAGE100_CORRUPTION_GUARD';
+  | 'ADR_11_SAGE100_CORRUPTION_GUARD'
+  | 'ADR_11_SAGE100_MISSING_NOLOCK'
+  | 'ADR_11_SAGE100_EMPTY_TABLE_SOURCE';
 
 /** Erreur typée des gardes ADR : le message commence toujours par le code. */
 export class AdrInvariantError extends Error {
@@ -178,8 +180,7 @@ export function assertSafeMcpToolSchema(toolName: string, parameterKeys: readonl
 }
 
 const SAGE_FORBIDDEN_KEYWORDS =
-  /\b(INTO|EXEC|EXECUTE|CREATE|GRANT|REVOKE|DENY|ALTER|DROP|TRUNCATE|MERGE|CALL|INSERT|UPDATE|DELETE|BULK|OPENROWSET|OPENQUERY|OPENDATASOURCE|OPENXML|DBCC|BACKUP|RESTORE|SHUTDOWN|WAITFOR)\b/;
-const SAGE_STRING_LITERAL = /'(?:[^']|'')*'/g;
+  /\b(INTO|EXEC|EXECUTE|CREATE|GRANT|REVOKE|DENY|ALTER|DROP|TRUNCATE|MERGE|CALL|INSERT|UPDATE|DELETE|BULK|OPENROWSET|OPENQUERY|OPENDATASOURCE|OPENXML|DBCC|BACKUP|RESTORE|SHUTDOWN|WAITFOR|UPDLOCK|XLOCK|HOLDLOCK|TABLOCKX)\b/;
 /** Mots qui terminent la clause FROM (la liste de tables s'arrête avant eux). */
 const SAGE_FROM_CLAUSE_END: ReadonlySet<string> = new Set([
   'WHERE', 'GROUP', 'HAVING', 'ORDER', 'UNION', 'INTERSECT', 'EXCEPT', 'FOR', 'OPTION', 'OFFSET', 'FETCH',
@@ -235,6 +236,294 @@ function findSageImplicitJoin(code: string): 'comma' | 'unbalanced' | null {
   return inFrom.length === 1 ? null : 'unbalanced';
 }
 
+type SageSanitized = { readonly code: string } | { readonly error: 'comment' | 'literal' };
+
+/**
+ * Passe unique : supprime les commentaires `--` et `/* *\/` (ces derniers imbriqués, comme SQL Server) et neutralise les
+ * littéraux entre apostrophes (remplacés par ` 0 `). Les identifiants `[...]` et "..." sont recopiés tels quels : un
+ * marqueur de commentaire ou une apostrophe à l'intérieur n'a aucun effet. Échec fermé si commentaire ou littéral non terminé.
+ */
+function sanitizeSageSql(sql: string): SageSanitized {
+  let out = '';
+  let index = 0;
+  while (index < sql.length) {
+    const char = sql.charAt(index);
+    const next = sql.charAt(index + 1);
+    if (char === "'") {
+      let end = index + 1;
+      while (end < sql.length && !(sql.charAt(end) === "'" && sql.charAt(end + 1) !== "'")) {
+        end += sql.charAt(end) === "'" ? 2 : 1;
+      }
+      if (end >= sql.length) {
+        return { error: 'literal' };
+      }
+      out += ' 0 ';
+      index = end + 1;
+    } else if (char === '[' || char === '"') {
+      const closer = char === '[' ? ']' : '"';
+      let end = index + 1;
+      while (end < sql.length && !(sql.charAt(end) === closer && sql.charAt(end + 1) !== closer)) {
+        end += sql.charAt(end) === closer ? 2 : 1;
+      }
+      const stop = Math.min(end + 1, sql.length);
+      out += sql.slice(index, stop);
+      index = stop;
+    } else if (char === '-' && next === '-') {
+      while (index < sql.length && sql.charAt(index) !== '\n' && sql.charAt(index) !== '\r') {
+        index += 1;
+      }
+      out += ' ';
+    } else if (char === '/' && next === '*') {
+      let depth = 1;
+      index += 2;
+      while (index < sql.length && depth > 0) {
+        if (sql.charAt(index) === '/' && sql.charAt(index + 1) === '*') {
+          depth += 1;
+          index += 2;
+        } else if (sql.charAt(index) === '*' && sql.charAt(index + 1) === '/') {
+          depth -= 1;
+          index += 2;
+        } else {
+          index += 1;
+        }
+      }
+      if (depth > 0) {
+        return { error: 'comment' };
+      }
+      out += ' ';
+    } else {
+      out += char;
+      index += 1;
+    }
+  }
+  return { code: out };
+}
+
+interface SageToken {
+  readonly kind: 'word' | 'ident' | 'punct' | 'other';
+  readonly text: string;
+  readonly upper: string;
+}
+
+const SAGE_WORD_START = /[\p{L}_#@]/u;
+const SAGE_WORD_PART = /[\p{L}\p{N}_$#@]/u;
+
+/** Découpe le SQL (déjà sans commentaires ni littéraux, crochets équilibrés) en mots, identifiants délimités et ponctuation. */
+function tokenizeSageSql(code: string): readonly SageToken[] {
+  const tokens: SageToken[] = [];
+  let index = 0;
+  while (index < code.length) {
+    const char = code.charAt(index);
+    if (/\s/u.test(char)) {
+      index += 1;
+    } else if (char === '[' || char === '"') {
+      const closer = char === '[' ? ']' : '"';
+      let end = index + 1;
+      while (end < code.length && !(code.charAt(end) === closer && code.charAt(end + 1) !== closer)) {
+        end += code.charAt(end) === closer ? 2 : 1;
+      }
+      const inner = code.slice(index + 1, end).split(closer + closer).join(closer);
+      tokens.push({ kind: 'ident', text: inner, upper: inner.toUpperCase() });
+      index = end + 1;
+    } else if (SAGE_WORD_START.test(char)) {
+      let end = index + 1;
+      while (end < code.length && SAGE_WORD_PART.test(code.charAt(end))) {
+        end += 1;
+      }
+      const word = code.slice(index, end);
+      tokens.push({ kind: 'word', text: word, upper: word.toUpperCase() });
+      index = end;
+    } else if (/\p{N}/u.test(char)) {
+      let end = index + 1;
+      while (end < code.length && /[\p{L}\p{N}_.]/u.test(code.charAt(end))) {
+        end += 1;
+      }
+      tokens.push({ kind: 'other', text: code.slice(index, end), upper: code.slice(index, end).toUpperCase() });
+      index = end;
+    } else {
+      tokens.push({ kind: 'punct', text: char, upper: char });
+      index += 1;
+    }
+  }
+  return tokens;
+}
+
+/** Mots qui ne peuvent pas être un alias de table : ils ouvrent la suite de la clause. */
+const SAGE_NOT_AN_ALIAS: ReadonlySet<string> = new Set([
+  'WITH', 'ON', 'WHERE', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'CROSS', 'OUTER', 'JOIN', 'APPLY', 'ORDER', 'GROUP',
+  'HAVING', 'UNION', 'EXCEPT', 'INTERSECT', 'OPTION', 'FOR', 'OFFSET', 'FETCH', 'PIVOT', 'UNPIVOT', 'TABLESAMPLE',
+  'SELECT', 'FROM', 'USING', 'NATURAL',
+]);
+
+interface SageTableAnalysis {
+  readonly physicalCount: number;
+  readonly missingNoLock: readonly string[];
+}
+
+const isIdentifierToken = (token: SageToken | undefined): token is SageToken =>
+  token !== undefined && (token.kind === 'word' || token.kind === 'ident');
+const isPunct = (token: SageToken | undefined, char: string): boolean => token?.kind === 'punct' && token.text === char;
+const isWord = (token: SageToken | undefined, word: string): boolean => token?.kind === 'word' && token.upper === word;
+
+/** Index du `)` qui ferme le `(` situé à `open` ; -1 si absent. */
+function matchingParen(tokens: readonly SageToken[], open: number): number {
+  let depth = 0;
+  for (let index = open; index < tokens.length; index += 1) {
+    if (isPunct(tokens[index], '(')) {
+      depth += 1;
+    } else if (isPunct(tokens[index], ')')) {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return -1;
+}
+
+/** Vrai si la liste d'indices (entre parenthèses, entrées séparées par des virgules de niveau 1) contient l'entrée exacte NOLOCK. */
+function hintListHasNoLock(tokens: readonly SageToken[], open: number, close: number): boolean {
+  let depth = 0;
+  let entry: SageToken[] = [];
+  const entries: SageToken[][] = [];
+  for (let index = open + 1; index < close; index += 1) {
+    const token = tokens[index];
+    if (token === undefined) {
+      continue;
+    }
+    if (isPunct(token, '(')) {
+      depth += 1;
+    } else if (isPunct(token, ')')) {
+      depth -= 1;
+    }
+    if (depth === 0 && isPunct(token, ',')) {
+      entries.push(entry);
+      entry = [];
+    } else {
+      entry.push(token);
+    }
+  }
+  entries.push(entry);
+  return entries.some((candidate) => candidate.length === 1 && isWord(candidate[0], 'NOLOCK'));
+}
+
+/**
+ * Parcourt chaque FROM, JOIN ou APPLY et vérifie que chaque table physique (nom à 1 à 4 parties, crochets, alias avec
+ * ou sans AS) porte sa propre clause WITH (...NOLOCK...). Les noms de CTE (une seule partie) sont exemptés, les
+ * sous-requêtes en FROM sont analysées par la boucle principale (elles ont leur propre FROM).
+ */
+function analyzeSageTableSources(tokens: readonly SageToken[], cteNames: ReadonlySet<string>): SageTableAnalysis {
+  let physicalCount = 0;
+  const missing: string[] = [];
+
+  const readSource = (start: number): number => {
+    let cursor = start;
+    while (isPunct(tokens[cursor], '(')) {
+      if (isWord(tokens[cursor + 1], 'SELECT')) {
+        return cursor; // table dérivée : le SELECT intérieur est traité par la boucle principale
+      }
+      cursor += 1; // jointure parenthésée : la première table est juste après
+    }
+    const first = tokens[cursor];
+    if (!isIdentifierToken(first)) {
+      physicalCount += 1;
+      missing.push('(source de table illisible)');
+      return cursor;
+    }
+    const parts: string[] = [first.text];
+    cursor += 1;
+    while (isPunct(tokens[cursor], '.')) {
+      cursor += 1;
+      const part = tokens[cursor];
+      if (isIdentifierToken(part)) {
+        parts.push(part.text);
+        cursor += 1;
+      } else {
+        parts.push('');
+      }
+    }
+    const callsFunction = isPunct(tokens[cursor], '(');
+    if (!callsFunction) {
+      if (isWord(tokens[cursor], 'AS')) {
+        cursor += 1;
+        if (isIdentifierToken(tokens[cursor])) {
+          cursor += 1;
+        }
+      } else {
+        const candidate = tokens[cursor];
+        if (candidate?.kind === 'ident' || (candidate?.kind === 'word' && !SAGE_NOT_AN_ALIAS.has(candidate.upper))) {
+          cursor += 1;
+        }
+      }
+    }
+    let hasNoLock = false;
+    if (isWord(tokens[cursor], 'WITH') && isPunct(tokens[cursor + 1], '(')) {
+      const close = matchingParen(tokens, cursor + 1);
+      if (close !== -1) {
+        hasNoLock = hintListHasNoLock(tokens, cursor + 1, close);
+        cursor = close + 1;
+      }
+    }
+    const isCte = parts.length === 1 && cteNames.has((parts[0] ?? '').toUpperCase());
+    if (!isCte) {
+      physicalCount += 1;
+      if (!hasNoLock || callsFunction) {
+        missing.push(parts.join('.'));
+      }
+    }
+    return cursor;
+  };
+
+  let index = 0;
+  while (index < tokens.length) {
+    const token = tokens[index];
+    if (token?.kind === 'word' && (token.upper === 'FROM' || token.upper === 'JOIN' || token.upper === 'APPLY')) {
+      index = Math.max(readSource(index + 1), index + 1);
+    } else {
+      index += 1;
+    }
+  }
+  return { physicalCount, missingNoLock: missing };
+}
+
+/**
+ * Lit l'en-tête `WITH nom [(colonnes)] AS ( … ) [, nom AS ( … )]…` et renvoie les noms de CTE (majuscules) avec l'index
+ * du premier jeton de la requête principale ; null si l'en-tête est mal formé.
+ */
+function readSageCteHeader(tokens: readonly SageToken[]): { readonly names: ReadonlySet<string>; readonly mainStart: number } | null {
+  const names = new Set<string>();
+  let cursor = 1;
+  for (;;) {
+    const name = tokens[cursor];
+    if (!isIdentifierToken(name)) {
+      return null;
+    }
+    cursor += 1;
+    if (isPunct(tokens[cursor], '(')) {
+      const closeColumns = matchingParen(tokens, cursor);
+      if (closeColumns === -1) {
+        return null;
+      }
+      cursor = closeColumns + 1;
+    }
+    if (!isWord(tokens[cursor], 'AS') || !isPunct(tokens[cursor + 1], '(')) {
+      return null;
+    }
+    const closeBody = matchingParen(tokens, cursor + 1);
+    if (closeBody === -1) {
+      return null;
+    }
+    names.add(name.upper);
+    cursor = closeBody + 1;
+    if (isPunct(tokens[cursor], ',')) {
+      cursor += 1;
+    } else {
+      break;
+    }
+  }
+  return isWord(tokens[cursor], 'SELECT') ? { names, mainStart: cursor } : null;
+}
+
 export function assertReadOnlySageSql(sqlQuery: string): void {
   const refuse = (reason: string): never => {
     throw new AdrInvariantError(
@@ -242,20 +531,22 @@ export function assertReadOnlySageSql(sqlQuery: string): void {
       `Écriture SQL directe interdite sur Sage 100 (${reason}). Utilisez IPMEncoder ou l'export .PNM.`,
     );
   };
-  const trimmed = sqlQuery.trim();
-  const statement = trimmed.endsWith(';') ? trimmed.slice(0, -1) : trimmed;
-  // Les littéraux sont neutralisés avant l'analyse : un mot-clé ou un « ; » entre apostrophes n'est pas du SQL exécutable.
-  const code = statement.replace(SAGE_STRING_LITERAL, '0').toUpperCase();
-  if (code.includes("'")) {
-    return refuse('littéral non terminé');
+  // Commentaires supprimés et littéraux neutralisés avant l'analyse : un mot-clé, un « ; » ou un indice entre
+  // apostrophes ou dans un commentaire n'est pas du SQL exécutable (et ne peut donc pas masquer un NOLOCK manquant).
+  const sanitized = sanitizeSageSql(sqlQuery);
+  if ('error' in sanitized) {
+    return refuse(sanitized.error === 'literal' ? 'littéral non terminé' : 'commentaire SQL non terminé');
   }
+  const trimmed = sanitized.code.trim();
+  const statement = trimmed.endsWith(';') ? trimmed.slice(0, -1) : trimmed;
+  const code = statement.toUpperCase();
   if (code.includes(';')) {
     return refuse('instructions multiples');
   }
-  if (code.includes('--') || code.includes('/*') || code.includes('*/')) {
-    return refuse('commentaire SQL');
+  if (code.includes('*/')) {
+    return refuse('fermeture de commentaire orpheline');
   }
-  if (!/^SELECT\b/.test(code)) {
+  if (!/^(?:SELECT|WITH)\b/.test(code)) {
     return refuse('une instruction SELECT unique est requise');
   }
   const keyword = SAGE_FORBIDDEN_KEYWORDS.exec(code);
@@ -272,11 +563,25 @@ export function assertReadOnlySageSql(sqlQuery: string): void {
   if (implicitJoin === 'unbalanced') {
     return refuse('parenthèses ou identifiant délimité mal formés');
   }
-  // AGENTS.md loi 9 : lecture WITH (NOLOCK) seulement. Chaque table lue (FROM ou JOIN) porte son indice.
-  const tableReads = (code.match(/\b(?:FROM|JOIN)\b/g) ?? []).length;
-  const noLockHints = (code.match(/\bWITH\s*\(\s*NOLOCK\s*\)/g) ?? []).length;
-  if (tableReads === 0 || noLockHints < tableReads) {
-    return refuse('lecture sans WITH (NOLOCK) sur chaque table');
+  const tokens = tokenizeSageSql(statement);
+  let cteNames: ReadonlySet<string> = new Set<string>();
+  if (isWord(tokens[0], 'WITH')) {
+    const header = readSageCteHeader(tokens);
+    if (header === null) {
+      return refuse('en-tête WITH … AS ( … ) mal formé ou requête principale non SELECT');
+    }
+    cteNames = header.names;
+  }
+  // AGENTS.md loi 9 / ADR-11 : lecture WITH (NOLOCK) seulement, sur CHAQUE table physique (FROM, JOIN, APPLY).
+  const analysis = analyzeSageTableSources(tokens, cteNames);
+  if (analysis.physicalCount === 0) {
+    throw new AdrInvariantError('ADR_11_SAGE100_EMPTY_TABLE_SOURCE', 'aucune table physique détectée dans la requête Sage 100.');
+  }
+  if (analysis.missingNoLock.length > 0) {
+    throw new AdrInvariantError(
+      'ADR_11_SAGE100_MISSING_NOLOCK',
+      `clause WITH (NOLOCK) manquante sur chaque table physique, absente de : ${analysis.missingNoLock.join(', ')}.`,
+    );
   }
 }
 
