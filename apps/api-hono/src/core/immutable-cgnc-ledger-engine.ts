@@ -266,6 +266,23 @@ export interface VatClearingDraftCreated extends DraftCreated {
   readonly clearedCents: number;
 }
 
+/** Brouillon VAT_CLEARING préparé, NON exécuté : les instructions (pièce, lignes) à joindre à un lot atomique de l'appelant. */
+export interface VatClearingDraftStatements extends VatClearingDraftCreated {
+  readonly statements: readonly SqlStatementParams[];
+}
+
+/** Trace d'audit adossée à une garde : `from_state` vaut NULL (le lot entier est annulé) tant que `guardSql` n'est pas vraie. */
+export interface GuardedExternalAuditSpec {
+  readonly entityTable: string;
+  readonly entityId: string;
+  readonly fromState: string;
+  readonly toState: string;
+  readonly idempotencyKey: string;
+  readonly proofRef: string;
+  readonly guardSql: string;
+  readonly guardParams: readonly SqlParam[];
+}
+
 export interface FiscalYearTransitionInput {
   readonly fiscalYearId: string;
   readonly idempotencyKey: string;
@@ -402,6 +419,27 @@ interface SealPlan {
   readonly previousEntryHash: string;
   /** Rang de la pièce dans la chaîne du journal après scellement. */
   readonly chainPosition: number;
+}
+
+interface DraftSpec {
+  readonly journalId: string;
+  readonly fiscalYearId: string;
+  readonly entryDate: string;
+  readonly reviewCycle: LedgerReviewCycle;
+  readonly sourceDocumentType: LedgerSourceDocumentType;
+  readonly status: 'IA_PROPOSITION' | 'DRAFT';
+  readonly lines: readonly DraftLineInput[];
+  readonly invoiceId: string | null;
+  readonly partnerId: string | null;
+  readonly dgiClearanceUuid: string | null;
+  readonly reversalOfEntryId: string | null;
+}
+
+interface BuiltEntry {
+  readonly entryId: string;
+  readonly entryReference: string;
+  readonly sequenceNumber: number;
+  readonly statements: readonly SqlStatementParams[];
 }
 
 interface InsertEntrySpec {
@@ -617,6 +655,16 @@ export class ImmutableCgncLedgerEngine {
   // -------------------------------------------------------------------------------------------------------------------
 
   async createVatClearingDraft(actor: LedgerActor, input: CreateVatClearingDraftInput): Promise<VatClearingDraftCreated> {
+    const { statements, ...created } = await this.buildVatClearingDraftStatements(actor, input);
+    await this.write(statements);
+    return created;
+  }
+
+  /**
+   * Prépare le brouillon VAT_CLEARING (mêmes contrôles et mêmes règles LCN que `createVatClearingDraft`) SANS rien écrire : rend
+   * les instructions de la pièce et de ses lignes, que l'appelant joint à son propre lot `executeBatchAtomically`.
+   */
+  async buildVatClearingDraftStatements(actor: LedgerActor, input: CreateVatClearingDraftInput): Promise<VatClearingDraftStatements> {
     assertIsoDate(input.entryDate, 'entryDate');
     if (!includes(UBL_PAYMENT_CODES, input.paymentMethodCode)) {
       throw invalid(`paymentMethodCode inconnu : ${String(input.paymentMethodCode)}.`);
@@ -689,7 +737,7 @@ export class ImmutableCgncLedgerEngine {
       };
       return [pendingLine, targetLine];
     });
-    const created = await this.insertDraft(actor, {
+    const built = await this.planDraft(actor, {
       journalId: input.journalId,
       fiscalYearId: input.fiscalYearId,
       entryDate: input.entryDate,
@@ -702,7 +750,33 @@ export class ImmutableCgncLedgerEngine {
       dgiClearanceUuid: null,
       reversalOfEntryId: null,
     });
-    return { ...created, clearedCents: movements.reduce((sum, m) => sum + m.amountCents, 0) };
+    return {
+      entryId: built.entryId,
+      entryReference: built.entryReference,
+      sequenceNumber: built.sequenceNumber,
+      status: built.status,
+      statements: built.statements,
+      clearedCents: movements.reduce((sum, m) => sum + m.amountCents, 0),
+    };
+  }
+
+  /** Instruction d'audit garde-fou pour un lot atomique composé par l'appelant (CAS : `from_state` NULL annule tout le lot). */
+  buildGuardedAuditStatement(actor: LedgerActor, spec: GuardedExternalAuditSpec): SqlStatementParams {
+    return guardedAudit(
+      {
+        id: this.newId(),
+        entityTable: spec.entityTable,
+        entityId: spec.entityId,
+        fromState: spec.fromState,
+        toState: spec.toState,
+        actorKind: actorKindOf(actor.role),
+        actorId: actor.actorId,
+        idempotencyKey: spec.idempotencyKey,
+        proofRef: spec.proofRef,
+        createdAtIso: this.deps.clock.nowIso(),
+      },
+      { guardSql: spec.guardSql, guardParams: spec.guardParams },
+    );
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -839,23 +913,18 @@ export class ImmutableCgncLedgerEngine {
   // Écriture d'un brouillon (commun à createDraft, createReversalDraft, createVatClearingDraft)
   // -------------------------------------------------------------------------------------------------------------------
 
-  private async insertDraft(
+  private async insertDraft(actor: LedgerActor, spec: DraftSpec, entryId?: string): Promise<DraftCreated> {
+    const plan = await this.planDraft(actor, spec, entryId);
+    await this.write(plan.statements);
+    return { entryId: plan.entryId, entryReference: plan.entryReference, sequenceNumber: plan.sequenceNumber, status: plan.status };
+  }
+
+  /** Contrôles et instructions d'un brouillon, sans écriture : `insertDraft` les exécute, `buildVatClearingDraftStatements` les rend. */
+  private async planDraft(
     actor: LedgerActor,
-    spec: {
-      readonly journalId: string;
-      readonly fiscalYearId: string;
-      readonly entryDate: string;
-      readonly reviewCycle: LedgerReviewCycle;
-      readonly sourceDocumentType: LedgerSourceDocumentType;
-      readonly status: 'IA_PROPOSITION' | 'DRAFT';
-      readonly lines: readonly DraftLineInput[];
-      readonly invoiceId: string | null;
-      readonly partnerId: string | null;
-      readonly dgiClearanceUuid: string | null;
-      readonly reversalOfEntryId: string | null;
-    },
+    spec: DraftSpec,
     entryId?: string,
-  ): Promise<DraftCreated> {
+  ): Promise<BuiltEntry & { readonly status: 'IA_PROPOSITION' | 'DRAFT' }> {
     assertIsoDate(spec.entryDate, 'entryDate');
     if (!includes(LEDGER_REVIEW_CYCLES, spec.reviewCycle)) {
       throw invalid(`reviewCycle inconnu : ${String(spec.reviewCycle)}.`);
@@ -881,7 +950,7 @@ export class ImmutableCgncLedgerEngine {
     }
     const journal = await this.requireJournal(spec.journalId);
     const prepared = await this.prepareLines(spec.lines);
-    const created = await this.writeEntry(
+    const created = await this.buildEntry(
       {
         journal,
         fiscalYear,
@@ -940,7 +1009,7 @@ export class ImmutableCgncLedgerEngine {
     });
   }
 
-  private async writeEntry(spec: InsertEntrySpec, presetEntryId?: string): Promise<{ entryId: string; entryReference: string; sequenceNumber: number }> {
+  private async buildEntry(spec: InsertEntrySpec, presetEntryId?: string): Promise<BuiltEntry> {
     const totals = assertBalancedLines(spec.lines);
     const entryId = presetEntryId ?? this.newId();
     const maxRows = await this.query<{ m: number }>(
@@ -996,8 +1065,13 @@ export class ImmutableCgncLedgerEngine {
         ],
       });
     }
-    await this.write(statements);
-    return { entryId, entryReference, sequenceNumber };
+    return { entryId, entryReference, sequenceNumber, statements };
+  }
+
+  private async writeEntry(spec: InsertEntrySpec, presetEntryId?: string): Promise<{ entryId: string; entryReference: string; sequenceNumber: number }> {
+    const built = await this.buildEntry(spec, presetEntryId);
+    await this.write(built.statements);
+    return { entryId: built.entryId, entryReference: built.entryReference, sequenceNumber: built.sequenceNumber };
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -1480,7 +1554,7 @@ function wrapFsmReversal<T>(action: () => T): T {
 
 interface AuditEvent {
   readonly id: string;
-  readonly entityTable: FsmEntityTable;
+  readonly entityTable: string;
   readonly entityId: string;
   readonly fromState: string;
   readonly toState: string;

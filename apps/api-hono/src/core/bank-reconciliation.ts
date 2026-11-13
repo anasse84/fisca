@@ -12,15 +12,19 @@
  * comme pour `createVatClearingDraft`. Sens du mouvement : `amount_cents` positif (encaissement) ou négatif (décaissement),
  * on règle sa valeur absolue.
  *
- * REPRISE IDEMPOTENTE. Le brouillon VAT_CLEARING puis la ligne bancaire s'écrivent en deux lots (non atomique) : une panne entre
- * les deux laisse un brouillon et une ligne encore UNMATCHED. Le code de lettrage est donc DÉTERMINISTE (SHA-256 de la ligne
- * bancaire, de la facture, du solde antérieur et du montant) et posé sur chaque ligne du brouillon à sa création : au rejeu de la
- * même demande, le brouillon portant ce code est retrouvé et réutilisé, la ligne bancaire passe alors à son état final, et aucun
- * second brouillon n'est créé. Limite : deux rejeux STRICTEMENT simultanés de la même demande peuvent encore créer chacun un
- * brouillon avant que l'un ne marque la ligne (le garde `reconciliation_state = 'UNMATCHED'` n'arrête que le second marquage) ;
- * une demande identique rejouée après la fin de la première reçoit 409 BANK_TRANSACTION_ALREADY_RECONCILED.
+ * TRANSACTION ATOMIQUE UNIQUE. Le brouillon VAT_CLEARING (pièce et lignes, construits par
+ * `ImmutableCgncLedgerEngine.buildVatClearingDraftStatements`, sans exécution) ET la mise à jour de la ligne bancaire (état
+ * MATCHED_FULL / MATCHED_PARTIAL, code de lettrage, lien `gl_entry_id`, trace d'audit) s'écrivent dans le MÊME lot
+ * `executeBatchAtomically` : en cas d'échec, aucun brouillon orphelin. Le code de lettrage reste DÉTERMINISTE (SHA-256 de la ligne
+ * bancaire, de la facture, du solde antérieur et du montant) et posé sur les lignes du brouillon.
+ * Concurrence : l'UPDATE porte `WHERE reconciliation_state = 'UNMATCHED'` et l'audit, placé en DERNIER, a `from_state` NULL si la
+ * ligne n'est pas liée à CE brouillon (ou si la transition est déjà tracée) : le lot entier est annulé, aucun brouillon n'est créé.
+ * De deux demandes strictement simultanées, une seule gagne ; l'autre reçoit 409 BANK_TRANSACTION_ALREADY_RECONCILED.
+ * Rejeu SÉQUENTIEL après succès (même demande ou non) : la ligne n'est plus UNMATCHED, 409 BANK_TRANSACTION_ALREADY_RECONCILED
+ * (contrat HTTP existant, testé) ; le brouillon déjà en place reste seul et lié à la ligne, sans doublon. Brouillon orphelin hérité de l'ancien traitement en deux
+ * lots (code présent, ligne encore UNMATCHED) : réutilisé, seule la ligne bancaire est marquée.
  */
-import { sha256Hex, type SqlParam, type TenantSqlDriver } from '@fisca/shared-types';
+import { sha256Hex, type SqlParam, type SqlStatementParams, type TenantSqlDriver } from '@fisca/shared-types';
 import { LedgerError, mapDatabaseError } from './ledger-errors.ts';
 import type { CreateVatClearingDraftInput, ImmutableCgncLedgerEngine, LedgerActor } from './immutable-cgnc-ledger-engine.ts';
 import { ProblemError } from './problem-details.ts';
@@ -51,6 +55,7 @@ interface BankRow {
   readonly id: string;
   readonly amount_cents: number | string;
   readonly reconciliation_state: string;
+  readonly reconciliation_code: string | null;
 }
 
 interface EntryRow {
@@ -70,12 +75,15 @@ interface ClearingRow {
 }
 
 /** Code de lettrage déterministe : même ligne bancaire, mêmes factures et montants, même code (clé de reprise). */
-async function reconciliationCodeFor(parts: readonly (string | number)[]): Promise<string> {
+export async function reconciliationCodeFor(parts: readonly (string | number)[]): Promise<string> {
   const digest = await sha256Hex(new TextEncoder().encode(parts.join('|')));
   return `LTR-${digest.slice(0, 32)}`;
 }
 
 const UPDATE_BANK = `UPDATE bank_transactions SET reconciliation_state = ?, reconciliation_code = ?
+  WHERE id = ? AND reconciliation_state = 'UNMATCHED'`;
+
+const UPDATE_BANK_LINKED = `UPDATE bank_transactions SET reconciliation_state = ?, reconciliation_code = ?, gl_entry_id = ?
   WHERE id = ? AND reconciliation_state = 'UNMATCHED'`;
 
 async function read<TRow>(db: TenantSqlDriver, sql: string, params: readonly SqlParam[]): Promise<readonly TRow[]> {
@@ -118,7 +126,7 @@ export async function reconcileBankTransaction(
   request: ReconcileRequest,
 ): Promise<ReconcileResponse> {
   deps.authorize();
-  const bankRows = await read<BankRow>(deps.db, 'SELECT id, amount_cents, reconciliation_state FROM bank_transactions WHERE id = ?', [request.bankTransactionId]);
+  const bankRows = await read<BankRow>(deps.db, 'SELECT id, amount_cents, reconciliation_state, reconciliation_code FROM bank_transactions WHERE id = ?', [request.bankTransactionId]);
   const bank = bankRows[0];
   if (bank === undefined) {
     throw new ProblemError(BANK_TRANSACTION_NOT_FOUND_PROBLEM);
@@ -171,15 +179,47 @@ export async function reconcileBankTransaction(
     ...(request.recoverableTarget === undefined ? {} : { recoverableTarget: request.recoverableTarget }),
     reconciliationCode: code,
   };
-  const clearing = (await findClearingByCode(deps.db, code)) ?? (await deps.engine.createVatClearingDraft(actor, clearingInput));
-  const full = movementCents === target.openCents;
-  await markBank(deps.db, full ? 'MATCHED_FULL' : 'MATCHED_PARTIAL', code, bank.id);
-  return {
-    outcome: full ? 'MATCHED_FULL' : 'MATCHED_PARTIAL',
+  const finalState = movementCents === target.openCents ? 'MATCHED_FULL' : 'MATCHED_PARTIAL';
+  const existing = await findClearingByCode(deps.db, code);
+  const respond = (clearing: { readonly entryId: string; readonly clearedCents: number }): ReconcileResponse => ({
+    outcome: finalState,
     bankTransactionId: bank.id,
     reconciliationCode: code,
     invoiceEntryId: target.invoiceEntryId,
     clearingEntryId: clearing.entryId,
     clearedCents: clearing.clearedCents,
-  };
+  });
+  if (existing !== null) {
+    await markBank(deps.db, finalState, code, bank.id);
+    return respond(existing);
+  }
+
+  const draft = await deps.engine.buildVatClearingDraftStatements(actor, clearingInput);
+  const statements: SqlStatementParams[] = [
+    ...draft.statements,
+    { sql: UPDATE_BANK_LINKED, params: [finalState, code, draft.entryId, bank.id] },
+    deps.engine.buildGuardedAuditStatement(actor, {
+      entityTable: 'bank_transactions',
+      entityId: bank.id,
+      fromState: 'UNMATCHED',
+      toState: finalState,
+      idempotencyKey: `bank-reconcile:${code}`,
+      proofRef: draft.entryId,
+      guardSql: `EXISTS (SELECT 1 FROM bank_transactions WHERE id = ? AND reconciliation_state = ? AND reconciliation_code = ? AND gl_entry_id = ?)`,
+      guardParams: [bank.id, finalState, code, draft.entryId],
+    }),
+  ];
+  try {
+    await deps.db.executeBatchAtomically(statements);
+  } catch (error) {
+    const mapped = mapDatabaseError(error);
+    if (mapped instanceof LedgerError && mapped.code === 'LEDGER_CONCURRENCY_CONFLICT') {
+      const after = (await read<BankRow>(deps.db, 'SELECT id, amount_cents, reconciliation_state, reconciliation_code FROM bank_transactions WHERE id = ?', [bank.id]))[0];
+      if (after !== undefined && after.reconciliation_state !== 'UNMATCHED') {
+        throw new ProblemError(BANK_TRANSACTION_ALREADY_RECONCILED_PROBLEM);
+      }
+    }
+    throw mapped;
+  }
+  return respond({ entryId: draft.entryId, clearedCents: draft.clearedCents });
 }
