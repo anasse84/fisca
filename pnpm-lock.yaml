@@ -186,7 +186,14 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  packages/ubl-xades: {}
+  packages/ubl-xades:
+    dependencies:
+      '@fisca/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/ui-mercury: {}
 

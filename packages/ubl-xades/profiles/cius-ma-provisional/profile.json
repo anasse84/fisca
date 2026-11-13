@@ -1,0 +1,45 @@
+{
+  "name": "cius-ma-provisional",
+  "status": "PROVISOIRE — règles marocaines dérivées de Doc_07, non publiées par la DGI, conformité officielle non vérifiée",
+  "derivedFrom": "docs/specs/07-api-edi-contracts.md « Section 07 » ; ERRATA B-13",
+  "baseSchema": "OASIS UBL 2.1 officiel (packages/ubl-xades/xsd)",
+  "ublVersionId": "2.1",
+  "customizationId": "ma:cius-ma-provisional:1.0",
+  "profileId": "ma:cius-ma-provisional:1.0",
+  "identifiersAreHypotheses": true,
+  "identifiersNote": "Aucun identifiant de personnalisation ou de profil n'est publié par la DGI ou xHub ; la valeur ma:cius-ma-provisional:1.0 est une hypothèse de travail, à remplacer à la parution des spécifications.",
+  "documentTypes": {
+    "380": { "document": "Invoice", "element": "InvoiceTypeCode" },
+    "381": { "document": "CreditNote", "element": "CreditNoteTypeCode", "billingReference": "obligatoire (UUID xHub initial)" },
+    "383": { "document": "DebitNote", "element": "DebitNoteTypeCode" },
+    "386": { "document": "Invoice", "element": "InvoiceTypeCode" },
+    "389": { "document": "Invoice", "element": "InvoiceTypeCode" }
+  },
+  "invoiceNumber": {
+    "pattern": "^(FAC|AVO|NDB|ACO|AUT)-\\d{4}-\\d{6}$",
+    "prefixByType": { "380": "FAC", "381": "AVO", "383": "NDB", "386": "ACO", "389": "AUT" }
+  },
+  "mapping": {
+    "ice": {
+      "path": "cac:PartyLegalEntity/cbc:CompanyID",
+      "schemeID": "MA:ICE",
+      "format": "15 chiffres"
+    },
+    "identifiantFiscal": {
+      "path": "cac:PartyTaxScheme/cbc:CompanyID",
+      "schemeID": "MA:IF",
+      "taxSchemeId": "VAT"
+    },
+    "legalFormAndCapital": {
+      "path": "cac:PartyLegalEntity/cbc:CompanyLegalForm",
+      "example": "SARL AU, capital 100000.00 MAD"
+    },
+    "rcTaxeProfessionnelleCnss": {
+      "path": "cac:PartyIdentification/cbc:ID",
+      "schemeIDs": ["MA:RC", "MA:TP", "MA:CNSS"],
+      "note": "Doc_07 écrit « AdditionalPartyIdentification » : cet élément n'existe pas dans OASIS UBL 2.1 ; l'élément UBL d'identifiants additionnels de la partie est cac:PartyIdentification. Les schemeID MA:RC, MA:TP, MA:CNSS sont des hypothèses de nommage."
+    }
+  },
+  "vatRatesBps": [2000, 1000, 0],
+  "notImplemented": ["PIH et ICV (AdditionalDocumentReference)", "WithholdingTaxTotal (retenue de garantie BTP, RAS-TVA)", "droit de timbre (AllowanceCharge)", "enveloppe XAdES (UBLExtensions)"]
+}
