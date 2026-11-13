@@ -1,8 +1,15 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [
+    "eslint.config.mjs",
+    "tsconfig.base.json",
+    "pnpm-workspace.yaml"
+  ],
   "tasks": {
     "typecheck": {
-      "dependsOn": ["^typecheck"],
+      "dependsOn": [
+        "^typecheck"
+      ],
       "outputs": []
     },
     "lint": {
@@ -12,12 +19,18 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^test"],
+      "dependsOn": [
+        "^test"
+      ],
       "outputs": []
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     }
   }
 }

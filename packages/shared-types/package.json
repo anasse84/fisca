@@ -8,5 +8,13 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
   }
 }

@@ -8,5 +8,12 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@fisca/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@typescript-eslint/rule-tester": "8.72.2",
+    "@typescript-eslint/utils": "8.72.2"
   }
 }
