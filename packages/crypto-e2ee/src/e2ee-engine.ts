@@ -44,3 +44,23 @@ export {
   sealSecretForEnclave,
 } from './hpke-enclave.ts';
 export type { HpkeEnclave, HpkeKem, HpkeSecretContext } from './hpke-enclave.ts';
+export {
+  ESCROW_HOLDER_ROLES,
+  SHAMIR_MAX_SECRET_BYTES,
+  SHAMIR_SHARE_VERSION,
+  gf256Inverse,
+  gf256Multiply,
+  parseShamirShare,
+  reconstructEscrowSecret,
+  reconstructSecretShamir2of3,
+  sealEscrowSecret,
+  serializeShamirShare,
+  splitSecretShamir2of3,
+} from './shamir-escrow.ts';
+export type {
+  EscrowHolderAssignment,
+  EscrowHolderRole,
+  EscrowPresentation,
+  SealedEscrowShare,
+  ShamirShare,
+} from './shamir-escrow.ts';

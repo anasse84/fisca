@@ -1,0 +1,32 @@
+{
+ "source": "Doc_10 Section 05 et Section 11 (Shamir 2-sur-3, GF(256), polynôme AES 0x11b) ; FIPS 197 section 4.2 pour la multiplication",
+ "article": "Art. 211 CGI",
+ "date": "2026-11-13",
+ "etat": "PROVISOIRE",
+ "note": "Les spécifications ne fixent aucun vecteur de partage. Produits GF(256) : RECOUPÉ contre FIPS 197 (0x57*0x13=0xfe, 0x57*0x83=0xc1) et l'inverse AES 0x53*0xCA=0x01. Parts : calculées indépendamment (Python) par y = secret XOR pente*x ; PROVISOIRE car aucune source externe ne publie de vecteur 2-sur-3. La règle légale elle-même (séquestre) n'est pas recoupée.",
+ "gf256": {
+  "etat": "RECOUPÉ",
+  "products": [
+   { "a": "53", "b": "ca", "product": "01" },
+   { "a": "57", "b": "13", "product": "fe" },
+   { "a": "57", "b": "83", "product": "c1" },
+   { "a": "00", "b": "ff", "product": "00" }
+  ],
+  "inverses": [
+   { "a": "01", "inverse": "01" },
+   { "a": "02", "inverse": "8d" },
+   { "a": "03", "inverse": "f6" },
+   { "a": "53", "inverse": "ca" }
+  ]
+ },
+ "shamir": {
+  "etat": "PROVISOIRE",
+  "secret": "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f",
+  "slope": "030a11181f262d343b424950575e656c737a81888f969da4abb2b9c0c7ced5dc",
+  "shares": {
+   "1": "131b030b0b333b23235b534b4b437b73535ba3ababb3bb83839b93ebebe3fbf3",
+   "2": "160530232a594c7f6e9d88bbb2a1d4c7c6d53b2821120774655643b0b9aa9f8c",
+   "3": "150f213b357f614b55dfc1ebe5ffb1abb5afbaa0ae849ad0cee4fa707e644a50"
+  }
+ }
+}
