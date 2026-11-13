@@ -57,3 +57,62 @@ export const EXPECTED_TOTALS = {
   taxInclusiveCents: 131000,
   payableCents: 131000,
 } as const;
+
+/** Date de règle de test (résolue par l'appelant via fiscal-ast en production). */
+export const RULE_DATE = '2026-11-13';
+
+/** Retenue de garantie : taux et ensemble admis fournis par l'appelant. */
+export function retentionRule(rateBps: number, basis: 'LINE_EXTENSION' | 'TAX_INCLUSIVE' = 'LINE_EXTENSION') {
+  return {
+    rateBps,
+    allowedRatesBps: [700, 1000],
+    basis,
+    ruleDate: RULE_DATE,
+    legalReference: 'Règle de test résolue par l’appelant',
+  };
+}
+
+/** Droit de timbre : taux et ensemble admis fournis par l'appelant. */
+export function stampDutyRule(cashSettledCents: number, rateBps = 25) {
+  return {
+    cashSettledCents,
+    rateBps,
+    allowedRatesBps: [25],
+    ruleDate: RULE_DATE,
+    legalReference: 'Règle de test résolue par l’appelant',
+  };
+}
+
+/** Empreinte précédente de test (SHA-256 hexadécimal minuscule). */
+export const PREVIOUS_HASH_HEX = '0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797';
+
+/**
+ * Document complet : service à 20 %, débours, retenue de garantie 7 %, timbre 25 bps, PIH/ICV.
+ * Service 1000,00 (TVA 200,00) + débours 500,00 hors champ : HT lignes 1500,00 ; TTC avant timbre 1700,00 ; espèces 1700,00 →
+ * timbre 4,25 ; TTC 1704,25 ; retenue 7 % du HT (150000 c) = 105,00 ; net à payer 1599,25. Voir EXPECTED_FULL.
+ */
+export function buildFullInput(typeCode: (typeof TYPE_CODES)[number] = '380'): UblInvoiceInput {
+  const base = buildInput(typeCode);
+  return {
+    ...base,
+    lines: [
+      { descriptionFr: 'Travaux de test', quantityMilli: 1000, unitPriceCents: 100000, vatRateBps: 2000 },
+      { descriptionFr: 'Débours de test', quantityMilli: 1000, unitPriceCents: 50000, vatRateBps: 0, isDisbursementDebours: true },
+    ],
+    ...(typeCode === '380' || typeCode === '386' || typeCode === '389' ? { retention: retentionRule(700) } : {}),
+    stampDuty: stampDutyRule(170000),
+    pih: { icvCounter: 2, previousPiHash: PREVIOUS_HASH_HEX },
+  };
+}
+
+export const EXPECTED_FULL = {
+  lineExtensionCents: 150000,
+  vatBaseCents: 100000,
+  disbursementsCents: 50000,
+  taxTotalCents: 20000,
+  stampDutyCents: 425,
+  taxExclusiveCents: 150425,
+  taxInclusiveCents: 170425,
+  retentionCents: 10500,
+  payableCents: 159925,
+} as const;

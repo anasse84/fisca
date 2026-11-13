@@ -86,6 +86,48 @@ export const UblDeclaredTotalsSchema = z.strictObject({
   taxTotalCents: CentimesIntSchema.optional(),
   taxInclusiveCents: CentimesIntSchema.optional(),
   payableCents: CentimesIntSchema.optional(),
+  stampDutyCents: CentimesIntSchema.optional(),
+  retentionCents: CentimesIntSchema.optional(),
+});
+
+/** Ensemble explicite de taux admis, fourni par l'appelant (règle datée résolue via fiscal-ast) : jamais une constante du paquet. */
+const AllowedRatesBps = z.array(BpsIntSchema.min(1)).min(1).max(32);
+
+/** Base de calcul de la retenue de garantie, choisie par l'appelant (aucune base par défaut cachée). */
+export const UBL_RETENTION_BASES = ['LINE_EXTENSION', 'TAX_INCLUSIVE'] as const;
+
+/**
+ * Retenue de garantie BTP : le taux (points de base) est un PARAMÈTRE de la règle datée résolue par l'appelant ;
+ * il doit appartenir à `allowedRatesBps` (ex. {700, 1000}), également fourni par l'appelant.
+ * `LINE_EXTENSION` = total HT des lignes (débours compris) ; `TAX_INCLUSIVE` = HT + TVA, avant droit de timbre.
+ */
+export const UblRetentionSchema = z.strictObject({
+  rateBps: BpsIntSchema.min(1),
+  allowedRatesBps: AllowedRatesBps,
+  basis: z.enum(UBL_RETENTION_BASES),
+  ruleDate: IsoDate,
+  legalReference: safeText(200),
+});
+
+/**
+ * Droit de timbre sur règlement en espèces : `rateBps` appliqué à `cashSettledCents` (TTC réglé en espèces),
+ * paramètres de la règle datée résolue par l'appelant ; `allowedRatesBps` fourni par l'appelant.
+ */
+export const UblStampDutySchema = z.strictObject({
+  cashSettledCents: CentimesIntSchema.positive(),
+  rateBps: BpsIntSchema.min(1),
+  allowedRatesBps: AllowedRatesBps,
+  ruleDate: IsoDate,
+  legalReference: safeText(200),
+});
+
+/** Empreinte précédente : SHA-256 hexadécimal minuscule (64) ou amorce de chaîne GENESIS_HASH_ + 32 zéros (45). */
+export const PiHashSchema = z.string().regex(/^(?:[0-9a-f]{64}|GENESIS_HASH_0{32})$/);
+
+/** Chaînage PIH/ICV : compteur monotone (à partir de 1) et empreinte de la facture précédente. */
+export const UblPihChainSchema = z.strictObject({
+  icvCounter: z.number().int().min(1).safe(),
+  previousPiHash: PiHashSchema,
 });
 
 export const UblInvoiceInputSchema = z
@@ -106,10 +148,23 @@ export const UblInvoiceInputSchema = z
     customer: UblPartySchema,
     lines: z.array(UblLineSchema).min(1).max(999),
     declaredTotals: UblDeclaredTotalsSchema.optional(),
+    retention: UblRetentionSchema.optional(),
+    stampDuty: UblStampDutySchema.optional(),
+    pih: UblPihChainSchema.optional(),
   })
   .superRefine((invoice, context) => {
     if (invoice.dueDate !== undefined && invoice.dueDate < invoice.issueDate) {
       context.addIssue({ code: 'custom', path: ['dueDate'], message: 'Échéance antérieure à l’émission.' });
+    }
+    for (const key of ['retention', 'stampDuty'] as const) {
+      const rule = invoice[key];
+      if (rule === undefined) continue;
+      if (!rule.allowedRatesBps.includes(rule.rateBps)) {
+        context.addIssue({ code: 'custom', path: [key, 'rateBps'], message: 'Taux hors de l’ensemble admis fourni par l’appelant.' });
+      }
+      if (rule.ruleDate > invoice.issueDate) {
+        context.addIssue({ code: 'custom', path: [key, 'ruleDate'], message: 'Règle datée postérieure à l’émission.' });
+      }
     }
   });
 
@@ -117,5 +172,8 @@ export const UblInvoiceInputSchema = z
 export type UblInvoiceInput = z.input<typeof UblInvoiceInputSchema>;
 /** Entrée validée, valeurs par défaut appliquées. */
 export type ParsedUblInvoiceInput = z.output<typeof UblInvoiceInputSchema>;
+export type UblRetentionInput = z.input<typeof UblRetentionSchema>;
+export type UblStampDutyInput = z.input<typeof UblStampDutySchema>;
+export type UblPihChainInput = z.input<typeof UblPihChainSchema>;
 export type UblPartyInput = z.input<typeof UblPartySchema>;
 export type UblLineInput = z.input<typeof UblLineSchema>;

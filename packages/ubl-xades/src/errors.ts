@@ -4,7 +4,10 @@ export type UblGeneratorErrorCode =
   | 'UBL_INVOICE_NUMBER_INVALID'
   | 'UBL_NUMBER_TYPE_MISMATCH'
   | 'UBL_BILLING_REFERENCE_REQUIRED'
-  | 'UBL_TOTALS_MISMATCH';
+  | 'UBL_TOTALS_MISMATCH'
+  | 'UBL_RETENTION_INVALID'
+  | 'UBL_STAMP_DUTY_INVALID'
+  | 'UBL_PIH_INVALID';
 
 /** Détail d'un écart de total : montants seuls, jamais de donnée personnelle. */
 export interface UblTotalsMismatchDetail {

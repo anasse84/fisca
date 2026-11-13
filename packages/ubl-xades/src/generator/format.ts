@@ -30,3 +30,10 @@ export function formatVatPercent(rate: number): string {
   }
   return percent;
 }
+
+/** Points de base → pourcentage décimal sans zéros inutiles (`700` → `7`, `25` → `0.25`, `1000` → `10`). */
+export function formatBpsPercent(bps: bigint): string {
+  const digits = bps.toString().padStart(3, '0');
+  const fraction = digits.slice(-2).replace(/0+$/, '');
+  return `${digits.slice(0, -2)}${fraction === '' ? '' : `.${fraction}`}`;
+}

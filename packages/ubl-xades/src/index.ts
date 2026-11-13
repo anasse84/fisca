@@ -6,5 +6,13 @@ export * from './schema-resolver.ts';
 export * from './generator/format.ts';
 export * from './generator/input.ts';
 export * from './generator/invoice-number.ts';
+export * from './generator/pih.ts';
 export * from './generator/totals.ts';
-export { computeInvoiceTotals, documentKindOf, generateUblInvoiceXml, parseUblInvoiceInput } from './generator/generate.ts';
+export {
+  computeInvoiceTotals,
+  computeUblInvoicePih,
+  documentKindOf,
+  generateUblInvoiceXml,
+  parseUblInvoiceInput,
+  pihFieldsOfInvoice,
+} from './generator/generate.ts';

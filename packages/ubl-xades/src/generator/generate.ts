@@ -1,8 +1,9 @@
 import { CIUS_MA_PROVISIONAL, MA_SCHEME_IDS } from '../profile.ts';
 import { UblGeneratorError, type UblInputIssueDetail } from '../errors.ts';
 import type { UblDocumentKind } from '../schema-resolver.ts';
-import { formatCentsDecimal, formatMilliQuantity, formatVatPercent } from './format.ts';
+import { formatBpsPercent, formatCentsDecimal, formatMilliQuantity, formatVatPercent } from './format.ts';
 import { UblInvoiceInputSchema, type ParsedUblInvoiceInput, type UblInvoiceInput } from './input.ts';
+import { assertPihFields, computeInvoicePih, type InvoicePihFields } from './pih.ts';
 import { INVOICE_NUMBER_PREFIX_BY_TYPE, parseInvoiceNumber, type UblTypeCode } from './invoice-number.ts';
 import {
   assertDeclaredTotals,
@@ -23,6 +24,10 @@ interface DocumentLayout {
   readonly totalElement: string;
   /** DueDate n'existe que dans le schéma Invoice ; sinon l'échéance passe par PaymentMeans/PaymentDueDate. */
   readonly hasDueDate: boolean;
+  /** cac:WithholdingTaxTotal n'existe que dans la racine Invoice (OASIS UBL 2.1) : pas dans CreditNote ni DebitNote. */
+  readonly hasWithholdingTaxTotal: boolean;
+  /** Dans DebitNote, cac:AllowanceCharge précède cac:PaymentMeans ; dans Invoice et CreditNote il le suit. */
+  readonly allowanceBeforePayment: boolean;
 }
 
 const LAYOUT_BY_TYPE: Readonly<Record<UblTypeCode, DocumentLayout>> = {
@@ -35,6 +40,8 @@ const LAYOUT_BY_TYPE: Readonly<Record<UblTypeCode, DocumentLayout>> = {
     quantityElement: 'CreditedQuantity',
     totalElement: 'LegalMonetaryTotal',
     hasDueDate: false,
+    hasWithholdingTaxTotal: false,
+    allowanceBeforePayment: false,
   },
   '383': {
     kind: 'debit-note',
@@ -44,6 +51,8 @@ const LAYOUT_BY_TYPE: Readonly<Record<UblTypeCode, DocumentLayout>> = {
     quantityElement: 'DebitedQuantity',
     totalElement: 'RequestedMonetaryTotal',
     hasDueDate: false,
+    hasWithholdingTaxTotal: false,
+    allowanceBeforePayment: true,
   },
   '386': invoiceLayout(),
   '389': invoiceLayout(),
@@ -58,6 +67,8 @@ function invoiceLayout(): DocumentLayout {
     quantityElement: 'InvoicedQuantity',
     totalElement: 'LegalMonetaryTotal',
     hasDueDate: true,
+    hasWithholdingTaxTotal: true,
+    allowanceBeforePayment: false,
   };
 }
 
@@ -83,6 +94,12 @@ export function parseUblInvoiceInput(input: UblInvoiceInput): ParsedUblInvoiceIn
       'Taux de TVA hors {2000, 1000, 0} points de base (ERRATA D-04).',
       details,
     );
+  }
+  const ruleCodes = { retention: 'UBL_RETENTION_INVALID', stampDuty: 'UBL_STAMP_DUTY_INVALID', pih: 'UBL_PIH_INVALID' } as const;
+  for (const key of ['retention', 'stampDuty', 'pih'] as const) {
+    if (result.error.issues.some((issue) => issue.path[0] === key)) {
+      throw new UblGeneratorError(ruleCodes[key], `Paramètre ${key} invalide : ${details.map((detail) => detail.path).join(', ')}.`, details);
+    }
   }
   throw new UblGeneratorError(
     'UBL_INPUT_INVALID',
@@ -154,25 +171,27 @@ function taxCategoryXml(
   vatRateBps: number,
   exemptionReasonCode: string | undefined,
   withExemptionReason: boolean,
+  outOfScopeReason: string,
 ): string {
   return element(
     'cac:TaxCategory',
     textElement('cbc:ID', categoryCode) +
       (categoryCode === 'O' ? '' : element('cbc:Percent', formatVatPercent(vatRateBps))) +
       (withExemptionReason && exemptionReasonCode !== undefined ? textElement('cbc:TaxExemptionReasonCode', exemptionReasonCode) : '') +
-      (withExemptionReason && categoryCode === 'O' ? textElement('cbc:TaxExemptionReason', 'Débours : hors champ de la TVA') : '') +
+      (withExemptionReason && categoryCode === 'O' ? textElement('cbc:TaxExemptionReason', outOfScopeReason) : '') +
       element('cac:TaxScheme', textElement('cbc:ID', 'VAT')),
   );
 }
 
 function taxTotalXml(totals: ComputedTotals): string {
+  const outOfScopeReason = totals.disbursementsCents > 0n ? 'Débours : hors champ de la TVA' : 'Droit de timbre : hors champ de la TVA';
   const subtotals = totals.taxSubtotals
     .map((subtotal: ComputedTaxSubtotal) =>
       element(
         'cac:TaxSubtotal',
         money('cbc:TaxableAmount', subtotal.taxableCents) +
           money('cbc:TaxAmount', subtotal.taxCents) +
-          taxCategoryXml(subtotal.categoryCode, subtotal.vatRateBps, subtotal.exemptionReasonCode, true),
+          taxCategoryXml(subtotal.categoryCode, subtotal.vatRateBps, subtotal.exemptionReasonCode, true, outOfScopeReason),
       ),
     )
     .join('');
@@ -185,7 +204,64 @@ function monetaryTotalXml(layout: DocumentLayout, totals: ComputedTotals): strin
     money('cbc:LineExtensionAmount', totals.lineExtensionCents) +
       money('cbc:TaxExclusiveAmount', totals.taxExclusiveCents) +
       money('cbc:TaxInclusiveAmount', totals.taxInclusiveCents) +
+      (totals.stampDutyCents > 0n ? money('cbc:ChargeTotalAmount', totals.stampDutyCents) : '') +
       money('cbc:PayableAmount', totals.payableCents),
+  );
+}
+
+/** Droit de timbre : charge de document hors champ de la TVA (catégorie O), raison « Droit de timbre ». */
+function stampDutyXml(invoice: ParsedUblInvoiceInput, totals: ComputedTotals): string {
+  const rule = invoice.stampDuty;
+  if (rule === undefined || totals.stampDutyCents === 0n) return '';
+  return element(
+    'cac:AllowanceCharge',
+    element('cbc:ChargeIndicator', 'true') +
+      textElement('cbc:AllowanceChargeReason', 'Droit de timbre') +
+      element('cbc:MultiplierFactorNumeric', formatBpsPercent(BigInt(rule.rateBps))) +
+      money('cbc:Amount', totals.stampDutyCents) +
+      money('cbc:BaseAmount', BigInt(rule.cashSettledCents)) +
+      element('cac:TaxCategory', textElement('cbc:ID', 'O') + element('cac:TaxScheme', textElement('cbc:ID', 'VAT'))),
+  );
+}
+
+/**
+ * Retenue de garantie : cac:WithholdingTaxTotal (racine Invoice seulement). Le TaxScheme/ID `RETENUE_GARANTIE` est une
+ * hypothèse de nommage du profil provisoire : aucun identifiant officiel n'est publié.
+ */
+function withholdingXml(invoice: ParsedUblInvoiceInput, totals: ComputedTotals): string {
+  const rule = invoice.retention;
+  if (rule === undefined) return '';
+  const base = rule.basis === 'LINE_EXTENSION' ? totals.lineExtensionCents : totals.lineExtensionCents + totals.taxTotalCents;
+  return element(
+    'cac:WithholdingTaxTotal',
+    money('cbc:TaxAmount', totals.retentionCents) +
+      element(
+        'cac:TaxSubtotal',
+        money('cbc:TaxableAmount', base) +
+          money('cbc:TaxAmount', totals.retentionCents) +
+          element(
+            'cac:TaxCategory',
+            element('cbc:Percent', formatBpsPercent(BigInt(rule.rateBps))) +
+              element('cac:TaxScheme', textElement('cbc:ID', 'RETENUE_GARANTIE') + textElement('cbc:Name', 'Retenue de garantie BTP')),
+          ),
+      ),
+  );
+}
+
+/** Chaînage : PIH (empreinte précédente en Base64 de son texte ASCII) puis ICV (compteur dans cbc:UUID, usage ZATCA), avant les parties. */
+function pihXml(invoice: ParsedUblInvoiceInput): string {
+  const chain = invoice.pih;
+  if (chain === undefined) return '';
+  return (
+    element(
+      'cac:AdditionalDocumentReference',
+      textElement('cbc:ID', 'PIH') +
+        element(
+          'cac:Attachment',
+          element('cbc:EmbeddedDocumentBinaryObject', btoa(chain.previousPiHash), { mimeCode: 'text/plain', filename: 'pih.txt' }),
+        ),
+    ) +
+    element('cac:AdditionalDocumentReference', textElement('cbc:ID', 'ICV') + element('cbc:UUID', String(chain.icvCounter)))
   );
 }
 
@@ -283,6 +359,14 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
     );
   }
 
+  if (invoice.retention !== undefined && !layout.hasWithholdingTaxTotal) {
+    // OASIS UBL 2.1 : cac:WithholdingTaxTotal absent des racines CreditNote et DebitNote ; refus plutôt que perte silencieuse.
+    throw new UblGeneratorError('UBL_RETENTION_INVALID', 'La retenue de garantie n’a pas d’emplacement dans CreditNote ni DebitNote.', [
+      { path: 'retention', code: 'custom' },
+    ]);
+  }
+  if (invoice.pih !== undefined) pihFieldsOf(invoice, computeTotals(invoice));
+
   const totals = computeTotals(invoice);
   assertDeclaredTotals(invoice, totals);
 
@@ -298,10 +382,14 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
     element('cbc:DocumentCurrencyCode', invoice.currencyCode) +
     (invoice.buyerReference === undefined ? '' : textElement('cbc:BuyerReference', invoice.buyerReference)) +
     billingReferenceXml(invoice) +
+    pihXml(invoice) +
     element('cac:AccountingSupplierParty', partyXml(invoice.supplier)) +
     element('cac:AccountingCustomerParty', partyXml(invoice.customer)) +
+    (layout.allowanceBeforePayment ? stampDutyXml(invoice, totals) : '') +
     paymentMeansXml(layout, invoice) +
+    (layout.allowanceBeforePayment ? '' : stampDutyXml(invoice, totals)) +
     taxTotalXml(totals) +
+    (layout.hasWithholdingTaxTotal ? withholdingXml(invoice, totals) : '') +
     monetaryTotalXml(layout, totals);
 
   const lines = invoice.lines.map((line, index) => lineXml(layout, line, totals.lines[index] as ComputedLine, index + 1)).join('');
@@ -312,4 +400,44 @@ export function generateUblInvoiceXml(input: UblInvoiceInput): string {
     'xmlns:cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
   };
   return `<?xml version="1.0" encoding="UTF-8"?>\n${element(layout.root, header + lines, namespaces)}\n`;
+}
+
+function pihFieldsOf(invoice: ParsedUblInvoiceInput, totals: ComputedTotals): InvoicePihFields {
+  const chain = invoice.pih;
+  if (chain === undefined) {
+    throw new UblGeneratorError('UBL_PIH_INVALID', 'Chaînage PIH/ICV absent de l’entrée.', [{ path: 'pih', code: 'custom' }]);
+  }
+  if (invoice.supplier.ice === undefined) {
+    throw new UblGeneratorError('UBL_PIH_INVALID', 'L’ICE de l’émetteur est obligatoire pour le PIH.', [{ path: 'supplier.ice', code: 'custom' }]);
+  }
+  const fields: InvoicePihFields = {
+    emitterIce15: invoice.supplier.ice,
+    sequentialNumber: invoice.number,
+    icvCounter: chain.icvCounter,
+    ublTypeCode: invoice.typeCode,
+    issueDate: invoice.issueDate,
+    buyerIdentifier: invoice.customer.ice,
+    currencyCode: invoice.currencyCode,
+    totalHtCents: Number(totals.lineExtensionCents),
+    totalVatCents: Number(totals.taxTotalCents),
+    stampDutyCents: Number(totals.stampDutyCents),
+    totalTtcCents: Number(totals.taxInclusiveCents),
+    previousPiHash: chain.previousPiHash,
+  };
+  assertPihFields(fields);
+  return fields;
+}
+
+/**
+ * Champs du tuple PIH d'une facture, tirés de l'entrée et des totaux du générateur :
+ * totalHtCents = HT des lignes (débours compris, avant droit de timbre), totalTtcCents = HT + droit de timbre + TVA.
+ */
+export function pihFieldsOfInvoice(input: UblInvoiceInput): InvoicePihFields {
+  const invoice = parseUblInvoiceInput(input);
+  return pihFieldsOf(invoice, computeTotals(invoice));
+}
+
+/** Empreinte PIH de la facture décrite par l'entrée (à stocker comme `sha256_hash`, puis comme `previousPiHash` de la suivante). */
+export async function computeUblInvoicePih(input: UblInvoiceInput): Promise<string> {
+  return computeInvoicePih(pihFieldsOfInvoice(input));
 }

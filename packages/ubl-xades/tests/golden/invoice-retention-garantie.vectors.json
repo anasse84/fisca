@@ -1,0 +1,165 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-03",
+  "description": "Retenue de garantie BTP : calcul divRoundHalfUpBigInt(base × bps, 10000) ; réduit le net à payer, jamais la base de TVA. Taux et base = paramètres fournis par l'appelant.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "vectors": [
+    {
+      "id": "RG-07-HT",
+      "title": "Retenue de garantie 7 % sur le HT",
+      "legalArticle": "Retenue de garantie BTP : référence à confirmer par l'expert-comptable (VEC-CGI-06, ERRATA E : traitement de la retenue de garantie non recoupé)",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "HT 1234567 c ; TVA = 1234567 × 2000 / 10000 = 246913,4 → 246913 c ; TTC 1481480 c ; retenue = 1234567 × 700 / 10000 = 86419,69 → 86420 c ; net à payer = 1481480 − 86420 = 1395060 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 1234567,
+            "vatRateBps": 2000
+          }
+        ],
+        "retention": {
+          "rateBps": 700,
+          "allowedRatesBps": [
+            700,
+            1000
+          ],
+          "basis": "LINE_EXTENSION",
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 1234567,
+        "vatBaseCents": 1234567,
+        "disbursementsCents": 0,
+        "taxTotalCents": 246913,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 1234567,
+        "taxInclusiveCents": 1481480,
+        "retentionCents": 86420,
+        "payableCents": 1395060
+      }
+    },
+    {
+      "id": "RG-10-HT",
+      "title": "Retenue de garantie 10 % sur le HT",
+      "legalArticle": "Retenue de garantie BTP : référence à confirmer par l'expert-comptable",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "HT 1234567 c ; TVA 246913 c ; TTC 1481480 c ; retenue = 1234567 × 1000 / 10000 = 123456,7 → 123457 c ; net à payer = 1481480 − 123457 = 1358023 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 1234567,
+            "vatRateBps": 2000
+          }
+        ],
+        "retention": {
+          "rateBps": 1000,
+          "allowedRatesBps": [
+            700,
+            1000
+          ],
+          "basis": "LINE_EXTENSION",
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 1234567,
+        "vatBaseCents": 1234567,
+        "disbursementsCents": 0,
+        "taxTotalCents": 246913,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 1234567,
+        "taxInclusiveCents": 1481480,
+        "retentionCents": 123457,
+        "payableCents": 1358023
+      }
+    },
+    {
+      "id": "RG-07-TTC",
+      "title": "Retenue de garantie 7 % sur le TTC",
+      "legalArticle": "Retenue de garantie BTP : référence à confirmer par l'expert-comptable",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "TTC 1481480 c ; retenue = 1481480 × 700 / 10000 = 103703,6 → 103704 c ; net à payer = 1481480 − 103704 = 1377776 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 1234567,
+            "vatRateBps": 2000
+          }
+        ],
+        "retention": {
+          "rateBps": 700,
+          "allowedRatesBps": [
+            700,
+            1000
+          ],
+          "basis": "TAX_INCLUSIVE",
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 1234567,
+        "vatBaseCents": 1234567,
+        "disbursementsCents": 0,
+        "taxTotalCents": 246913,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 1234567,
+        "taxInclusiveCents": 1481480,
+        "retentionCents": 103704,
+        "payableCents": 1377776
+      }
+    },
+    {
+      "id": "RG-07-DEMI",
+      "title": "Arrondi au demi supérieur : 703,5 → 704",
+      "legalArticle": "Retenue de garantie BTP : référence à confirmer par l'expert-comptable",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "HT 10050 c ; TVA 2010 c ; TTC 12060 c ; retenue = 10050 × 700 / 10000 = 703,5 → 704 c (demi supérieur) ; net à payer = 12060 − 704 = 11356 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 10050,
+            "vatRateBps": 2000
+          }
+        ],
+        "retention": {
+          "rateBps": 700,
+          "allowedRatesBps": [
+            700,
+            1000
+          ],
+          "basis": "LINE_EXTENSION",
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 10050,
+        "vatBaseCents": 10050,
+        "disbursementsCents": 0,
+        "taxTotalCents": 2010,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 10050,
+        "taxInclusiveCents": 12060,
+        "retentionCents": 704,
+        "payableCents": 11356
+      }
+    }
+  ]
+}
