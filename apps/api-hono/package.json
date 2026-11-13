@@ -11,6 +11,7 @@
     "test": "pnpm run gen:routes && vitest run"
   },
   "dependencies": {
+    "hono": "^4.13.18",
     "@fisca/shared-types": "workspace:*",
     "@fisca/db-schema": "workspace:*",
     "@fisca/auth-rbac": "workspace:*",

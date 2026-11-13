@@ -89,6 +89,9 @@ importers:
       '@fisca/vault-merkle':
         specifier: workspace:*
         version: link:../../packages/vault-merkle
+      hono:
+        specifier: ^4.13.18
+        version: 4.13.18
     devDependencies:
       '@types/pg':
         specifier: 8.23.1
