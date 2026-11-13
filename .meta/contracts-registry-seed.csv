@@ -1,0 +1,150 @@
+contract_id,resource_kind,exact_name,defined_in_file,payload_or_schema_summary,verified,producer_session,consumer_sessions,status,doc_section_ref
+CTR-BND-01,WRANGLER_BINDING,CONTROL_PLANE_DB,apps/api-hono/wrangler.toml,D1 fisca-control-plane-eu (--location=weur),False,S0,"S1A,S1B,P4-B",DRAFT,Doc_04_TDD#S11
+CTR-BND-02,WRANGLER_BINDING,R2_LEGAL_VAULT,apps/api-hono/wrangler.toml,"R2 fisca-worm-vault-10y-eu, jurisdiction = ""eu"", Object Lock Compliance 3653 j",False,S0,"P2-A,P3-A,P4-B",DRAFT,Doc_04_TDD#S11
+CTR-BND-03,WRANGLER_BINDING,FISCA_FAST_KV,apps/api-hono/wrangler.toml,"KV : entitlements, règles AST actives, disjoncteurs",False,S0,"S1B,P3-B,P4-B",DRAFT,Doc_04_TDD#S11
+CTR-BND-04,WRANGLER_BINDING,INVOICE_SEQUENCER,apps/api-hono/wrangler.toml,"Durable Object, classe InvoiceSequencerDO (séquence sans trou + PIH)",False,S1B,P2-A,DRAFT,Doc_04_TDD#S11
+CTR-BND-05,WRANGLER_BINDING,AGENT_HINDSIGHT_MEMORY,apps/api-hono/wrangler.toml,"Durable Object, classe AgentHindsightMemoryDO",False,S1B,P3-B,DRAFT,Doc_04_TDD#S11
+CTR-BND-06,WRANGLER_BINDING,FISCAL_JAVA_CONTAINER,apps/api-hono/wrangler.toml,"Conteneur, classe FiscalJavaContainerDO (PHIVE, Mustangproject)",False,P2-A,P3-A,DRAFT,Doc_04_TDD#S11
+CTR-BND-07,WRANGLER_BINDING,DOCLING_PYTHON_CONTAINER,apps/api-hono/wrangler.toml,"Conteneur, classe DoclingPythonContainerDO",False,P3-B,—,DRAFT,Doc_04_TDD#S11
+CTR-BND-08,WRANGLER_BINDING,DGI_CLEARANCE_WORKFLOW,apps/api-hono/wrangler.toml,"Workflow dgi-clearance-workflow, classe DgiClearanceWorkflow",False,P2-A,—,DRAFT,Doc_04_TDD#S11
+CTR-BND-09,WRANGLER_BINDING,INVOICE_QUEUE,apps/api-hono/wrangler.toml,Producteur de la file fisca-invoice-ingestion,False,S0,"P3-B,P3-C",DRAFT,Doc_04_TDD#S11
+CTR-BND-10,WRANGLER_BINDING,SOVEREIGN_MIRROR_QUEUE,apps/api-hono/wrangler.toml,Producteur de la file fisca-sovereign-mirror,False,S0,"P4-B,P4-C",DRAFT,Doc_04_TDD#S11
+CTR-BND-11,WRANGLER_BINDING,AI,apps/api-hono/wrangler.toml,"Workers AI (via AI Gateway fisca-neuro-gateway, journaux désactivés)",False,S0,P3-B,DRAFT,Doc_04_TDD#S11
+CTR-BND-12,WRANGLER_BINDING,CGNC_VECTOR_INDEX,apps/api-hono/wrangler.toml,"Vectorize fisca-maroc-cgnc-cgi-v1 (1024 dimensions, cosine)",False,S0,P3-B,DRAFT,Doc_04_TDD#S11
+CTR-QUE-01,QUEUE_NAME,fisca-invoice-ingestion,scripts/provision-cloudflare-prod.sh,File Cloudflare ; file d'erreurs associée : dlq-fisca-invoice-ingestion (rétention 14 j),False,P4-C,"P2-A,P3-B,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S02
+CTR-QUE-02,QUEUE_NAME,fisca-xhub-clearance,scripts/provision-cloudflare-prod.sh,File Cloudflare ; file d'erreurs associée : dlq-fisca-xhub-clearance (rétention 14 j),False,P4-C,"P2-A,P3-B,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S02
+CTR-QUE-03,QUEUE_NAME,fisca-erp-sync-outbound,scripts/provision-cloudflare-prod.sh,File Cloudflare ; file d'erreurs associée : dlq-fisca-erp-sync-outbound (rétention 14 j),False,P4-C,"P2-A,P3-B,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S02
+CTR-QUE-04,QUEUE_NAME,fisca-sovereign-mirror,scripts/provision-cloudflare-prod.sh,File Cloudflare ; file d'erreurs associée : dlq-fisca-sovereign-mirror (rétention 14 j),False,P4-C,"P2-A,P3-B,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S02
+CTR-QUE-05,QUEUE_NAME,fisca-notifications,scripts/provision-cloudflare-prod.sh,File Cloudflare ; file d'erreurs associée : dlq-fisca-notifications (rétention 14 j),False,P4-C,"P2-A,P3-B,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S02
+CTR-SEC-01,ENV_SECRET,AUTH_PEPPER,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-02,ENV_SECRET,JWT_EDDSA_PRIVATE_JWK,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-03,ENV_SECRET,GOOGLE_OAUTH_CLIENT_SECRET,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-04,ENV_SECRET,CF_D1_PROVISIONER_TOKEN,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-05,ENV_SECRET,BARID_ESIGN_CSC_SECRET,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-06,ENV_SECRET,PAYZONE_WEBHOOK_SECRET,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-07,ENV_SECRET,INFOBIP_API_KEY,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-08,ENV_SECRET,AWS_SES_SMTP_SECRET,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-SEC-09,ENV_SECRET,SOVEREIGN_MIRROR_HMAC_KEY,Cloudflare Secrets Store (wrangler secret put),"Jamais dans Git ni wrangler.toml ; en test, valeur factice injectée par Miniflare",False,P4-C,"S1A,P2-A,P3-C,P4-B",DRAFT,Doc_16_Cloud_Deploy#S03
+CTR-API-01,API_ROUTE,POST /api/v1/auth/register,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-02,API_ROUTE,POST /api/v1/auth/verify-email,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-03,API_ROUTE,POST /api/v1/auth/login,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-04,API_ROUTE,GET /api/v1/auth/google/start,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-05,API_ROUTE,GET /api/v1/auth/google/callback,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-06,API_ROUTE,POST /api/v1/auth/password/forgot,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-07,API_ROUTE,POST /api/v1/auth/2fa/totp/setup,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-08,API_ROUTE,POST /api/v1/auth/2fa/totp/enable,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-09,API_ROUTE,POST /api/v1/auth/2fa/verify,apps/api-hono/src/routes/auth,Turnstile + limitation de débit,False,S1A,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-10,API_ROUTE,GET /api/v1/directory/ice/:ice,apps/api-hono/src/routes/ledger,JWT + résolution TENANT_DB côté serveur + Idempotency-Key 72 h en écriture,False,S1B,"P2-B,P2-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-11,API_ROUTE,POST /api/v1/ledger/entries/:id/post,apps/api-hono/src/routes/ledger,JWT + résolution TENANT_DB côté serveur + Idempotency-Key 72 h en écriture,False,S1B,"P2-B,P2-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-12,API_ROUTE,POST /api/v1/banking/reconcile,apps/api-hono/src/routes/ledger,JWT + résolution TENANT_DB côté serveur + Idempotency-Key 72 h en écriture,False,S1B,"P2-B,P2-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-13,API_ROUTE,GET /api/v1/health/deep,apps/api-hono/src/core,JWT + résolution TENANT_DB côté serveur + Idempotency-Key 72 h en écriture,False,S1B,"P2-B,P2-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-14,API_ROUTE,POST /api/v1/invoices/:id/certify,apps/api-hono/src/routes/invoices,JWT + Step-Up 2FA 300 s + Idempotency-Key 72 h + OID == ICE/IF,False,P2-A,"P2-B,P3-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-15,API_ROUTE,POST /api/v1/invoices/:id/cdv-response,apps/api-hono/src/routes/invoices,JWT + Step-Up 2FA 300 s + Idempotency-Key 72 h + OID == ICE/IF,False,P2-A,"P2-B,P3-C,P4-A",DRAFT,Doc_07_API_EDI#S02
+CTR-API-16,API_ROUTE,POST /api/v1/pos/sync-batch,apps/api-hono/src/routes/pos,Certificat terminal + signature ECDSA P-256 ; route publique : Turnstile + UNIQUE(pos_ticket_id),False,P2-A,"P2-B,P2-C",DRAFT,Doc_07_API_EDI#S03
+CTR-API-17,API_ROUTE,POST /api/v1/public/pos-qr/:qrToken/convert-b2b,apps/api-hono/src/routes/pos,Certificat terminal + signature ECDSA P-256 ; route publique : Turnstile + UNIQUE(pos_ticket_id),False,P2-A,"P2-B,P2-C",DRAFT,Doc_07_API_EDI#S03
+CTR-API-18,API_ROUTE,GET /api/v1/public/verify/:xhubUuid,apps/api-hono/src/routes/invoices,Certificat terminal + signature ECDSA P-256 ; route publique : Turnstile + UNIQUE(pos_ticket_id),False,P2-A,"P2-B,P2-C",DRAFT,Doc_07_API_EDI#S03
+CTR-API-19,API_ROUTE,POST /api/v1/edi/:declarationType,apps/api-hono/src/routes/edi,JWT rôle CHEF_MISSION ; sortie validée XSD avant livraison,False,P3-A,P4-A,DRAFT,Doc_07_API_EDI#S02
+CTR-API-20,API_ROUTE,POST /api/v1/compliance/ras-tva/:id/certificate,apps/api-hono/src/routes/edi,JWT rôle CHEF_MISSION ; sortie validée XSD avant livraison,False,P3-A,P4-A,DRAFT,Doc_07_API_EDI#S02
+CTR-API-21,API_ROUTE,POST /api/v1/purchases/ingest,apps/api-hono/src/routes/purchases,JWT ; événements SSE à identifiant de ligne fixe (CLS nul),False,P3-B,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S03
+CTR-API-22,API_ROUTE,GET /api/v1/purchases/stream,apps/api-hono/src/routes/purchases,JWT ; événements SSE à identifiant de ligne fixe (CLS nul),False,P3-B,"P2-B,P4-A",DRAFT,Doc_07_API_EDI#S03
+CTR-API-23,API_ROUTE,POST /api/v1/erp/odoo/clearance-entries,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-24,API_ROUTE,POST /api/v1/erp/odoo/reconcile,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-25,API_ROUTE,POST /api/v1/erp/sage100/ingest-gl,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-26,API_ROUTE,GET /api/v1/erp/sage100/outbound-entries,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-27,API_ROUTE,GET /api/v1/erp/sage100/export-pnm,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-28,API_ROUTE,GET /api/v1/bi/odata/$metadata,apps/api-hono/src/routes/erp,HMAC X-SaaS-Signature (Odoo) ou mTLS (Sage 100) + Idempotency-Key,False,P3-C,—,DRAFT,Doc_07_API_EDI#S04
+CTR-API-29,API_ROUTE,POST /api/v1/webhooks/payzone,apps/api-hono/src/routes/webhooks,"Signature du fournisseur vérifiée en temps constant, fenêtre 300 s, dédoublonnage 72 h",False,P3-C,P4-B,DRAFT,Doc_07_API_EDI#S05
+CTR-API-30,API_ROUTE,POST /api/v1/webhooks/infobip,apps/api-hono/src/routes/webhooks,"Signature du fournisseur vérifiée en temps constant, fenêtre 300 s, dédoublonnage 72 h",False,P3-C,P4-B,DRAFT,Doc_07_API_EDI#S05
+CTR-API-31,API_ROUTE,POST /api/v1/webhooks/ses-events,apps/api-hono/src/routes/webhooks,"Signature du fournisseur vérifiée en temps constant, fenêtre 300 s, dédoublonnage 72 h",False,P3-C,P4-B,DRAFT,Doc_07_API_EDI#S05
+CTR-API-32,API_ROUTE,POST /api/v1/webhooks/xhub-cdv,apps/api-hono/src/routes/webhooks,"Signature du fournisseur vérifiée en temps constant, fenêtre 300 s, dédoublonnage 72 h",False,P3-C,P4-B,DRAFT,Doc_07_API_EDI#S05
+CTR-API-33,API_ROUTE,POST /api/v1/factorflow/pledge,apps/api-hono/src/routes/factorflow,"JWT rôle DAF ou gérant ; verrou UNIQUE(xhub_uuid, invoice_sha256)",False,P4-B,P4-A,DRAFT,Doc_07_API_EDI#S02
+CTR-API-34,API_ROUTE,GET /api/v1/reversibility/export-10y,apps/api-hono/src/routes/billing,"Toujours ouverte, même en RESTRICTED_READ_ONLY (Art. 211 CGI)",False,P4-B,P4-A,DRAFT,Doc_12_SLA_DPA_PRA_Reversibilite#S08
+CTR-MCP-01,MCP_SERVER,POST https://mcp.fisca.ma/mcp,apps/api-hono/src/routes/mcp,OAuth 2.1 + PKCE ; aucun argument tenantId/companyId ; aucun outil POSTED ni virement,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-02,MCP_TOOL,check_answerable,packages/ai-agents/src/mcp-server.ts,Classe : lecture ; schéma vérifié par assertSafeMcpToolSchema,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-03,MCP_TOOL,get_vat_forecast,packages/ai-agents/src/mcp-server.ts,Classe : lecture ; schéma vérifié par assertSafeMcpToolSchema,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-04,MCP_TOOL,search_cgi_wiki,packages/ai-agents/src/mcp-server.ts,Classe : lecture ; schéma vérifié par assertSafeMcpToolSchema,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-05,MCP_TOOL,list_law6921_risks,packages/ai-agents/src/mcp-server.ts,Classe : audit ; schéma vérifié par assertSafeMcpToolSchema,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-06,MCP_TOOL,inspect_fec_exceptions,packages/ai-agents/src/mcp-server.ts,Classe : audit ; schéma vérifié par assertSafeMcpToolSchema,False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-07,MCP_TOOL,create_draft_invoice,packages/ai-agents/src/mcp-server.ts,"Classe : brouillon, validation humaine requise ; schéma vérifié par assertSafeMcpToolSchema",False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-MCP-08,MCP_TOOL,propose_od_draft,packages/ai-agents/src/mcp-server.ts,"Classe : brouillon, validation humaine requise ; schéma vérifié par assertSafeMcpToolSchema",False,P3-B,P4-A,DRAFT,Doc_07_API_EDI#S06
+CTR-XSD-01,XSD_SCHEMA,SIMPL-TVA v4.0 (DeclarationReleveDeduction),packages/edi-simpl/xsd/,<prorata> entre <tx> et <mp> ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S08
+CTR-XSD-02,XSD_SCHEMA,RAS-TVA RDRS v1.0 (DeclarationReleveRetenueSource) et DeclarationVersementRASTVA,packages/edi-simpl/xsd/,tauxRetenue 75 ou 100 ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S08
+CTR-XSD-03,XSD_SCHEMA,Loi 69-21 ADC500B-23I v1.0 (DeclarationDelaisPaiement),packages/edi-simpl/xsd/,amende au dirham supérieur ; litiges isolés ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S08
+CTR-XSD-04,XSD_SCHEMA,"SIMPL-IS v2.0.3 (Liasse, 4 modèles)",packages/edi-simpl/xsd/,"codes 11501 à 11504 absents ; totaux tableaux 3, 4, 8 ; schéma officiel à déposer (ERRATA B-13)",False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S09
+CTR-XSD-05,XSD_SCHEMA,EtatVentesParClient (Art. 20-I),packages/edi-simpl/xsd/,B2B + POS B2C = classe 71 du CPC ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S09
+CTR-XSD-06,XSD_SCHEMA,DRVT v2.0.3 (3 archives),packages/edi-simpl/xsd/,bloc loyers TSC ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S09
+CTR-XSD-07,XSD_SCHEMA,État 9421 (TraitementEtSalaire),packages/edi-simpl/xsd/,.xml non zippé ; <numPPR/> entre <numCE/> et <numCNSS> ; schéma officiel à déposer (ERRATA B-13),False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S10
+CTR-XSD-08,XSD_SCHEMA,FEC-MA 24 colonnes,packages/edi-simpl/xsd/,"pipe, CRLF, journal AN en tête, chaîne SHA-256 ; schéma officiel à déposer (ERRATA B-13)",False,P3-A,"G2,G3",DRAFT,Doc_07_API_EDI#S10
+CTR-XSD-09,XSD_SCHEMA,"UBL 2.1 CIUS-MA (380, 381, 383, 386, 389)",packages/ubl-xades/xsd/,PHIVE : XSD OASIS + Schematron EN 16931 ; schéma officiel à déposer (ERRATA B-13),False,P2-A,"G2,G3",DRAFT,Doc_07_API_EDI#S07
+CTR-XSD-10,XSD_SCHEMA,ISO 20022 pain.001.001.03,packages/edi-simpl/xsd/,exclut tout tiers ALERTE_RIB_DAF ; schéma officiel à déposer (ERRATA B-13),False,P4-B,"G2,G3",DRAFT,Doc_07_API_EDI#S10
+CTR-COD-01,CODE_CONTRACT,FISCA_ADR_INVARIANTS,packages/shared-types/src/invariants.ts,"assertSafeIntegerAmount, assertValidVatRateForIssueYear, assertCertificateMatchesEmitter, assertSafeMcpToolSchema, assertReadOnlySageSql",False,S0,toutes,DRAFT,Doc_05_ADR#S14
+CTR-COD-02,CODE_CONTRACT,divRoundHalfUpBigInt,packages/shared-types/src/invariants.ts,"Seule division monétaire admise (demi-supérieur, BigInt)",False,S0,toutes,DRAFT,Doc_14_QA#S11
+CTR-COD-03,CODE_CONTRACT,FiscaInfrastructureAdapter,packages/shared-types/src/infra-adapter.ts,"TenantSqlDriver, WormVaultDriver, AsyncQueueDriver, SignedReplicationDelta ; modes CLOUDFLARE_EDGE et SOVEREIGN_MOROCCO_VPS",False,S0,"S1B,P2-A,P4-B,P4-C",DRAFT,Doc_04_TDD#S10
+CTR-COD-04,CODE_CONTRACT,executeAtomicD1Transition,packages/shared-types/src/fsm-engine.ts,Transition atomique avec verrou optimiste + state_transition_audit,False,S0,"S1B,P2-A,P4-B",DRAFT,Doc_02_State_Machines#S11
+CTR-COD-05,CODE_CONTRACT,api-contracts (Zod),packages/shared-types/src/api-contracts.ts,"CentimesIntSchema, BpsIntSchema, Ice15Schema, VatRate2026BpsSchema, CreateInvoiceRequestSchema, ProblemDetailsSchema, verifySignedWebhookPayload",False,S0,toutes,DRAFT,Doc_07_API_EDI#S11
+CTR-COD-06,CODE_CONTRACT,evaluateAccessPolicy,packages/auth-rbac/src/policy-engine.ts,"12 rôles, ABAC, Step-Up 300 s, SoD-01 à SoD-03",False,S1A,"S1B,P2-A,P3-B,P4-A,P4-B",DRAFT,Doc_09_RBAC_SoD#S11
+CTR-COD-07,CODE_CONTRACT,auth-2fa,packages/auth-rbac/src/auth-2fa.ts,"hashPasswordWorkerSafe (PBKDF2-SHA512 100 000), verifyTotpCodeRfc6238, mfa_challenge_token",False,S1A,"P2-B,P4-A",DRAFT,Doc_09_RBAC_SoD#S02
+CTR-COD-08,CODE_CONTRACT,e2ee-engine,packages/crypto-e2ee/src/e2ee-engine.ts,"encryptFieldWithAad (AAD companyId|table|recordId|column), computeBlindIndex128, Shamir 2-sur-3, EphemeralRamPiiScrubber",False,S1A,"S1B,P2-A,P3-B,P4-A",DRAFT,Doc_10_STRIDE_Crypto#S11
+CTR-COD-09,CODE_CONTRACT,privacy-sovereignty-engine,packages/compliance-cndp/src/privacy-sovereignty-engine.ts,"assertSovereignEgressAllowed, evaluateCndpErasureAgainstCgiArt211",False,S1A,"P3-C,P4-B,P4-C",DRAFT,Doc_11_CNDP_Souverainete#S11
+CTR-COD-10,CODE_CONTRACT,ensureTenantSchemaUpToDate,packages/db-schema/src/migrator.ts,Migrations idempotentes à empreinte SHA-256 ; table _fisca_schema_migrations,False,S1B,P4-C,DRAFT,Doc_06_ERD#S10
+CTR-COD-11,CODE_CONTRACT,fiscal-golden-suite,packages/qa-harness/src/fiscal-golden-suite.ts,"Fonctions de référence Art. 11-II, Loi 69-21, RAS-TVA, validateur .PNM ; fichier protégé",False,S0,"G1,G2,G3,G4",DRAFT,Doc_14_QA#S11
+CTR-COD-12,CODE_CONTRACT,finops-governor,packages/ai-agents/src/finops-governor.ts,"selectOptimalFinOpsTier : 3 paliers, plafond doux, anomalie 2x",False,P3-B,G3,DRAFT,Doc_13_FinOps#S11
+CTR-COD-13,CODE_CONTRACT,billing-engine,packages/billing-metering/src/billing-engine.ts,"computeDailyProrataCents, computeCabinetMonthlyInvoice, assertFeatureAuthorized (arithmétique BigInt, ERRATA D-09)",False,P4-B,G4,DRAFT,Doc_03_Entitlements_Pricing#S11
+CTR-COD-14,CODE_CONTRACT,failback-and-dip,packages/pra-reversibility/src/failback-and-dip.ts,"evaluateMonthlySlaCredit, verifyFailbackCryptographicParity, buildIso14641DipManifest",False,P4-B,"P4-C,G4,S5",DRAFT,Doc_12_SLA_DPA_PRA_Reversibilite#S11
+CTR-COD-15,CODE_CONTRACT,providers,packages/external-integrations/src/providers.ts,"sendOtpWithInfobip15sFailover, canSendProactiveWhatsAppUtilityTemplate, signDigestViaBaridEsignCscV2",False,P3-C,"P2-A,G3",DRAFT,Doc_17_Third_Party_Integrations#S11
+CTR-COD-16,CODE_CONTRACT,tokens.css + FiscalPrimitives,packages/ui-mercury/src/tokens.css,"Variables sémantiques clair/sombre ; resolveSafeLocaleForSurface, formatCentimesMad, FiscalAmount, FiscalTerm",False,P2-B,"P2-C,P4-A",DRAFT,Doc_08_Design_i18n#S11
+CTR-SQL-01,D1_TABLE,pricing_catalog,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-02,D1_TABLE,plan_entitlements,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-03,D1_TABLE,subscriptions,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-04,D1_TABLE,fiduciary_dossier_meters,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-05,D1_TABLE,pos_terminal_meters,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-06,D1_TABLE,prepaid_wallets,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_03_Entitlements_Pricing#S10
+CTR-SQL-07,D1_TABLE,organizations,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-08,D1_TABLE,users,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-09,D1_TABLE,user_oauth_accounts,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-10,D1_TABLE,user_mfa_factors,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-11,D1_TABLE,user_trusted_devices,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-12,D1_TABLE,organization_memberships,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-13,D1_TABLE,tenant_databases,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-14,D1_TABLE,morocco_company_directory,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-15,D1_TABLE,dynamic_fiscal_rules,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-16,D1_TABLE,simpl_is_cell_rules,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-17,D1_TABLE,pledged_invoices_registry,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-18,D1_TABLE,archival_merkle_batches,packages/db-schema/src/control-plane.ts,Plan : CONTROL_PLANE_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S02
+CTR-SQL-19,D1_TABLE,tenant_key_grants,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-20,D1_TABLE,fiscal_partners,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-21,D1_TABLE,purchase_orders,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-22,D1_TABLE,delivery_notes,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-23,D1_TABLE,invoices,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-24,D1_TABLE,invoice_delivery_links,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-25,D1_TABLE,invoice_lines,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S03
+CTR-SQL-26,D1_TABLE,pos_sessions,packages/db-schema/src/tenant.ts,Plan : TENANT_DB (et SQLite OPFS de la caisse) ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S04
+CTR-SQL-27,D1_TABLE,pos_tickets,packages/db-schema/src/tenant.ts,Plan : TENANT_DB (et SQLite OPFS de la caisse) ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S04
+CTR-SQL-28,D1_TABLE,pos_z_closures,packages/db-schema/src/tenant.ts,Plan : TENANT_DB (et SQLite OPFS de la caisse) ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S04
+CTR-SQL-29,D1_TABLE,fiscal_years,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-30,D1_TABLE,journals,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-31,D1_TABLE,cgnc_accounts,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-32,D1_TABLE,journal_entries,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-33,D1_TABLE,journal_entry_lines,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-34,D1_TABLE,bank_transactions,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-35,D1_TABLE,fixed_assets_register,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-36,D1_VIEW,v_cgnc_trial_balance_6col,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-37,D1_TRIGGER,prevent_posted_entry_update,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-38,D1_TRIGGER,prevent_posted_entry_delete,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-39,D1_TRIGGER,prevent_posted_lines_mutation_update,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-40,D1_TRIGGER,prevent_posted_lines_mutation_delete,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-41,D1_TRIGGER,enforce_balance_and_positive_cash_on_post,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S05
+CTR-SQL-42,D1_TABLE,tax_and_payment_subledger,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-43,D1_TABLE,withholding_tax_subledger,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-44,D1_TABLE,payroll_annual_subledger,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-45,D1_TABLE,payroll_exempt_elements,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-46,D1_TABLE,payroll_ir_remittances,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-47,D1_TABLE,archival_packages,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-48,D1_TABLE,state_transition_audit,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-49,D1_TABLE,fec_audit_runs,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-50,D1_TRIGGER,enforce_10year_worm_retention_delete,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-51,D1_TRIGGER,enforce_10year_worm_retention_update,packages/db-schema/src/tenant.ts,Plan : TENANT_DB ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S06
+CTR-SQL-52,D1_TABLE,fiscal_sequences,apps/api-hono/src/core,Plan : Durable Object SQLite ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S07
+CTR-SQL-53,D1_TABLE,world_facts,apps/api-hono/src/core,Plan : Durable Object SQLite ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S07
+CTR-SQL-54,D1_TABLE,experiences,apps/api-hono/src/core,Plan : Durable Object SQLite ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S07
+CTR-SQL-55,D1_TABLE,evolving_opinions,apps/api-hono/src/core,Plan : Durable Object SQLite ; DDL de référence dans la section citée,False,S1B,sessions en aval,DRAFT,Doc_06_ERD#S07
