@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "gen:routes": "node ../../scripts/gen-route-manifest.ts",
+    "openapi:gen": "node src/core/openapi-gen.ts",
     "typecheck": "pnpm run gen:routes && tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "pnpm run gen:routes && vitest run",

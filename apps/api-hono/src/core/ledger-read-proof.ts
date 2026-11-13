@@ -1,42 +1,24 @@
 /**
- * Lecture de preuve du grand livre (GET /api/v1/ledger/verify-chain) : règle de REPLI à échec fermé.
+ * Lecture de preuve du grand livre (GET /api/v1/ledger/verify-chain) : permission dédiée `LEDGER_READ_PROOF` de `auth-rbac`
+ * (Doc_09 § 06B : l'Auditeur CAC/DGI a « Lecture Preuves », les autres rôles comptables « Lecture »), à échec fermé.
  *
- * `auth-rbac` ne définit AUCUNE permission de lecture du grand livre (PERMISSION_ACTIONS : seules LEDGER_SAVE_DRAFT,
- * LEDGER_VISA_CYCLE, LEDGER_POST_IMMUTABLE et REVERSIBILITY_EXPORT_10Y touchent le grand livre). En attendant une permission dédiée
- * (recommandation : `LEDGER_READ_PROOF`), la lecture est réservée aux rôles qui portent au moins une de ces actions. Pour la
- * remplacer, il suffit de substituer `LEDGER_READ_PROOF_FALLBACK_ACTIONS` par la permission dédiée : aucune autre règle à changer.
- *
- * - Les identités techniques (ERP, IA) sont refusées quoi que porte leur rôle : elles ne lisent pas la preuve légale.
- * - Accès par mandat : le plafond de permissions doit contenir au moins une action du repli (intersection non vide).
+ * - La matrice de `auth-rbac` accorde LEDGER_READ_PROOF aux seuls rôles humains concernés ; les identités techniques
+ *   (ERP_CONNECTOR_AGENT, AI_MCP_ACTOR) ne la portent jamais et sont de plus refusées ici par garde explicite.
+ * - Accès par mandat : le plafond de permissions du mandat doit contenir LEDGER_READ_PROOF (intersection stricte avec le rôle).
  */
-import { PERMISSION_ACTIONS, TECHNICAL_ROLE_CODES, permissionsOfRole, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
+import { TECHNICAL_ROLE_CODES, permissionsOfRole, type PermissionAction, type RoleCode } from '@fisca/auth-rbac';
 import { LedgerError } from './ledger-errors.ts';
-
-/** Actions de repli : toute action LEDGER_* du catalogue, plus l'export de réversibilité 10 ans (auditeurs CAC / DGI). */
-export const LEDGER_READ_PROOF_FALLBACK_ACTIONS: ReadonlySet<PermissionAction> = new Set<PermissionAction>([
-  ...PERMISSION_ACTIONS.filter((action) => action.startsWith('LEDGER_')),
-  'REVERSIBILITY_EXPORT_10Y',
-]);
 
 function isTechnicalRole(role: RoleCode): boolean {
   return (TECHNICAL_ROLE_CODES as readonly string[]).includes(role);
 }
 
-function holdsFallbackAction(actions: ReadonlySet<PermissionAction>): boolean {
-  for (const action of actions) {
-    if (LEDGER_READ_PROOF_FALLBACK_ACTIONS.has(action)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /** `ceiling` : plafond d'un accès par mandat ; `null` ou absent : appartenance directe, aucun plafond. */
 export function canReadLedgerProof(role: RoleCode, ceiling: ReadonlySet<PermissionAction> | null | undefined): boolean {
-  if (isTechnicalRole(role) || !holdsFallbackAction(permissionsOfRole(role))) {
+  if (isTechnicalRole(role) || !permissionsOfRole(role).has('LEDGER_READ_PROOF')) {
     return false;
   }
-  return ceiling === null || ceiling === undefined || holdsFallbackAction(ceiling);
+  return ceiling === null || ceiling === undefined || ceiling.has('LEDGER_READ_PROOF');
 }
 
 /** Refus au code RBAC habituel du grand livre (403 `LEDGER_ACCESS_DENIED`, `denialCode` = `RBAC_FORBIDDEN_FOR_<rôle>`). */
@@ -45,5 +27,5 @@ export function assertCanReadLedgerProof(holder: { readonly role: RoleCode; read
     return;
   }
   const denialCode = `RBAC_FORBIDDEN_FOR_${holder.role}` as const;
-  throw new LedgerError('LEDGER_ACCESS_DENIED', `${denialCode} : lecture de la preuve du grand livre refusée (aucune action LEDGER_* ni REVERSIBILITY_EXPORT_10Y dans le rôle ou le plafond du mandat).`, { denialCode });
+  throw new LedgerError('LEDGER_ACCESS_DENIED', `${denialCode} : lecture de la preuve du grand livre refusée (LEDGER_READ_PROOF absente du rôle ou du plafond du mandat).`, { denialCode });
 }

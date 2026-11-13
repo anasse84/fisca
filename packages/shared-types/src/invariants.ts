@@ -111,7 +111,7 @@ function parseSubjectDn(subjectDn: string): readonly (readonly [string, string])
     } else if (char === '"') {
       inQuotes = !inQuotes;
       current += char;
-    } else if (char === ',' && !inQuotes) {
+    } else if ((char === ',' || char === '/' || char === '+') && !inQuotes) {
       segments.push(current);
       current = '';
     } else {
@@ -133,29 +133,51 @@ function parseSubjectDn(subjectDn: string): readonly (readonly [string, string])
   return attributes;
 }
 
+/** Seuls attributs du SubjectDN lus : organizationIdentifier (2.5.4.97) et serialNumber (2.5.4.5). Le CN n'est jamais lu. */
 const IDENTIFIER_ATTRIBUTES: readonly string[] = [
-  'SERIALNUMBER', '2.5.4.5', 'OID.2.5.4.5',
-  'ORGANIZATIONIDENTIFIER', '2.5.4.97', 'OID.2.5.4.97',
-  'CN',
+  '2.5.4.97', 'OID.2.5.4.97', 'ORGANIZATIONIDENTIFIER',
+  '2.5.4.5', 'OID.2.5.4.5', 'SERIALNUMBER',
 ];
 const ICE_VALUE_PATTERN = /^[0-9]{15}$/;
+const IF_VALUE_PATTERN = /^[0-9]{6,12}$/;
+/** Préfixe ETSI (EN 319 412-1) : un code pays autre que MA est refusé tout de suite. */
+const ETSI_PREFIX_PATTERN = /^(VAT|NTR|PSD|LEI)([A-Z]{2})-(.+)$/;
 
+/**
+ * Compare le certificat à l'émetteur (Loi 43-20) : seuls organizationIdentifier (2.5.4.97) et serialNumber
+ * (2.5.4.5) comptent, par correspondance exacte (casse ignorée, guillemets retirés) avec un jeton de l'ICE
+ * (valeur nue, NTRMA-, ICEMA-, ICE:, ICE-) ou de l'IF (VATMA-, IFMA-, IF:, IF-). Un préfixe ETSI à code pays
+ * autre que MA rejette le certificat, quel que soit l'autre attribut. Le CN ne suffit jamais. Échec fermé :
+ * ICE de 15 chiffres exacts et IF de 6 à 12 chiffres, sinon refus.
+ */
 export function assertCertificateMatchesEmitter(certSubjectDn: string, emitterIce: string, emitterIf: string): void {
-  const expected: string[] = [];
-  if (ICE_VALUE_PATTERN.test(emitterIce)) {
-    expected.push(emitterIce);
-  }
-  if (emitterIf.trim().length >= 6) {
-    expected.push(emitterIf.trim().toUpperCase());
-  }
-  const matches = parseSubjectDn(certSubjectDn).some(
-    ([key, value]) => IDENTIFIER_ATTRIBUTES.includes(key) && expected.includes(value.toUpperCase()),
-  );
-  if (!matches) {
+  const refuse = (detail: string): never => {
     throw new AdrInvariantError(
       'ADR_06_LOI4320_CERT_MISMATCH',
-      `Le SubjectDN du certificat qualifié ne correspond ni à l'ICE (${emitterIce}) ni à l'IF (${emitterIf}) : aucun attribut (serialNumber, OID 2.5.4.5, organizationIdentifier, OID 2.5.4.97, CN) n'a cette valeur complète.`,
+      `Le SubjectDN du certificat qualifié ne correspond pas à l'émetteur : ${detail}.`,
     );
+  };
+  if (!ICE_VALUE_PATTERN.test(emitterIce)) {
+    return refuse("l'ICE de l'émetteur doit compter exactement 15 chiffres");
+  }
+  if (!IF_VALUE_PATTERN.test(emitterIf)) {
+    return refuse("l'IF de l'émetteur doit compter de 6 à 12 chiffres");
+  }
+  const accepted: ReadonlySet<string> = new Set([
+    emitterIce, `NTRMA-${emitterIce}`, `ICEMA-${emitterIce}`, `ICE:${emitterIce}`, `ICE-${emitterIce}`,
+    `VATMA-${emitterIf}`, `IFMA-${emitterIf}`, `IF:${emitterIf}`, `IF-${emitterIf}`,
+  ]);
+  const values = parseSubjectDn(certSubjectDn)
+    .filter(([key]) => IDENTIFIER_ATTRIBUTES.includes(key))
+    .map(([, value]) => value.toUpperCase());
+  for (const value of values) {
+    const prefix = ETSI_PREFIX_PATTERN.exec(value);
+    if (prefix !== null && prefix[2] !== 'MA') {
+      return refuse(`préfixe ETSI étranger (${prefix[1] ?? ''}${prefix[2] ?? ''}-) dans un attribut identifiant`);
+    }
+  }
+  if (!values.some((value) => accepted.has(value))) {
+    return refuse('aucun attribut organizationIdentifier (2.5.4.97) ou serialNumber (2.5.4.5) ne porte exactement l\'ICE ou l\'IF');
   }
 }
 

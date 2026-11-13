@@ -77,7 +77,7 @@ export interface LedgerApi {
   submitDraft(call: LedgerCall, input: { readonly entryId: string; readonly idempotencyKey: string }): Promise<SubmitEntryResponse>;
   /** `engine.visaCycle` (DRAFT → REVISEE_CYCLE, LEDGER_VISA_CYCLE), une pièce à la fois. */
   visaEntry(call: LedgerCall, input: { readonly entryId: string; readonly idempotencyKey: string }): Promise<VisaEntryResponse>;
-  /** `engine.verifyJournalChain` : lecture ; le moteur n'évalue aucune permission pour elle, la colle applique le repli `assertCanReadLedgerProof`. */
+  /** `engine.verifyJournalChain` : lecture ; le moteur n'évalue aucune permission pour elle, la colle applique `assertCanReadLedgerProof` (LEDGER_READ_PROOF). */
   verifyChain(call: LedgerCall, input: { readonly journalId: string }): Promise<VerifyChainResponse>;
 }
 
