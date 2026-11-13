@@ -70,6 +70,136 @@
       "illegibleAmountText": "Amḍan ur yettwaɣer ara — ad t-yaru wemdan",
       "validatedByHuman": "Yettwasentem sɣur wemdan",
       "rejectedByHuman": "Yettwagi sɣur wemdan"
+    },
+    "auth": {
+      "title": {
+        "login": "Akcam",
+        "signup": "Snulfu amiḍan",
+        "mfa": "Asenqed s sin n yiswiren",
+        "forgot": "Yettwattu wawal uffir",
+        "forgotSent": "Senqed tabwaṭ-ik n imayl",
+        "reset": "Beddel awal uffir",
+        "resetDone": "Yettubeddel wawal uffir",
+        "verifyEmail": "Sentem tansa-inek n imayl",
+        "ice": "Tuddsa-inek deg 90 n tsinin",
+        "iceReview": "Senqed afaylu n tuddsa-inek",
+        "iceDone": "Afaylu yewjed"
+      },
+      "subtitle": {
+        "mfa": "Sekcem tangalt n usenqed wis sin akken ad tfakeḍ akcam.",
+        "forgot": "Sekcem tansa-inek n imayl: ma yella umiḍan, ad k-nazen aseɣwen.",
+        "ice": "Sekcem ICE n tuddsa-inek: ad d-nawi talɣut n ufaylu seg umuɣ."
+      },
+      "field": {
+        "email": "Tansa n imayl",
+        "password": "Awal uffir",
+        "newPassword": "Awal uffir amaynut",
+        "fullName": "Isem d yisem n twacult",
+        "code": "Tangalt",
+        "resetToken": "Tangalt n useɣwen",
+        "verifyCode": "Tangalt n usenqed",
+        "ice": "ICE"
+      },
+      "action": {
+        "login": "Kcem s imayl",
+        "signup": "Snulfu amiḍan-iw",
+        "google": "Kemmel s Google",
+        "passkey": "Kcem s tsarut",
+        "verifyEmail": "Sentem tansa",
+        "forgot": "Tettuḍ awal uffir?",
+        "sendLink": "Azen aseɣwen",
+        "reset": "Ḥfeḍ awal uffir",
+        "toSignup": "Ulac amiḍan? Snulfu yiwen",
+        "toLogin": "Tesɛiḍ amiḍan? Kcem",
+        "backToLogin": "Uɣal ɣer ukcam",
+        "showPassword": "Sken awal uffir",
+        "hidePassword": "Ffer awal uffir",
+        "submitCode": "Sentem tangalt",
+        "lookup": "Nadi deg umuɣ",
+        "confirmDossier": "Sentem afaylu-a",
+        "editIce": "Ẓreg ICE"
+      },
+      "divider": {
+        "or": "neɣ"
+      },
+      "method": {
+        "label": "Tarrayt n usenqed",
+        "TOTP": "Asnas n usentem",
+        "RECOVERY_CODE": "Tangalt n tallalt",
+        "INFOBIP_OTP": "Tangalt i d-yusan deg tebratt"
+      },
+      "hint": {
+        "TOTP": "Tangalt n 6 n yimḍanen i d-yettbin deg usnas-ik.",
+        "RECOVERY_CODE": "Tangalt n tallalt i yiwen n tikkelt kan.",
+        "INFOBIP_OTP": "Tangalt i d-yusan deg tebratt."
+      },
+      "strength": {
+        "label": "Taɣellist n wawal uffir",
+        "weak": "Ḍɛif",
+        "fair": "Alemmas",
+        "good": "Yelha",
+        "strong": "Iqwa",
+        "hint": "Ma drus 12 n yisekkilen; tafyirt ɣezzifen tezmer ugar."
+      },
+      "ice": {
+        "shapeNote": "Asenqed-a yettwali kan talɣa (15 n yimḍanen). Anadi deg umuɣ kan i d-yeqqaren ma yella ICE yettwassen.",
+        "counter": "{count} / 15 n yimḍanen",
+        "progress": "Aswir {current} seg {total}",
+        "elapsed": "Akud yezrin: {seconds} n tsinin",
+        "review": {
+          "legalName": "Isem n tuddsa",
+          "legalNameAr": "Isem n tuddsa (s taɛrabt)",
+          "if": "IF",
+          "rc": "RC",
+          "legalForm": "Talɣa n leqanun",
+          "capital": "Ras n lmal",
+          "address": "Tansa",
+          "notice": "Talɣut-a tekka-d seg umuɣ: senqed-itt send ad tkemmleḍ."
+        },
+        "done": {
+          "body": "Talɣut n tuddsa-inek tewjed. Tzemreḍ ad tkemmleḍ."
+        }
+      },
+      "body": {
+        "forgotSent": "Ma yella umiḍan i tansa-a, yettwazen-d useɣwen i yeṭṭafaren 15 n tesdatin.",
+        "resetDone": "Yettubeddel wawal uffir-ik. Tzemreḍ tura ad tkecmeḍ.",
+        "verifyEmail": "Yettwazen-d yiwen n tengalt n usenqed ɣer {email}. Sekcem-itt akken ad tsermedeḍ amiḍan-ik."
+      },
+      "status": {
+        "busy": "Tamahilt tetteddu…",
+        "locked": "Aṭas n tɛraḍin. Ɛiwed deg {seconds} n tsinin.",
+        "passkeyWaiting": "Asentem ɣef ibenk-ik…"
+      },
+      "errors": {
+        "generic": "Yedra-d waḍru. Ɛiwed.",
+        "network": "Ur nezmir ara ad neqqen. Senqed azeṭṭa syen ɛiwed.",
+        "invalidCredentials": "Tansa n imayl neɣ awal uffir ɣalaṭ.",
+        "accountLocked": "Amiḍan yettwamdel akud kan, aṭas n tɛraḍin ur nelhi ara. Ɛiwed ticki.",
+        "rateLimited": "Aṭas n yisuturen. Ṛju kra syen ɛiwed.",
+        "turnstile": "Asenqed ɣef uṛubut ur yeddi ara. Ales asali n usebter syen ɛiwed.",
+        "requestInvalid": "Kra n telɣut ur telhi ara. Senqed urtiyen.",
+        "registrationInvalid": "Ur yezmir ara ad yeddu: senqed tansa n imayl, isem d teɣzi n wawal uffir.",
+        "tokenInvalid": "Tangalt-a neɣ aseɣwen-a ur yelhi ara neɣ yettwaseqdec yakan.",
+        "tokenExpired": "Tangalt-a tfuk-itt. Suter-d yiwet tamaynut.",
+        "mfaCodeInvalid": "Tangalt-a ɣalaṭ. Senqed-itt syen ɛiwed.",
+        "challengeExpired": "Asenqed yfuk. Ales akcam seg tazwara.",
+        "attemptsExhausted": "Aṭas n tɛraḍin. Ales akcam seg tazwara.",
+        "methodUnavailable": "Tarrayt-a ulac-itt i umiḍan-ik.",
+        "enrollmentRequired": "Ilaq amiḍan-ik ad yesremded asenqed wis sin send ad tkecmeḍ.",
+        "passkeyFailed": "Tasarut ur tettwasentem ara. Seqdec awal uffir.",
+        "passkeyCancelled": "Asentem s tsarut yettwasefsex.",
+        "sessionRequired": "Tiɣimit-ik tfuk. Ales akcam.",
+        "iceNotFound": "ICE-a ur yettwaf ara deg umuɣ. Senqed ayen i tegreḍ.",
+        "iceRejected": "ICE-a yettwagi: senqed 15 n yimḍanen.",
+        "iceShape": "ICE ilaq ad yesɛu 15 n yimḍanen akken ilaq.",
+        "server": "Tameẓlit ulac-itt tura. Ɛiwed ticki.",
+        "googleFailed": "Akcam s Google ur yeddi ara. Ɛiwed.",
+        "field": {
+          "email": "Tansa n imayl ɣalaṭ.",
+          "password": "Awal uffir ɣalaṭ.",
+          "generic": "Azal ɣalaṭ."
+        }
+      }
     }
   }
 }

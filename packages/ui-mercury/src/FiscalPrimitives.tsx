@@ -52,17 +52,19 @@ export type FiscalStatus = 'cleared';
 
 export interface FiscalStatusBadgeProps {
   readonly status: FiscalStatus;
+  /** Libellé obligatoire, résolu par l'appelant dans la langue active (clé i18n `states.cleared`) : aucun repli en dur. */
+  readonly label: string;
 }
 
-/** Tant que seul le pilote `simulated` existe, l'état `--status-cleared` s'affiche « Validation simulée » (B-13). */
-export function FiscalStatusBadge({ status }: FiscalStatusBadgeProps): ReactElement {
+/** Tant que seul le pilote `simulated` existe, le libellé de `states.cleared` (pilote simulé, B-13) vient du dictionnaire. */
+export function FiscalStatusBadge({ status, label }: FiscalStatusBadgeProps): ReactElement {
   return (
     <span
       role="status"
       data-status={status}
       className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-[var(--status-cleared-bg)] text-[var(--status-cleared-text)]"
     >
-      Validation simulée
+      {label}
     </span>
   );
 }

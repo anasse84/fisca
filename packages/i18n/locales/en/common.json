@@ -70,6 +70,136 @@
       "illegibleAmountText": "Illegible amount — to be entered by a person",
       "validatedByHuman": "Validated by a human",
       "rejectedByHuman": "Rejected by a human"
+    },
+    "auth": {
+      "title": {
+        "login": "Sign in",
+        "signup": "Create an account",
+        "mfa": "Two-step verification",
+        "forgot": "Forgot your password",
+        "forgotSent": "Check your inbox",
+        "reset": "Reset your password",
+        "resetDone": "Password changed",
+        "verifyEmail": "Confirm your email address",
+        "ice": "Your company in 90 seconds",
+        "iceReview": "Review your company file",
+        "iceDone": "Company file ready"
+      },
+      "subtitle": {
+        "mfa": "Enter the code from your second factor to finish signing in.",
+        "forgot": "Enter your email address: if an account exists, we will send you a link.",
+        "ice": "Enter your company’s ICE: we pre-fill the file from the directory."
+      },
+      "field": {
+        "email": "Email address",
+        "password": "Password",
+        "newPassword": "New password",
+        "fullName": "Full name",
+        "code": "Security code",
+        "resetToken": "Reset link token",
+        "verifyCode": "Verification code",
+        "ice": "ICE"
+      },
+      "action": {
+        "login": "Sign in with email",
+        "signup": "Create my account",
+        "google": "Continue with Google",
+        "passkey": "Sign in with a passkey",
+        "verifyEmail": "Confirm address",
+        "forgot": "Forgot your password?",
+        "sendLink": "Send the link",
+        "reset": "Save the password",
+        "toSignup": "No account yet? Create one",
+        "toLogin": "Already have an account? Sign in",
+        "backToLogin": "Back to sign in",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "submitCode": "Submit the code",
+        "lookup": "Search the directory",
+        "confirmDossier": "Confirm this company file",
+        "editIce": "Edit the ICE"
+      },
+      "divider": {
+        "or": "or"
+      },
+      "method": {
+        "label": "Verification method",
+        "TOTP": "Authenticator app",
+        "RECOVERY_CODE": "Recovery code",
+        "INFOBIP_OTP": "Code sent by message"
+      },
+      "hint": {
+        "TOTP": "6-digit code shown by your app.",
+        "RECOVERY_CODE": "A single-use recovery code.",
+        "INFOBIP_OTP": "Code received by WhatsApp or SMS."
+      },
+      "strength": {
+        "label": "Password strength",
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong",
+        "hint": "At least 12 characters; a long passphrase is stronger."
+      },
+      "ice": {
+        "shapeNote": "This check covers the format only (15 digits). Only the directory search tells whether the ICE is known.",
+        "counter": "{count} / 15 digits",
+        "progress": "Step {current} of {total}",
+        "elapsed": "Elapsed: {seconds} s",
+        "review": {
+          "legalName": "Company name",
+          "legalNameAr": "Company name (Arabic)",
+          "if": "IF",
+          "rc": "RC",
+          "legalForm": "Legal form",
+          "capital": "Share capital",
+          "address": "Address",
+          "notice": "Information taken from the directory: check it before continuing."
+        },
+        "done": {
+          "body": "Your company details are ready. You can continue."
+        }
+      },
+      "body": {
+        "forgotSent": "If an account exists for this address, a link valid for 15 minutes has just been sent.",
+        "resetDone": "Your password has been changed. You can now sign in.",
+        "verifyEmail": "A verification code was sent to {email}. Enter it to activate your account."
+      },
+      "status": {
+        "busy": "Working…",
+        "locked": "Too many attempts. Try again in {seconds} s.",
+        "passkeyWaiting": "Confirm on your device…"
+      },
+      "errors": {
+        "generic": "Something went wrong. Please try again.",
+        "network": "Unable to connect. Check your network and try again.",
+        "invalidCredentials": "Incorrect email address or password.",
+        "accountLocked": "Account temporarily locked after too many failures. Try again later.",
+        "rateLimited": "Too many requests. Wait a moment, then try again.",
+        "turnstile": "The anti-bot check failed. Reload the page and try again.",
+        "requestInvalid": "Some information is invalid. Check the fields.",
+        "registrationInvalid": "Not possible: check the email address, the name and the password length.",
+        "tokenInvalid": "This code or link is invalid or has already been used.",
+        "tokenExpired": "This code has expired. Request a new one.",
+        "mfaCodeInvalid": "Wrong code. Check it and try again.",
+        "challengeExpired": "The verification has expired. Start signing in again.",
+        "attemptsExhausted": "Too many attempts. Start signing in again.",
+        "methodUnavailable": "This method is not available for your account.",
+        "enrollmentRequired": "Your account must first enable a second factor before it can sign in.",
+        "passkeyFailed": "The passkey could not be verified. Use your password.",
+        "passkeyCancelled": "Passkey verification cancelled.",
+        "sessionRequired": "Your session has expired. Please sign in again.",
+        "iceNotFound": "This ICE was not found in the directory. Check what you typed.",
+        "iceRejected": "This ICE is rejected: check the 15 digits.",
+        "iceShape": "The ICE must contain exactly 15 digits.",
+        "server": "The service is temporarily unavailable. Try again later.",
+        "googleFailed": "Signing in with Google failed. Please try again.",
+        "field": {
+          "email": "Invalid email address.",
+          "password": "Invalid password.",
+          "generic": "Invalid value."
+        }
+      }
     }
   }
 }

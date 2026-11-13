@@ -70,6 +70,136 @@
       "illegibleAmountText": "Montant illisible — à saisir par un humain",
       "validatedByHuman": "Validé par un humain",
       "rejectedByHuman": "Rejeté par un humain"
+    },
+    "auth": {
+      "title": {
+        "login": "Connexion",
+        "signup": "Créer un compte",
+        "mfa": "Vérification en deux étapes",
+        "forgot": "Mot de passe oublié",
+        "forgotSent": "Vérifiez votre boîte e-mail",
+        "reset": "Réinitialisation du mot de passe",
+        "resetDone": "Mot de passe modifié",
+        "verifyEmail": "Confirmez votre adresse e-mail",
+        "ice": "Votre société en 90 secondes",
+        "iceReview": "Vérifiez votre dossier",
+        "iceDone": "Dossier prêt"
+      },
+      "subtitle": {
+        "mfa": "Saisissez le code de votre second facteur pour terminer la connexion.",
+        "forgot": "Indiquez votre adresse e-mail : si un compte existe, nous vous enverrons un lien.",
+        "ice": "Saisissez l’ICE de votre société : nous pré-remplissons le dossier depuis l’annuaire."
+      },
+      "field": {
+        "email": "Adresse e-mail",
+        "password": "Mot de passe",
+        "newPassword": "Nouveau mot de passe",
+        "fullName": "Nom complet",
+        "code": "Code",
+        "resetToken": "Jeton du lien de réinitialisation",
+        "verifyCode": "Code de vérification",
+        "ice": "ICE"
+      },
+      "action": {
+        "login": "Se connecter",
+        "signup": "Créer mon compte",
+        "google": "Continuer avec Google",
+        "passkey": "Se connecter avec une clé d’accès",
+        "verifyEmail": "Confirmer l’adresse",
+        "forgot": "Mot de passe oublié ?",
+        "sendLink": "Envoyer le lien",
+        "reset": "Enregistrer le mot de passe",
+        "toSignup": "Pas encore de compte ? Créer un compte",
+        "toLogin": "Déjà un compte ? Se connecter",
+        "backToLogin": "Retour à la connexion",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+        "submitCode": "Valider le code",
+        "lookup": "Rechercher dans l’annuaire",
+        "confirmDossier": "Confirmer ce dossier",
+        "editIce": "Modifier l’ICE"
+      },
+      "divider": {
+        "or": "ou"
+      },
+      "method": {
+        "label": "Méthode de vérification",
+        "TOTP": "Application d’authentification",
+        "RECOVERY_CODE": "Code de secours",
+        "INFOBIP_OTP": "Code reçu par message"
+      },
+      "hint": {
+        "TOTP": "Code à 6 chiffres affiché par votre application.",
+        "RECOVERY_CODE": "Un code de secours à usage unique.",
+        "INFOBIP_OTP": "Code reçu par WhatsApp ou par SMS."
+      },
+      "strength": {
+        "label": "Robustesse du mot de passe",
+        "weak": "Faible",
+        "fair": "Moyenne",
+        "good": "Bonne",
+        "strong": "Forte",
+        "hint": "12 caractères minimum ; une phrase de passe longue est plus robuste."
+      },
+      "ice": {
+        "shapeNote": "Ce contrôle ne porte que sur la forme (15 chiffres). Seule la recherche dans l’annuaire indique si l’ICE est connu.",
+        "counter": "{count} / 15 chiffres",
+        "progress": "Étape {current} sur {total}",
+        "elapsed": "Temps écoulé : {seconds} s",
+        "review": {
+          "legalName": "Raison sociale",
+          "legalNameAr": "Raison sociale (arabe)",
+          "if": "IF",
+          "rc": "RC",
+          "legalForm": "Forme juridique",
+          "capital": "Capital social",
+          "address": "Adresse",
+          "notice": "Informations issues de l’annuaire : vérifiez-les avant de continuer."
+        },
+        "done": {
+          "body": "Les informations de votre société sont prêtes. Vous pouvez poursuivre."
+        }
+      },
+      "body": {
+        "forgotSent": "Si un compte existe pour cette adresse, un lien valable 15 minutes vient d’être envoyé.",
+        "resetDone": "Votre mot de passe a été modifié. Vous pouvez vous connecter.",
+        "verifyEmail": "Un code de vérification a été envoyé à {email}. Saisissez-le pour activer votre compte."
+      },
+      "status": {
+        "busy": "Traitement en cours…",
+        "locked": "Trop de tentatives. Réessayez dans {seconds} s.",
+        "passkeyWaiting": "Validation sur votre appareil…"
+      },
+      "errors": {
+        "generic": "Une erreur est survenue. Réessayez.",
+        "network": "Connexion impossible. Vérifiez votre réseau puis réessayez.",
+        "invalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
+        "accountLocked": "Compte temporairement verrouillé après trop d’échecs. Réessayez plus tard.",
+        "rateLimited": "Trop de requêtes. Patientez un instant puis réessayez.",
+        "turnstile": "La vérification anti-robot a échoué. Rechargez la page puis réessayez.",
+        "requestInvalid": "Certaines informations sont invalides. Vérifiez les champs.",
+        "registrationInvalid": "Opération impossible : vérifiez l’adresse e-mail, le nom et la longueur du mot de passe.",
+        "tokenInvalid": "Ce code ou ce lien est invalide ou déjà utilisé.",
+        "tokenExpired": "Ce code a expiré. Demandez-en un nouveau.",
+        "mfaCodeInvalid": "Code incorrect. Vérifiez-le puis réessayez.",
+        "challengeExpired": "La vérification a expiré. Recommencez la connexion.",
+        "attemptsExhausted": "Trop d’essais. Recommencez la connexion.",
+        "methodUnavailable": "Cette méthode n’est pas disponible pour votre compte.",
+        "enrollmentRequired": "Votre compte doit d’abord activer un second facteur avant de pouvoir se connecter.",
+        "passkeyFailed": "La clé d’accès n’a pas pu être validée. Utilisez votre mot de passe.",
+        "passkeyCancelled": "Validation de la clé d’accès annulée.",
+        "sessionRequired": "Votre session a expiré. Reconnectez-vous.",
+        "iceNotFound": "Cet ICE n’a pas été trouvé dans l’annuaire. Vérifiez la saisie.",
+        "iceRejected": "Cet ICE est refusé : vérifiez les 15 chiffres.",
+        "iceShape": "L’ICE doit comporter exactement 15 chiffres.",
+        "server": "Le service est momentanément indisponible. Réessayez plus tard.",
+        "googleFailed": "La connexion avec Google a échoué. Réessayez.",
+        "field": {
+          "email": "Adresse e-mail invalide.",
+          "password": "Mot de passe invalide.",
+          "generic": "Valeur invalide."
+        }
+      }
     }
   }
 }

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -66,11 +69,21 @@ describe('FiscalTerm', () => {
 });
 
 describe('FiscalStatusBadge', () => {
-  it('affiche « Validation simulée » pour cleared, sans mot interdit', () => {
-    render(<FiscalStatusBadge status="cleared" />);
+  it('affiche exactement le libellé fourni par l’appelant (clé i18n states.cleared), sans mot interdit', () => {
+    render(<FiscalStatusBadge status="cleared" label="Validation simulée" />);
     const badge = screen.getByRole('status');
     expect(badge.textContent).toBe('Validation simulée');
     expect(badge.className).toContain('status-cleared');
     expect(document.body.textContent ?? '').not.toMatch(/conforme|homologu|certifi|xhub|DGI/i);
+  });
+
+  it('aucun libellé de repli en dur : un autre libellé est rendu tel quel', () => {
+    render(<FiscalStatusBadge status="cleared" label="Simulated validation" />);
+    expect(screen.getByRole('status').textContent).toBe('Simulated validation');
+  });
+
+  it('le code source ne contient plus « Validation simulée »', () => {
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'FiscalPrimitives.tsx'), 'utf8');
+    expect(source).not.toMatch(/Validation simulée/);
   });
 });
