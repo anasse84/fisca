@@ -17,3 +17,5 @@ export * from './route-guard.ts';
 export * from './session-routes.ts';
 export * from './passkey-routes.ts';
 export * from './policy-engine.ts';
+export * from './account-lifecycle.ts';
+export * from './account-lifecycle-routes.ts';

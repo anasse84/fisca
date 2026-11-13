@@ -2,10 +2,13 @@
  * Routeur d'authentification composé : routes Google (CTR-API-04, CTR-API-05), routes 2FA
  * (CTR-API-07, CTR-API-08, CTR-API-09) et, si fournie, la connexion par mot de passe (CTR-API-03). Avec `extra`,
  * il monte aussi refresh et logout (CTR-API-35, CTR-API-36) et les quatre routes passkeys (CTR-API-37 à 40).
+ * Avec `lifecycle`, il monte aussi register, verify-email et password/forgot (CTR-API-01, 02, 06).
  * La colle d'apps/api-hono/src/routes/auth l'expose sans logique (ERRATA B-02).
  */
 
 import { Hono } from 'hono';
+import { createAccountLifecycleRouter } from './account-lifecycle-routes.ts';
+import type { AccountLifecycleRouterDeps } from './account-lifecycle-routes.ts';
 import { createLoginRouter } from './login-routes.ts';
 import type { LoginRouterDeps } from './login-routes.ts';
 import { createMfaRouter } from './mfa-routes.ts';
@@ -27,6 +30,7 @@ export function createAuthRouter(
   mfa: MfaRouterDeps,
   login?: LoginRouterDeps,
   extra?: SessionAndPasskeyRouterDeps,
+  lifecycle?: AccountLifecycleRouterDeps,
 ): Hono {
   const app = new Hono();
   if (login !== undefined) {
@@ -37,6 +41,9 @@ export function createAuthRouter(
   if (extra !== undefined) {
     app.route('/', createSessionRouter(extra.session));
     app.route('/', createPasskeyRouter(extra.passkeys));
+  }
+  if (lifecycle !== undefined) {
+    app.route('/', createAccountLifecycleRouter(lifecycle));
   }
   return app;
 }
