@@ -1,15 +1,22 @@
 /**
  * Colle des routes d'authentification (ERRATA B-02) : aucune logique, aucune dépendance tierce.
- * Les routes GET /api/v1/auth/google/start (CTR-API-04) et GET /api/v1/auth/google/callback (CTR-API-05)
- * sont construites par @fisca/auth-rbac ; ce module les expose au manifeste de routes.
+ * Routes construites par @fisca/auth-rbac et exposées au manifeste de routes :
+ * - GET /api/v1/auth/google/start (CTR-API-04) et GET /api/v1/auth/google/callback (CTR-API-05) ;
+ * - POST /api/v1/auth/2fa/totp/setup (CTR-API-07), POST /api/v1/auth/2fa/totp/enable (CTR-API-08)
+ *   et POST /api/v1/auth/2fa/verify (CTR-API-09).
  *
  * La référence `lib="dom"` donne au typage les API Web standard (crypto, Request, Response) que le paquet
  * @fisca/auth-rbac utilise ; elle évite de toucher à apps/api-hono/tsconfig.json, hors périmètre.
  */
 /// <reference lib="dom" />
-import { createGoogleOAuthRouter } from '@fisca/auth-rbac';
-import type { GoogleOAuthRouterDeps } from '@fisca/auth-rbac';
+import { createAuthRouter, createGoogleOAuthRouter, createMfaRouter } from '@fisca/auth-rbac';
+import type { GoogleOAuthRouterDeps, MfaRouterDeps } from '@fisca/auth-rbac';
 
-export function createAuthRoutes(deps: GoogleOAuthRouterDeps) {
-  return createGoogleOAuthRouter(deps);
+/** Monte les routes Google ; avec `mfa`, monte aussi les trois routes 2FA. */
+export function createAuthRoutes(deps: GoogleOAuthRouterDeps, mfa?: MfaRouterDeps) {
+  return mfa === undefined ? createGoogleOAuthRouter(deps) : createAuthRouter(deps, mfa);
+}
+
+export function createMfaRoutes(deps: MfaRouterDeps) {
+  return createMfaRouter(deps);
 }
