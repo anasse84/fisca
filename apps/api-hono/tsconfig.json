@@ -9,6 +9,8 @@
   },
   "include": [
     "src",
-    "tests"
+    "tests",
+    "vitest.config.ts",
+    "vitest.global-setup.ts"
   ]
 }
