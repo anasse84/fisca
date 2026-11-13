@@ -102,7 +102,14 @@ importers:
 
   packages/ai-agents: {}
 
-  packages/auth-rbac: {}
+  packages/auth-rbac:
+    dependencies:
+      '@fisca/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      hono:
+        specifier: ^4.13.18
+        version: 4.13.18
 
   packages/billing-metering: {}
 
@@ -642,6 +649,10 @@ packages:
   hashery@1.5.1:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
     engines: {node: '>=20'}
+
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
+    engines: {node: '>=16.9.0'}
 
   hookified@1.15.1:
     resolution: {integrity: sha512-MvG/clsADq1GPM2KGo2nyfaWVyn9naPiXrqIe4jYjXNZQt238kWyOGrsyc/DmRAQ+Re6yeo6yX/yoNCG5KAEVg==}
@@ -1480,6 +1491,8 @@ snapshots:
   hashery@1.5.1:
     dependencies:
       hookified: 1.15.1
+
+  hono@4.13.18: {}
 
   hookified@1.15.1: {}
 
