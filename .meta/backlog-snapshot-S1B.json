@@ -71,9 +71,10 @@
     "retry_count": 0,
     "tests_green": "true",
     "verify_cmd": "pnpm --filter @fisca/db-schema test",
-    "review_notes": "Décisions du pilote 1 à 8 appliquées en migrations v4 (tenant et plan de contrôle), e2818a4, 533 tests, SQLite et PG16 réels, mêmes textes d'erreur. À FAIRE VALIDER par l'auditeur et le propriétaire : durcissements d'échec fermé (trigger INSERT lignes, exception monotone pii_restricted_flag, exercice CLOSED, POS : conversion B2B et pose de gl_journal_entry_id/aip_archive_id seules admises). Formule de chaînage POS à définir par P2-A (producteur de la signature POS) ; un hachage « genesis » serait refusé par le contrôle 64 hex. cnss_number, rc_number, taxe_pro stockés en clair conformément à Doc_06, à faire valider. EN_ATTENTE_XHUB (Doc_02 ligne 50) absent de cdv_lifecycle_status. TTL OAuth : référence = horloge de la base (601 s refusé) ; code_verifier en clair, risque résiduel pour G1. Triggers inscrits au registre CTR-SQL-64 à 74.",
+    "review_notes": "G1 tour 1 corrigé par la migration tenant v8 (9aa3dac, empreinte a62dd9d2…, v1 à v7 inchangées). Tests ROUGES d'abord (SQLite/PG16) : (1) « injection… déplacer une ligne de brouillon VERS une pièce POSTED » : « n'a levé aucune erreur pour UPDATE journal_entry_lines SET entry_id = 'je-posted'… » ; (2a) scellement dans exercice CLOSED : aucune erreur levée ; (2b) UPDATE fiscal_year_id vers CLOSED : aucune erreur ; (3) caisse 5161, deux Client pg concurrents : « expected null to be 'CGNC_NEGATIVE_CASH_5161…' » (deux succès, solde −2 000) ; (4) deux REVERSAL : aucune erreur, et deux createReversalDraft simultanés : LEDGER_CONCURRENCY_CONFLICT 23505 + rejeu sans champ replayed ; (5) renumérotation d'un compte porté par une pièce POSTED : aucune erreur ; (6) lettrage : « expected [..] to have a length of 1 but got 2 » (second brouillon VAT_CLEARING au rejeu). Correctifs : prevent_posted_lines_mutation_update refuse ancien OU nouveau entry_id POSTED (flag 0→1 seulement si entry_id inchangé) ; prevent_post_in_closed_fiscal_year ; prevent_entry_fiscal_year_change ; verrou pg_advisory_xact_lock(hashtextextended('fisca:cash5161:'||current_schema(),0)) pris dans la fonction PL/pgSQL AVANT lecture du solde (crédits 5161 seulement ; verrou consultatif choisi plutôt qu'une table de solde ; isolation inchangée ; SQLite/D1 mono-écrivain documenté ; second scellement refusé, solde final 4 000, test répété 5 fois) ; index unique partiel uq_journal_entries_reversal_of + createReversalDraft rejoue (replayed) ; prevent_posted_account_renumbering ; code de lettrage déterministe LTR-<sha256> posé sur le brouillon pour une reprise sans doublon. Écarts : deux rejeux STRICTEMENT simultanés du lettrage peuvent encore créer chacun un brouillon avant marquage de la ligne bancaire (documenté) ; réponse REVERSE de l'API n'expose pas replayed ; CGNC_FISCAL_YEAR_IMMUTABLE non mappé dans mapDatabaseError (500 stockage) ; la v8 échoue sur une base portant déjà deux contre-passations d'une même pièce ; vat_regime_role et is_reconcilable restent modifiables. Non vérifié : D1 réel. verify:fast complet sans cache ×3, exit 0.",
     "updated_at": "2026-11-13",
-    "commit_url": "https://github.com/anasse84/fisca/commit/e2818a4"
+    "commit_url": "https://github.com/anasse84/fisca/commit/9aa3dac",
+    "rubric_score": "0"
   },
   {
     "task_id": "T-S1B-05",
@@ -202,11 +203,12 @@
     "git_branch": "feat/w1-erd-ast-cgnc",
     "locked_by_branch": "",
     "retry_count": 0,
-    "tests_green": "true",
+    "tests_green": "false",
     "verify_cmd": "pnpm --filter @fisca/api-hono test",
-    "review_notes": "Pipeline c605e37 + stockage idempotence bbb1c46 : table idempotency_keys en TENANT_DB (migration v7, choix du pilote, à faire valider à G1) + adaptateur createSqlIdempotencyStore (reserve atomique DELETE expiré + INSERT ON CONFLICT DO NOTHING ; idempotencyCompleteStatement pour le lot commun avec l'écriture comptable ; purgeExpired). Reste : câblage dans une route (T-S1B-12), appel périodique de la purge, vrai D1 non testé (meta.changes). Autres points ouverts : voir section 04 (mandats, formats, enveloppe d'erreur). Hono 4.13.18 vérifié sur la version installée.",
+    "review_notes": "G1 tour 1 corrigé (d7f3dff). Rouge d'abord : après fusion de origin/main (af1df5d) et de S1A, `pnpm --filter @fisca/api-hono typecheck` échouait : « src/core/problem-details.ts(125,3): error TS2375: Type '{ issues?: readonly ProblemIssue[]… }' is not assignable to type 'ProblemBody' with 'exactOptionalPropertyTypes' » (reproduit à l'identique avant correctif). Correctif : ProblemBody et ProblemIssue locaux SUPPRIMÉS ; buildProblemBody rend ProblemDetails et boundedIssues rend ProblemIssue[] de @fisca/shared-types (code optionnel conservé et borné) ; ProblemBodySchema = alias de ProblemDetailsSchema ; request-validation importe ProblemIssue de shared-types. `turbo run typecheck` (tous paquets) exit 0 ; api-hono 405 tests ; verify:fast complet sans cache ×3 exit 0 sur l'arbre S1A+S1B fusionné avec origin/main (af1df5d ancêtre de HEAD). Rappel de réserves : stockage idempotence et mandats = choix du pilote à valider.",
     "updated_at": "2026-11-13",
-    "commit_url": "https://github.com/anasse84/fisca/commit/bbb1c46"
+    "commit_url": "https://github.com/anasse84/fisca/commit/d7f3dff",
+    "rubric_score": "89"
   },
   {
     "task_id": "T-S1B-12",
