@@ -326,3 +326,68 @@ Lors de la Session S1A et de chaque Barrière QA, l'agent Fisca-QA-Security-Audi
 - Test Zéro-Fuite PII vers Workers AI : Intercepte l'appel sortant du connecteur IA sur un dossier contenant des ICE, RIB, téléphones +212 et noms de salariés de l'État 9421, et échoue si une seule donnée réelle apparaît en dehors des jetons [ICE15_01] / [RIB24_01].
 - Test Forensique PDF & Intégrité POS Offline : Vérifie qu'une attestation fiscale PDF comportant une mise à jour incrémentale suspecte post-signature est routée en PIECE_A_CONTROLER, et qu'un ticket Fisca POS dont le montant centimes a été modifié dans SQLite OPFS est rejeté par vérification de signature ECDSA P-256.
 - Scan Pré-Commit Anti-Secrets : Scanne l'arbre Git complet pour garantir l'absence totale de jetons privés, clés PEM ou identifiants Payzone/Infobip/SES en dehors de Cloudflare Secrets Store.
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+### V.1 — Corps de Galois GF(256) et partage de secret de Shamir 2 sur 3
+
+<!-- verif:10-01:code -->
+```python
+def gf_mul(a: int, b: int) -> int:
+    p = 0
+    for _ in range(8):
+        if b & 1:
+            p ^= a
+        hi = a & 0x80
+        a = (a << 1) & 0xFF
+        if hi:
+            a ^= 0x1B
+        b >>= 1
+    return p
+
+def gf_pow(a: int, exp: int) -> int:
+    res = 1
+    base = a
+    while exp > 0:
+        if exp & 1:
+            res = gf_mul(res, base)
+        base = gf_mul(base, base)
+        exp >>= 1
+    return res
+
+def gf_inv(a: int) -> int:
+    if a == 0:
+        raise ValueError("Zero inverse")
+    return gf_pow(a, 254)
+
+# Verify a * inv(a) == 1 for all a in 1..255
+assert all(gf_mul(a, gf_inv(a)) == 1 for a in range(1, 256))
+
+# Verify 2-of-3 Shamir for all pairs (1,2), (1,3), (2,3)
+import os
+secret = os.urandom(32)
+coeffs = os.urandom(32)
+shares = {}
+for x in (1, 2, 3):
+    shares[x] = bytes([secret[i] ^ gf_mul(coeffs[i], x) for i in range(32)])
+
+for x0, x1 in [(1, 2), (1, 3), (2, 3)]:
+    inv_dx = gf_inv(x0 ^ x1)
+    l0 = gf_mul(x1, inv_dx)
+    l1 = gf_mul(x0, inv_dx)
+    rec = bytes([gf_mul(shares[x0][i], l0) ^ gf_mul(shares[x1][i], l1) for i in range(32)])
+    assert rec == secret
+
+print("GF(256) Shamir 2-of-3 verified 100% across all 255 elements and all 3 pairs!")
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:10-01:resultat -->
+```text
+GF(256) Shamir 2-of-3 verified 100% across all 255 elements and all 3 pairs!
+```

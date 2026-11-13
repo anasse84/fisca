@@ -1,4 +1,4 @@
-# Protocole de boucle autonome Fisca (v2, 2026-11-13)
+# Protocole de boucle autonome Fisca (v2.1, 2026-11-13)
 
 S'applique à toute session de construction (S0, S1A à P4-C, part orchestrateur de S5). Il remplace les « prompts maîtres » d'origine là où ils diffèrent ; les raisons sont dans `docs/specs/ERRATA.md` (section B).
 
@@ -10,7 +10,7 @@ S'applique à toute session de construction (S0, S1A à P4-C, part orchestrateur
 4. Le test s'écrit avant le code. Un test existant ne s'affaiblit jamais pour passer au vert.
 5. Tu n'écris que dans le périmètre de ta session, plus `pnpm-lock.yaml` et `.meta/`. Les fichiers de gouvernance (AGENTS.md, scripts de garde, `docs/specs/`, suite d'or) sont intouchables hors mode orchestrateur.
 6. Tu pousses sur ta branche `feat/*` ou `fix/*`. Jamais de force-push, de suppression de branche, d'écriture sur `main`, de secret dans le dépôt. Seul Fisca-Lead-Orchestrator fusionne.
-7. Un nom de route, de table, de binding ou de file se lit dans `fisca_contracts_registry` ou s'y inscrit au moment où tu le crées. Un XML ne se valide que contre son XSD officiel versionné.
+7. Un nom de route, de table, de binding ou de file se lit dans `fisca_contracts_registry` ou s'y inscrit au moment où tu le crées. Un XML se valide contre son XSD officiel versionné ; tant que l'administration ne l'a pas publié, contre le schéma provisoire du dépôt, inscrit au registre avec le statut `PROVISIONAL` (ERRATA B-13).
 
 ## 2. Ouverture de session
 
@@ -20,7 +20,7 @@ S'applique à toute session de construction (S0, S1A à P4-C, part orchestrateur
 4. `bash scripts/bootstrap-sandbox.sh` avec les options de ta session (`--java`, `--dotnet`, `--python`, `--postgres`, `--redis`, `--playwright`), puis `export FISCA_SCOPE_DIRS=<périmètre>`.
 5. Lance `pnpm verify:fast` avant tout changement. Rouge sur une branche neuve : `main` est cassée. N'y touche pas : consigne `MAIN_RED` avec la sortie dans `04_Circuit_Breaker_Blockers` et arrête-toi.
 6. Lis `AGENTS.md`, `docs/specs/ERRATA.md`, puis les sections 01, 02 et 04 de FISCA_STATE_AND_HANDOFF.
-7. Programme le rappel de continuité (section 5).
+7. Note l'heure de début du tour (`date +%s > /agent/workspace/.fisca-turn-start`) et applique la section 5 (continuité).
 
 ## 3. Cycle d'un ticket
 
@@ -36,7 +36,8 @@ Ticket <task_id> — <task_title>. Dépôt : <chemin du clone>, branche <branche
 puis seulement les sections <spec_doc_ref> des fichiers docs/specs/<fichiers>. Consignes : <review_notes>.
 Ordre : test d'abord, puis implémentation complète, puis `pnpm verify:fast` et `<verify_cmd>`.
 Ne fais ni commit, ni push, ni écriture de table. Si un point de la spécification est contradictoire ou
-qu'une entrée manque (schéma XSD, secret, contrat absent du registre), arrête-toi sans deviner.
+qu'une entrée manque (secret, accès, contrat absent du registre), arrête-toi sans deviner.
+Schéma officiel DGI ou xHub absent : ce n'est pas un blocage, applique le régime provisoire d'ERRATA B-13.
 Rends : fichiers créés ou modifiés, 15 dernières lignes de chaque commande de vérification, contrats créés
 (nature, nom exact, fichier), points non vérifiés.
 ```
@@ -52,14 +53,30 @@ Sans outil de délégation interne, réalise le ticket toi-même, en gardant les
 ## 4. Disjoncteur
 
 - Échec de vérification : incrémente `retry_count`, lis la trace réelle, corrige le code. Au troisième échec sur le même ticket : `git checkout -- . && git clean -fd`, `status = BLOCKED`, verrou vidé, puis dans `04_Circuit_Breaker_Blockers` : ticket, commande, 20 dernières lignes de sortie, ce qui a été tenté, hypothèse. Passe au ticket suivant qui n'en dépend pas.
-- Blocage immédiat, sans consommer trois essais : spécification contradictoire que l'errata ne tranche pas (`SPEC_AMBIGUITY`), entrée manquante comme un XSD officiel ou un secret (`MISSING_INPUT`), besoin d'écrire hors périmètre (`SEAM_REQUEST`, en nommant le fichier et le changement voulu).
-- Un ticket `BLOCKED` ne se débloque pas seul : l'orchestrateur ou le propriétaire tranche, remet `retry_count` à 0 et `status` à `TODO`.
+- Blocage immédiat, sans consommer trois essais : spécification contradictoire que l'errata ne tranche pas (`SPEC_AMBIGUITY`), entrée manquante comme un secret, un accès ou une permission (`MISSING_INPUT`), besoin d'écrire hors périmètre (`SEAM_REQUEST`, en nommant le fichier et le changement voulu).
+- L'absence d'un schéma officiel de la DGI ou de xHub n'est pas un blocage : régime provisoire d'ERRATA B-13 (schéma provisoire remplaçable, contrat `PROVISIONAL`, mention « conformité officielle non vérifiée »).
+- Un ticket `BLOCKED` ne se débloque pas seul : le pilote ou le propriétaire tranche, remet `retry_count` à 0 et `status` à `TODO` (`pilotage-automatique.md` § 5).
 
 ## 5. Continuité sans intervention
 
-- En début de tour, annule tes rappels en attente, puis programme un rappel dans ce même fil à 60 minutes avec la note : « RELAIS FISCA <SESSION_ID> : reprends le protocole de boucle à l'étape 3 sur la branche <branche>. S'il ne reste aucun ticket TODO de la session, clôture (étape 6). » Si le tour s'interrompt (durée limite, erreur), le rappel relance la session dans le fil où npm est déjà autorisé.
-- Le clone local peut disparaître entre deux tours : refais alors l'ouverture de session (étapes 2 à 5 de la section 2). Rien n'est perdu, chaque ticket étant poussé.
-- N'ouvre pas de fil neuf pour continuer : il n'aurait ni l'accord npm ni ton clone. À défaut d'outil de rappel seulement, délègue à une instance de ton propre agent avec un brief autonome et préviens que l'accès npm devra être accordé dans ce fil ; à défaut encore, consigne l'état et arrête-toi.
+Deux cas, selon l'origine du message qui a ouvert ton tour.
+
+**Fil piloté (cas normal : le message vient du pilote, `pilotage-automatique.md`).**
+
+- Tu ne programmes aucun rappel et tu n'ouvres aucun autre fil : ces outils ne sont pas disponibles dans un fil ouvert par un autre fil. C'est le pilote qui te relance.
+- Enchaîne les tickets. Passé 40 minutes de tour (`$(( $(date +%s) - $(cat /agent/workspace/.fisca-turn-start) ))` secondes), n'entame pas de nouveau ticket : mieux vaut un tour qui se termine proprement qu'un ticket coupé en plein milieu.
+- Termine toujours ton tour par la ligne `ETAT <SESSION_ID> : <n> IN_REVIEW, <m> BLOCKED, <k> TODO`, suivie de la ligne de clôture (section 6) s'il ne reste ni `TODO` ni `IN_PROGRESS`.
+- Si le tour est coupé quand même, rien n'est perdu : le ticket resté `IN_PROGRESS` sous ton verrou se reprend en premier (étape 3a).
+
+**Fil ouvert directement par le propriétaire (session lancée à la main).**
+
+- En début de tour, annule tes rappels en attente, puis programme un rappel dans ce même fil à 60 minutes avec la note : « RELAIS FISCA <SESSION_ID> : reprends le protocole de boucle à l'étape 3 sur la branche <branche>. S'il ne reste aucun ticket TODO de la session, clôture (étape 6). »
+- Si l'outil de rappel n'est pas appelable, consigne l'état et termine par la ligne `ETAT` : le propriétaire relance par `CONTINUE`.
+
+**Dans les deux cas.**
+
+- Le clone local peut disparaître entre deux tours : refais alors l'ouverture de session (étapes 2 à 5 de la section 2). Chaque ticket étant poussé, rien n'est perdu.
+- N'ouvre pas de fil neuf pour continuer : il n'aurait ni l'accord npm ni ton clone.
 - Ne compte pas sur un Schedule : ses écritures sont limitées pour les agents constructeurs.
 
 ## 6. Clôture de session
@@ -69,7 +86,7 @@ Quand il ne reste aucun ticket `TODO` ou `IN_PROGRESS` de la session :
 1. `pnpm verify:fast` vert sur la tête de branche, et `node scripts/enforce-constitution.ts --range origin/main` sans violation.
 2. Exporte les lignes de ta session dans `.meta/backlog-snapshot-<SESSION_ID>.json`, commit et push.
 3. Passe la Pull Request en « prête pour revue » : tickets livrés, tickets bloqués avec leur cause, commandes de vérification et leur dernière sortie, contrats ajoutés.
-4. Mets à jour ton bloc de `02_Active_Branches_And_Scopes` (session close, PR, nombre de tickets `IN_REVIEW` et `BLOCKED`) et annule le rappel.
+4. Mets à jour ton bloc de `02_Active_Branches_And_Scopes` (session close, PR, nombre de tickets `IN_REVIEW` et `BLOCKED`) et annule le rappel s'il y en a un.
 5. Termine par une ligne : `SESSION <ID> CLOSE — <n> IN_REVIEW, <m> BLOCKED — PR <url>`.
 
 ## 7. Écritures autorisées dans FISCA_STATE_AND_HANDOFF

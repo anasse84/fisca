@@ -1,5 +1,30 @@
 {
-  "version": "2026-11-13",
+  "version": "2026-11-13b",
+  "lanes": {
+    "PILOTE": "Fisca-Lead-Orchestrator",
+    "BACK-1": "Fisca-Core-Backend-Fiscal",
+    "BACK-2": "Fisca-Core-Backend-Fiscal",
+    "EDI-1": "Fisca-Containers-EDI-ERP",
+    "EDI-2": "Fisca-Containers-EDI-ERP",
+    "FRONT-1": "Fisca-Frontend-Mobile-Growth",
+    "FRONT-2": "Fisca-Frontend-Mobile-Growth",
+    "AUDIT": "Fisca-QA-Security-Auditor"
+  },
+  "pont_s0": {
+    "gate_id": "PONT_S0",
+    "lane": "AUDIT",
+    "candidate_branch": "feat/w0-foundation",
+    "rubrics": [
+      "R1",
+      "R2"
+    ],
+    "spec_docs": [
+      "docs/specs/05-adr.md",
+      "docs/specs/14-qa-harness.md",
+      "docs/specs/15-agents-md-constitution.md"
+    ],
+    "bootstrap": ""
+  },
   "always_allowed_paths": [
     "pnpm-lock.yaml",
     ".meta/"
@@ -64,7 +89,10 @@
       ],
       "tickets": 8,
       "prerequisite": "PR des spécifications fusionnée sur main",
-      "pushed": true
+      "pushed": true,
+      "lane": "PILOTE",
+      "bootstrap": "",
+      "after": []
     },
     {
       "session_id": "S1A",
@@ -105,7 +133,10 @@
       ],
       "tickets": 10,
       "prerequisite": "Pont S0 certifié et fusionné",
-      "pushed": true
+      "pushed": true,
+      "lane": "BACK-1",
+      "bootstrap": "",
+      "after": []
     },
     {
       "session_id": "S1B",
@@ -151,7 +182,12 @@
       ],
       "tickets": 12,
       "prerequisite": "Tous les tickets S1A en IN_REVIEW",
-      "pushed": true
+      "pushed": true,
+      "lane": "BACK-1",
+      "bootstrap": "--postgres",
+      "after": [
+        "S1A"
+      ]
     },
     {
       "session_id": "G1",
@@ -191,7 +227,10 @@
       ],
       "tickets": 3,
       "prerequisite": "Tous les tickets S1A et S1B en IN_REVIEW",
-      "pushed": false
+      "pushed": false,
+      "lane": "AUDIT",
+      "bootstrap": "--postgres",
+      "after": []
     },
     {
       "session_id": "P2-A",
@@ -237,8 +276,11 @@
         "R2"
       ],
       "tickets": 10,
-      "prerequisite": "G1 fusionnée",
-      "pushed": true
+      "prerequisite": "G1 fusionnée (profil xHub non publié : profil provisoire, ERRATA B-13 révisé)",
+      "pushed": true,
+      "lane": "EDI-1",
+      "bootstrap": "--java",
+      "after": []
     },
     {
       "session_id": "P2-B",
@@ -280,7 +322,10 @@
       ],
       "tickets": 12,
       "prerequisite": "G1 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "FRONT-1",
+      "bootstrap": "--playwright",
+      "after": []
     },
     {
       "session_id": "P2-C",
@@ -318,7 +363,10 @@
       ],
       "tickets": 8,
       "prerequisite": "G1 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "FRONT-2",
+      "bootstrap": "--playwright",
+      "after": []
     },
     {
       "session_id": "G2",
@@ -358,7 +406,10 @@
       ],
       "tickets": 3,
       "prerequisite": "Tous les tickets P2-A/B/C en IN_REVIEW",
-      "pushed": false
+      "pushed": false,
+      "lane": "AUDIT",
+      "bootstrap": "--java --playwright",
+      "after": []
     },
     {
       "session_id": "P3-A",
@@ -397,8 +448,11 @@
         "R1"
       ],
       "tickets": 12,
-      "prerequisite": "G2 fusionnée + XSD officiels DGI déposés",
-      "pushed": true
+      "prerequisite": "G2 fusionnée (XSD officiels DGI si déposés, sinon XSD provisoires, ERRATA B-13 révisé)",
+      "pushed": true,
+      "lane": "EDI-1",
+      "bootstrap": "",
+      "after": []
     },
     {
       "session_id": "P3-B",
@@ -440,7 +494,10 @@
       ],
       "tickets": 10,
       "prerequisite": "G2 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "BACK-1",
+      "bootstrap": "--python",
+      "after": []
     },
     {
       "session_id": "P3-C",
@@ -484,7 +541,10 @@
       ],
       "tickets": 9,
       "prerequisite": "G2 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "EDI-2",
+      "bootstrap": "--java --dotnet --python",
+      "after": []
     },
     {
       "session_id": "G3",
@@ -524,7 +584,10 @@
       ],
       "tickets": 3,
       "prerequisite": "Tous les tickets P3-A/B/C en IN_REVIEW",
-      "pushed": false
+      "pushed": false,
+      "lane": "AUDIT",
+      "bootstrap": "--java --dotnet --python",
+      "after": []
     },
     {
       "session_id": "P4-A",
@@ -561,7 +624,10 @@
       ],
       "tickets": 9,
       "prerequisite": "G3 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "FRONT-1",
+      "bootstrap": "--playwright",
+      "after": []
     },
     {
       "session_id": "P4-B",
@@ -608,7 +674,10 @@
       ],
       "tickets": 9,
       "prerequisite": "G3 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "BACK-1",
+      "bootstrap": "--postgres",
+      "after": []
     },
     {
       "session_id": "P4-C",
@@ -649,7 +718,10 @@
       ],
       "tickets": 7,
       "prerequisite": "G3 fusionnée + permission Workflows sur le jeton GitHub",
-      "pushed": true
+      "pushed": true,
+      "lane": "BACK-2",
+      "bootstrap": "--postgres --redis",
+      "after": []
     },
     {
       "session_id": "G4",
@@ -690,7 +762,10 @@
       ],
       "tickets": 3,
       "prerequisite": "Tous les tickets P4-A/B/C en IN_REVIEW",
-      "pushed": false
+      "pushed": false,
+      "lane": "AUDIT",
+      "bootstrap": "--postgres --redis --playwright",
+      "after": []
     },
     {
       "session_id": "S5",
@@ -733,7 +808,10 @@
       ],
       "tickets": 4,
       "prerequisite": "G4 fusionnée",
-      "pushed": true
+      "pushed": true,
+      "lane": "PILOTE+AUDIT",
+      "bootstrap": "",
+      "after": []
     }
   ]
 }

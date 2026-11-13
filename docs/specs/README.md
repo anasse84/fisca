@@ -26,3 +26,14 @@ Les 18 documents de spécification, convertis en Markdown le 2026-11-13. `ERRATA
 Le backlog cite les sections sous la forme `Doc_04_TDD#S02` : document `04-tdd-architecture.md`, titre « ## Section 02 ».
 
 Chaque session ne lit que les 3 à 5 documents de sa ligne dans la matrice de `docs/orchestration/README.md`, section par section. Ce dossier est protégé : seul Fisca-Lead-Orchestrator le modifie.
+
+## Annexes V : code de vérification numérique
+
+Les documents 03, 10, 12, 13, 14, 17 et 18 se terminent par une « Annexe V » : le code Python qui a servi à calculer et contrôler leurs chiffres (fichier `code.docx` du propriétaire), suivi de sa sortie. 13 blocs au total.
+
+```bash
+python3 docs/specs/verification/verify-annexes.py        # réexécute les 13 blocs et compare les sorties
+python3 docs/specs/verification/verify-annexes.py 14     # un seul document
+```
+
+C'est une pièce justificative, pas une exigence ni du code de production (ERRATA D-21). L'état de vérification des règles fiscales contre les textes officiels est dans `ERRATA.md`, section E.

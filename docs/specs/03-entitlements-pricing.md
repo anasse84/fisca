@@ -348,3 +348,227 @@ Lors de la Session P4-B et de la Barrière QA G4, l'agent Fisca-QA-Security-Audi
 - Franchissement du seuil de 100 dossiers (-15 %) : Pour 20 DOSSIER_SIMPLIFIE, 50 DOSSIER_TPE et 30 DOSSIER_PME_COMPLET (100 dossiers, brut variable 1630000 centimes), la remise volume soustrait exactement 244500 centimes ; avec le socle de 49000 centimes, le net HT vaut 1434500 centimes (14 345,00 MAD HT) et le TTC 1721400 centimes (17 214,00 MAD TTC).
 - Commission FactorFlow (25 bps) : Sur une facture certifiée de 120 000,00 MAD TTC (12000000 centimes) mobilisée en 48h, la commission technologique HT vaut exactement 30000 centimes (300,00 MAD HT), soit 36000 centimes TTC (360,00 MAD TTC).
 - Sanctuarisation Art. 211 CGI à J+15 : Une organisation en statut RESTRICTED_READ_ONLY reçoit une erreur bloquante sur POST /api/v1/invoices, mais obtient un code HTTP 200 sur GET /api/v1/reversibility/export-10y et sur le webhook entrant de réception xHub.
+
+## Annexe V — Code de vérification numérique
+
+> Origine : fichier `code.docx` fourni par le propriétaire du projet le 2026-11-13. C'est le code Python qui a servi à calculer et à contrôler les chiffres de ce document, suivi de la sortie obtenue par l'auteur.
+> Chaque bloc a été réexécuté le 2026-11-13 (Python 3.12) et sa sortie comparée à celle de l'auteur. Pour le refaire : `python3 docs/specs/verification/verify-annexes.py`.
+> Statut : pièce justificative des chiffres, pas du code de production. Elle n'ajoute aucune exigence et ne se copie dans aucun paquet. En cas d'écart avec le corps du document, `ERRATA.md` tranche.
+
+> Les montants attendus (7 450, 12 450, 244 500, 1 239 360, 30 000 centimes…) font foi. En production, tout prorata passe par `divRoundHalfUpBigInt` (ERRATA D-09).
+
+### V.1 — Grille tarifaire, prorata journalier, remise fiduciaire et commission FactorFlow
+
+<!-- verif:03-01:code -->
+```python
+# Verify all pricing figures, centimes, VAT 20%, annual (10 months = 2 months free), prorata examples, and Vitest vectors for Document 03
+
+vat_bps = 2000 # 20%
+
+def compute_ttc(ht_cents):
+    vat_cents = round((ht_cents * vat_bps) / 10000)
+    return ht_cents, vat_cents, ht_cents + vat_cents
+
+# 1. Direct PME Plans
+pme_plans = {
+    "SOLO_AE": 12900,        # 129.00 MAD HT
+    "ESSENTIEL_TPE": 39000,  # 390.00 MAD HT
+    "CROISSANCE_PME": 89000, # 890.00 MAD HT
+}
+
+print("=== PME PLANS ===")
+for k, ht in pme_plans.items():
+    _, vat, ttc = compute_ttc(ht)
+    ann_ht = ht * 10
+    _, ann_vat, ann_ttc = compute_ttc(ann_ht)
+    print(f"{k}: Monthly HT={ht}c ({ht/100:.2f} MAD), TTC={ttc/100:.2f} MAD | Annual HT={ann_ht}c ({ann_ht/100:.2f} MAD), TTC={ann_ttc/100:.2f} MAD")
+
+# 2. POS Add-on
+pos_std = 14900   # 149.00 MAD HT / caisse
+pos_fleet = 9900  # 99.00 MAD HT / caisse (10+ caisses or Fiduciary partner rate)
+print("\n=== POS ADD-ONS ===")
+for label, ht in [("POS Standard", pos_std), ("POS Fleet 10+ / Partner OEC", pos_fleet)]:
+    _, vat, ttc = compute_ttc(ht)
+    print(f"{label}: Monthly HT={ht}c ({ht/100:.2f} MAD), TTC={ttc/100:.2f} MAD | Annual HT={ht*10/100:.2f} MAD")
+
+# 3. Fiduciary Metering Test Vectors
+# Vector 1: Mid-month addition on November 16, 2026 (30-day month, inclusive days from 16 to 30 = 15 days active out of 30)
+# Wait: let's define exact convention: active_days = total_days_in_month - start_day + 1 (if added on day 1 -> 30/30 = 100%; if added on day 16 of 30-day month -> 30 - 16 + 1 = 15/30 = 50%)
+days_in_nov = 30
+start_day = 16
+active_days = days_in_nov - start_day + 1 # 15 days
+prorata_tpe_cents = round((14900 * active_days) / days_in_nov)
+prorata_pme_cents = round((24900 * active_days) / days_in_nov)
+print(f"\nProrata 15/30 days: TPE={prorata_tpe_cents}c ({prorata_tpe_cents/100:.2f} MAD), PME={prorata_pme_cents}c ({prorata_pme_cents/100:.2f} MAD)")
+
+# Vector 2: Cabinet with 60 full-month dossiers (10 Simplifies @ 6900, 35 TPE @ 14900, 15 PME @ 24900) + 2 POS Partner terminals @ 9900 + Base 49000
+cab60_base = 49000
+cab60_var = 10 * 6900 + 35 * 14900 + 15 * 24900 # 69000 + 521500 + 373500 = 964000
+cab60_pos = 2 * 9900 # 19800
+cab60_ht = cab60_base + cab60_var + cab60_pos
+_, cab60_vat, cab60_ttc = compute_ttc(cab60_ht)
+print(f"Cabinet 60 + 2 POS: Base={cab60_base}c, Var={cab60_var}c, POS={cab60_pos}c -> HT={cab60_ht}c ({cab60_ht/100:.2f} MAD), TVA={cab60_vat}c ({cab60_vat/100:.2f} MAD), TTC={cab60_ttc}c ({cab60_ttc/100:.2f} MAD)")
+
+# Vector 3: Cabinet crossing 100 dossiers -> 100 dossiers (20 Simplifies @ 6900, 50 TPE @ 14900, 30 PME @ 24900) -> 15% volume discount on variable dossiers
+cab100_raw_var = 20 * 6900 + 50 * 14900 + 30 * 24900 # 138000 + 745000 + 747000 = 1630000
+cab100_disc_cents = round((cab100_raw_var * 1500) / 10000) # 244500
+cab100_net_var = cab100_raw_var - cab100_disc_cents # 1385500
+cab100_ht = 49000 + cab100_net_var # 1434500
+_, cab100_vat, cab100_ttc = compute_ttc(cab100_ht)
+print(f"Cabinet 100 (-15%): RawVar={cab100_raw_var}c, Disc={cab100_disc_cents}c, NetVar={cab100_net_var}c, TotalHT={cab100_ht}c ({cab100_ht/100:.2f} MAD), TVA={cab100_vat}c, TTC={cab100_ttc}c ({cab100_ttc/100:.2f} MAD)")
+
+# Vector 4: FactorFlow 0.25% (25 bps) tech commission on a 120,000.00 MAD TTC invoice (12,000,000 centimes)
+inv_ttc = 12000000
+ff_fee_ht = round((inv_ttc * 25) / 10000) # 30000 centimes = 300.00 MAD HT
+_, ff_vat, ff_ttc = compute_ttc(ff_fee_ht)
+print(f"FactorFlow 25 bps on 120,000 MAD: Fee HT={ff_fee_ht}c ({ff_fee_ht/100:.2f} MAD), TTC={ff_ttc}c ({ff_ttc/100:.2f} MAD)")
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:03-01:resultat -->
+```text
+=== PME PLANS ===
+SOLO_AE: Monthly HT=12900c (129.00 MAD), TTC=154.80 MAD | Annual HT=129000c (1290.00 MAD), TTC=1548.00 MAD
+ESSENTIEL_TPE: Monthly HT=39000c (390.00 MAD), TTC=468.00 MAD | Annual HT=390000c (3900.00 MAD), TTC=4680.00 MAD
+CROISSANCE_PME: Monthly HT=89000c (890.00 MAD), TTC=1068.00 MAD | Annual HT=890000c (8900.00 MAD), TTC=10680.00 MAD
+
+=== POS ADD-ONS ===
+POS Standard: Monthly HT=14900c (149.00 MAD), TTC=178.80 MAD | Annual HT=1490.00 MAD
+POS Fleet 10+ / Partner OEC: Monthly HT=9900c (99.00 MAD), TTC=118.80 MAD | Annual HT=990.00 MAD
+
+Prorata 15/30 days: TPE=7450c (74.50 MAD), PME=12450c (124.50 MAD)
+Cabinet 60 + 2 POS: Base=49000c, Var=964000c, POS=19800c -> HT=1032800c (10328.00 MAD), TVA=206560c (2065.60 MAD), TTC=1239360c (12393.60 MAD)
+Cabinet 100 (-15%): RawVar=1630000c, Disc=244500c, NetVar=1385500c, TotalHT=1434500c (14345.00 MAD), TVA=286900c, TTC=1721400c (17214.00 MAD)
+FactorFlow 25 bps on 120,000 MAD: Fee HT=30000c (300.00 MAD), TTC=36000c (360.00 MAD)
+```
+
+### V.2 — Portefeuille des 7 lignes de revenus (revenu, coût marginal, marge)
+
+<!-- verif:03-02:code -->
+```python
+import json
+
+# Let's compute a clean portfolio comparison across all 7 revenue lines of Fisca (per customer unit / monthly equivalent HT in MAD)
+# Wait: let's check unit monthly revenue HT vs monthly infrastructure marginal cost vs gross margin per customer archetype:
+# 1. Fisca Solo (AE): 129.00 MAD HT/mo, infra = 2.50 MAD/mo -> margin = 126.50 MAD (98.1%)
+# 2. Fisca Essentiel (TPE): 390.00 MAD HT/mo, infra = 5.00 MAD/mo -> margin = 385.00 MAD (98.7%)
+# 3. Fisca Croissance (PME + 1 POS inclus): 890.00 MAD HT/mo, infra = 8.00 MAD/mo -> margin = 882.00 MAD (99.1%)
+# 4. Option POS Tactile (+1 Caisse): 149.00 MAD HT/mo, infra = 2.00 MAD/mo -> margin = 147.00 MAD (98.7%)
+# 5. Cabinet Fiduciaire (60 dossiers + 2 POS): 10,328.00 MAD HT/mo, infra = 304.00 MAD/mo (60*5 + 2*2) -> margin = 10,024.00 MAD (97.1%)
+# 6. Contrat Enterprise Corporate (5 ICE, 58k/an): 4,833.33 MAD/mo -> let's use Annual Contract Value or Monthly MRR! Wait: to avoid decimals on 58000/12, let's model a realistic target Year-1 Customer Mix (e.g., 100 Solo, 80 Essentiel, 40 Croissance, 50 POS add-ons, 10 Fiduciaires of 60 dossiers, 4 Enterprise Corporate, 1 Fisca Souverain) in Annual Recurring Revenue (ARR HT in MAD)!
+# Let's check Annual HT figures — every single one is an EXACT integer in MAD!
+# Note: Monthly subscribers paying monthly x 12 vs Annual contracts:
+# Let's check standard 12-month ARR at monthly catalog rates vs annual contracts:
+# - Solo AE (100 clients @ 129 MAD/mo * 12 = 1,548 MAD/yr): 154,800 MAD HT/an | Infra (5 MAD/mo * 12 = 60 MAD/yr * 100 = 6,000 MAD)
+# Wait: in Source 29, marginal infrastructure cost is 5.00 MAD / PME / mois (60 MAD / an)! Using the exact 5.00 MAD / dossier / mois (60 MAD / an) from Source 29 keeps 100% alignment with our source documents!
+
+portfolio = [
+    {"tier": "Fisca Solo (AE)", "units": 100, "monthly_ht": 129.0, "annual_unit_ht": 1548.0, "annual_infra_unit": 60.0},
+    {"tier": "Fisca Essentiel (TPE)", "units": 80, "monthly_ht": 390.0, "annual_unit_ht": 4680.0, "annual_infra_unit": 60.0},
+    {"tier": "Fisca Croissance (PME)", "units": 40, "monthly_ht": 890.0, "annual_unit_ht": 10680.0, "annual_infra_unit": 60.0},
+    {"tier": "Terminaux POS Tactiles", "units": 60, "monthly_ht": 149.0, "annual_unit_ht": 1788.0, "annual_infra_unit": 24.0},
+    {"tier": "Cabinets OEC (x60 dossiers)", "units": 10, "monthly_ht": 10130.0, "annual_unit_ht": 121560.0, "annual_infra_unit": 3600.0},
+    {"tier": "Enterprise Corporate (Annuel)", "units": 4, "monthly_ht": 4833.33, "annual_unit_ht": 58000.0, "annual_infra_unit": 1800.0},
+    {"tier": "Fisca Souverain (Annuel)", "units": 1, "monthly_ht": 11666.67, "annual_unit_ht": 140000.0, "annual_infra_unit": 12000.0},
+]
+
+for p in portfolio:
+    p["arr_ht_mad"] = p["units"] * p["annual_unit_ht"]
+    p["infra_arr_mad"] = p["units"] * p["annual_infra_unit"]
+    p["gross_profit_arr_mad"] = p["arr_ht_mad"] - p["infra_arr_mad"]
+
+tot_arr = sum(p["arr_ht_mad"] for p in portfolio)
+tot_infra = sum(p["infra_arr_mad"] for p in portfolio)
+tot_gp = tot_arr - tot_infra
+tot_gm_pct = round((tot_gp / tot_arr) * 100, 1)
+
+print(json.dumps({"items": portfolio, "totals": {"arr_ht_mad": tot_arr, "mrr_equiv_mad": round(tot_arr/12, 2), "infra_arr_mad": tot_infra, "gross_profit_arr_mad": tot_gp, "gross_margin_pct": tot_gm_pct}}, indent=2, ensure_ascii=False))
+```
+
+Résultat du code (réexécution : identique) :
+
+<!-- verif:03-02:resultat -->
+```text
+{
+  "items": [
+    {
+      "tier": "Fisca Solo (AE)",
+      "units": 100,
+      "monthly_ht": 129.0,
+      "annual_unit_ht": 1548.0,
+      "annual_infra_unit": 60.0,
+      "arr_ht_mad": 154800.0,
+      "infra_arr_mad": 6000.0,
+      "gross_profit_arr_mad": 148800.0
+    },
+    {
+      "tier": "Fisca Essentiel (TPE)",
+      "units": 80,
+      "monthly_ht": 390.0,
+      "annual_unit_ht": 4680.0,
+      "annual_infra_unit": 60.0,
+      "arr_ht_mad": 374400.0,
+      "infra_arr_mad": 4800.0,
+      "gross_profit_arr_mad": 369600.0
+    },
+    {
+      "tier": "Fisca Croissance (PME)",
+      "units": 40,
+      "monthly_ht": 890.0,
+      "annual_unit_ht": 10680.0,
+      "annual_infra_unit": 60.0,
+      "arr_ht_mad": 427200.0,
+      "infra_arr_mad": 2400.0,
+      "gross_profit_arr_mad": 424800.0
+    },
+    {
+      "tier": "Terminaux POS Tactiles",
+      "units": 60,
+      "monthly_ht": 149.0,
+      "annual_unit_ht": 1788.0,
+      "annual_infra_unit": 24.0,
+      "arr_ht_mad": 107280.0,
+      "infra_arr_mad": 1440.0,
+      "gross_profit_arr_mad": 105840.0
+    },
+    {
+      "tier": "Cabinets OEC (x60 dossiers)",
+      "units": 10,
+      "monthly_ht": 10130.0,
+      "annual_unit_ht": 121560.0,
+      "annual_infra_unit": 3600.0,
+      "arr_ht_mad": 1215600.0,
+      "infra_arr_mad": 36000.0,
+      "gross_profit_arr_mad": 1179600.0
+    },
+    {
+      "tier": "Enterprise Corporate (Annuel)",
+      "units": 4,
+      "monthly_ht": 4833.33,
+      "annual_unit_ht": 58000.0,
+      "annual_infra_unit": 1800.0,
+      "arr_ht_mad": 232000.0,
+      "infra_arr_mad": 7200.0,
+      "gross_profit_arr_mad": 224800.0
+    },
+    {
+      "tier": "Fisca Souverain (Annuel)",
+      "units": 1,
+      "monthly_ht": 11666.67,
+      "annual_unit_ht": 140000.0,
+      "annual_infra_unit": 12000.0,
+      "arr_ht_mad": 140000.0,
+      "infra_arr_mad": 12000.0,
+      "gross_profit_arr_mad": 128000.0
+    }
+  ],
+  "totals": {
+    "arr_ht_mad": 2651280.0,
+    "mrr_equiv_mad": 220940.0,
+    "infra_arr_mad": 69840.0,
+    "gross_profit_arr_mad": 2581440.0,
+    "gross_margin_pct": 97.4
+  }
+}
+```
