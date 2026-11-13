@@ -161,7 +161,10 @@ function normalizeToolKey(key: string): string {
   return key.normalize('NFKC').toLowerCase().replace(/[\s_.\-\p{Cf}]/gu, '');
 }
 
-const FORBIDDEN_TOOL_KEYS: readonly string[] = ['tenantid', 'companyid', 'd1databaseid', 'organizationid', 'dbid'];
+const FORBIDDEN_TOOL_KEYS: readonly string[] = [
+  'tenantid', 'companyid', 'd1databaseid', 'organizationid', 'dbid',
+  'databaseid', 'orgid', 'd1id', 'tenantuuid', 'companyuuid',
+];
 
 export function assertSafeMcpToolSchema(toolName: string, parameterKeys: readonly string[]): void {
   for (const key of parameterKeys) {
@@ -177,6 +180,60 @@ export function assertSafeMcpToolSchema(toolName: string, parameterKeys: readonl
 const SAGE_FORBIDDEN_KEYWORDS =
   /\b(INTO|EXEC|EXECUTE|CREATE|GRANT|REVOKE|DENY|ALTER|DROP|TRUNCATE|MERGE|CALL|INSERT|UPDATE|DELETE|BULK|OPENROWSET|OPENQUERY|OPENDATASOURCE|OPENXML|DBCC|BACKUP|RESTORE|SHUTDOWN|WAITFOR)\b/;
 const SAGE_STRING_LITERAL = /'(?:[^']|'')*'/g;
+/** Mots qui terminent la clause FROM (la liste de tables s'arrête avant eux). */
+const SAGE_FROM_CLAUSE_END: ReadonlySet<string> = new Set([
+  'WHERE', 'GROUP', 'HAVING', 'ORDER', 'UNION', 'INTERSECT', 'EXCEPT', 'FOR', 'OPTION', 'OFFSET', 'FETCH',
+]);
+
+/**
+ * Analyse (échec fermé) du code SQL déjà débarrassé de ses littéraux : renvoie 'comma' si une virgule sépare
+ * deux tables dans une clause FROM (jointure implicite), 'unbalanced' si les parenthèses ou identifiants
+ * délimités sont mal formés, null sinon. Chaque niveau de parenthèses a son propre état : les virgules de la
+ * liste de colonnes, des arguments de fonction (REPLACE(a,b,c)) et de IN (1,2) ne sont pas dans une clause FROM.
+ */
+function findSageImplicitJoin(code: string): 'comma' | 'unbalanced' | null {
+  const inFrom: boolean[] = [false];
+  let index = 0;
+  while (index < code.length) {
+    const char = code.charAt(index);
+    if (char === '[' || char === '"') {
+      const close = code.indexOf(char === '[' ? ']' : '"', index + 1);
+      if (close === -1) {
+        return 'unbalanced';
+      }
+      index = close + 1;
+    } else if (char === '(') {
+      inFrom.push(false);
+      index += 1;
+    } else if (char === ')') {
+      inFrom.pop();
+      if (inFrom.length === 0) {
+        return 'unbalanced';
+      }
+      index += 1;
+    } else if (char === ',') {
+      if (inFrom[inFrom.length - 1] === true) {
+        return 'comma';
+      }
+      index += 1;
+    } else if (/[A-Z_]/.test(char)) {
+      let end = index + 1;
+      while (end < code.length && /[A-Z0-9_$#@]/.test(code.charAt(end))) {
+        end += 1;
+      }
+      const word = code.slice(index, end);
+      if (word === 'FROM') {
+        inFrom[inFrom.length - 1] = true;
+      } else if (SAGE_FROM_CLAUSE_END.has(word)) {
+        inFrom[inFrom.length - 1] = false;
+      }
+      index = end;
+    } else {
+      index += 1;
+    }
+  }
+  return inFrom.length === 1 ? null : 'unbalanced';
+}
 
 export function assertReadOnlySageSql(sqlQuery: string): void {
   const refuse = (reason: string): never => {
@@ -207,6 +264,13 @@ export function assertReadOnlySageSql(sqlQuery: string): void {
   }
   if (/\bREPLACE\s+INTO\b/.test(code)) {
     return refuse('mot-clé REPLACE INTO');
+  }
+  const implicitJoin = findSageImplicitJoin(code);
+  if (implicitJoin === 'comma') {
+    return refuse('liste de tables séparée par une virgule : JOIN explicite requis, WITH (NOLOCK) sur chaque table');
+  }
+  if (implicitJoin === 'unbalanced') {
+    return refuse('parenthèses ou identifiant délimité mal formés');
   }
   // AGENTS.md loi 9 : lecture WITH (NOLOCK) seulement. Chaque table lue (FROM ou JOIN) porte son indice.
   const tableReads = (code.match(/\b(?:FROM|JOIN)\b/g) ?? []).length;

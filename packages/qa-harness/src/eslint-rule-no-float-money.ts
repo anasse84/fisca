@@ -2,7 +2,8 @@ import type { TSESLint, TSESTree } from '@typescript-eslint/utils';
 
 /**
  * Règle locale `no-float-money` (ADR-03, Loi 1) : interdit l'opérateur `/` (et `/=`) ainsi que `parseFloat`
- * sur toute valeur reconnue comme monétaire. Sans règle typée, la reconnaissance repose sur trois signaux :
+ * sur toute valeur reconnue comme monétaire, ainsi que `* + - %` (et `*= += -= %=`) entre une telle valeur et un littéral
+ * numérique non entier (`ht * 0.2`). Sans règle typée, la reconnaissance repose sur trois signaux :
  * 1. le NOM : dernier mot de l'identifiant ou du membre ∈ {cents, bps, milli, micro, centimes}
  *    (`totalCents`, `total_cents`, `vatRateBps`, `qty_milli`, `rateMicro`, `Centimes`...) ;
  * 2. une DÉCLARATION lisible dans le même fichier : `const ht = centimes(...)` (constructeurs `centimes`,
@@ -96,14 +97,37 @@ function typeAnnotationOf(node: TSESTree.Node): TSESTree.TSTypeAnnotation | unde
   return undefined;
 }
 
-export type NoFloatMoneyMessageId = 'floatDivision' | 'floatRounding' | 'floatParse';
+export type NoFloatMoneyMessageId = 'floatDivision' | 'floatRounding' | 'floatParse' | 'floatLiteral';
+
+const LITERAL_ARITHMETIC_OPERATORS: ReadonlySet<string> = new Set(['*', '+', '-', '%']);
+const LITERAL_ASSIGNMENT_OPERATORS: ReadonlySet<string> = new Set(['*=', '+=', '-=', '%=']);
+
+/**
+ * Vrai si le nœud (à des parenthèses, signes unaires et enveloppes TypeScript près) est un littéral numérique
+ * NON entier : écrit avec une virgule (`0.2`, `1.0`, `.5`) ou de valeur fractionnaire (`2.5e-1`).
+ * `2`, `1e3`, `0x10` restent des entiers.
+ */
+function isFloatLiteral(node: TSESTree.Node): boolean {
+  let current = unwrapTs(node);
+  while (current.type === 'UnaryExpression' && (current.operator === '-' || current.operator === '+')) {
+    current = unwrapTs(current.argument);
+  }
+  if (current.type !== 'Literal' || typeof current.value !== 'number') {
+    return false;
+  }
+  const raw = current.raw;
+  if (/^0[xXbBoO]/.test(raw)) {
+    return false;
+  }
+  return raw.includes('.') || !Number.isInteger(current.value);
+}
 
 export const noFloatMoneyRule: TSESLint.RuleModule<NoFloatMoneyMessageId, []> = {
   defaultOptions: [],
   meta: {
     type: 'problem',
     docs: {
-      description: 'Interdit `/` et `parseFloat` sur les montants (cents, centimes), taux (bps), quantités (milli) et cours (micro).',
+      description: 'Interdit `/`, `parseFloat` et toute opération arithmétique avec un littéral décimal sur les montants (cents, centimes), taux (bps), quantités (milli) et cours (micro).',
     },
     schema: [],
     messages: {
@@ -111,6 +135,8 @@ export const noFloatMoneyRule: TSESLint.RuleModule<NoFloatMoneyMessageId, []> = 
         "ADR_03_FLOAT_FORBIDDEN : division `/` sur « {{name}} » (unité entière). Utiliser divRoundHalfUpBigInt ou applyBps de @fisca/shared-types.",
       floatRounding:
         "ADR_03_FLOAT_FORBIDDEN : arrondi Math.round/floor/ceil/trunc d'une division sur « {{name}} » (unité entière). Utiliser divRoundHalfUpBigInt ou applyBps de @fisca/shared-types.",
+      floatLiteral:
+        "ADR_03_FLOAT_FORBIDDEN : opération arithmétique entre « {{name}} » (unité entière) et un littéral décimal. Exprimer le taux en bps entiers et utiliser applyBps ou divRoundHalfUpBigInt de @fisca/shared-types.",
       floatParse:
         "ADR_03_FLOAT_FORBIDDEN : parseFloat sur « {{name}} » (unité entière). Lire un entier exact (ensureSafeInteger).",
     },
@@ -121,6 +147,7 @@ export const noFloatMoneyRule: TSESLint.RuleModule<NoFloatMoneyMessageId, []> = 
     const typedMemberNames = new Set<string>();
     const divisions: Array<TSESTree.BinaryExpression | TSESTree.AssignmentExpression> = [];
     const parseCalls: TSESTree.CallExpression[] = [];
+    const literalOperations: Array<TSESTree.BinaryExpression | TSESTree.AssignmentExpression> = [];
 
     function isTrackedBinding(identifier: TSESTree.Identifier): boolean {
       let scope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
@@ -232,11 +259,15 @@ export const noFloatMoneyRule: TSESLint.RuleModule<NoFloatMoneyMessageId, []> = 
       BinaryExpression(node) {
         if (node.operator === '/') {
           divisions.push(node);
+        } else if (LITERAL_ARITHMETIC_OPERATORS.has(node.operator)) {
+          literalOperations.push(node);
         }
       },
       AssignmentExpression(node) {
         if (node.operator === '/=') {
           divisions.push(node);
+        } else if (LITERAL_ASSIGNMENT_OPERATORS.has(node.operator)) {
+          literalOperations.push(node);
         }
       },
       CallExpression(node) {
@@ -245,6 +276,19 @@ export const noFloatMoneyRule: TSESLint.RuleModule<NoFloatMoneyMessageId, []> = 
         }
       },
       'Program:exit'() {
+        for (const node of literalOperations) {
+          const left = node.left;
+          const right = node.right;
+          let name: string | null = null;
+          if (isFloatLiteral(right)) {
+            name = findMoneyName(left);
+          } else if (node.type === 'BinaryExpression' && isFloatLiteral(left)) {
+            name = findMoneyName(right);
+          }
+          if (name !== null) {
+            context.report({ node, messageId: 'floatLiteral', data: { name } });
+          }
+        }
         for (const node of divisions) {
           const name = findMoneyName(node.left) ?? findMoneyName(node.right);
           if (name === null) {

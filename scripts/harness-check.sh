@@ -82,8 +82,9 @@ HITS="$(grep -rnE ':\s*any\b(\[\])?\s*[;,)=>{|&]|:\s*any\s*$|<any>|\bas\s+any\b|
   "${EXCLUDES[@]}" --include=*.ts --include=*.tsx "${EXISTING[@]}" || true)"
 report ERR_UNSAFE_ANY_TYPE "type any interdit." "$HITS"
 
-# 4. Flottants monétaires (heuristique ; la règle ESLint no-float-money reste la défense principale)
-HITS="$(grep -rnE 'parseFloat\(|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*/\s*[A-Za-z0-9_(]|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*[:=]\s*-?[0-9]+\.[0-9]+' \
+# 4. Flottants monétaires : parseFloat, division, affectation décimale, et opération arithmétique entre un identifiant à unité
+#    et un littéral à virgule (`ht_cents * 0.2`, `1.2 * totalCents`) (heuristique ; la règle ESLint no-float-money reste la défense principale)
+HITS="$(grep -rnE 'parseFloat\(|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*/\s*[A-Za-z0-9_(]|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|Bps|_bps)\b\s*[:=]\s*-?[0-9]+\.[0-9]+|\b[A-Za-z0-9_]*(Cents|_cents|Centimes|centimes|Bps|_bps|Milli|_milli|Micro|_micro)\b\s*[-+*/%]=?\s*[-+]?\(?\s*[0-9]*\.[0-9]|[0-9]\.[0-9]+\)?\s*[-+*/%]\s*[A-Za-z0-9_.]*(Cents|_cents|Centimes|Bps|_bps|Milli|_milli|Micro|_micro)\b' \
   "${EXCLUDES[@]}" --include=*.ts --include=*.tsx --exclude=FiscalPrimitives.tsx --exclude=eslint-rule-no-float-money.test.ts "${EXISTING[@]}" \
   | grep -vE '^\S+:[0-9]+:\s*(//|\*)' || true)"
 report ERR_ADR03_FLOAT "arithmétique flottante sur centimes/bps interdite : utiliser divRoundHalfUpBigInt." "$HITS"
