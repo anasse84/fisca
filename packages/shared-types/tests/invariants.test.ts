@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FISCA_ADR_INVARIANTS,
+  FISCA_ADR_INVARIANT_CATALOG,
   assertCertificateMatchesEmitter,
   assertReadOnlySageSql,
   assertSafeIntegerAmount,
@@ -9,18 +9,18 @@ import {
   runAdrInvariantSelfCheck,
 } from '../src/index.ts';
 
-describe('FISCA_ADR_INVARIANTS : structure', () => {
+describe('FISCA_ADR_INVARIANT_CATALOG (13 invariants) : structure', () => {
   it('couvre exactement ADR-01 à ADR-12', () => {
-    const adrs = new Set(FISCA_ADR_INVARIANTS.map((entry) => entry.adr));
+    const adrs = new Set(FISCA_ADR_INVARIANT_CATALOG.map((entry) => entry.adr));
     expect([...adrs].sort()).toEqual(
       Array.from({ length: 12 }, (_, index) => `ADR-${String(index + 1).padStart(2, '0')}`),
     );
   });
 
   it('a des identifiants uniques, un énoncé, une origine et une vraie fonction de contrôle', () => {
-    const ids = FISCA_ADR_INVARIANTS.map((entry) => entry.id);
+    const ids = FISCA_ADR_INVARIANT_CATALOG.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const entry of FISCA_ADR_INVARIANTS) {
+    for (const entry of FISCA_ADR_INVARIANT_CATALOG) {
       expect(entry.id).toMatch(/^INV-ADR-\d{2}-\d{2}$/);
       expect(entry.statement.length).toBeGreaterThan(20);
       expect(['DOC_05_SECTION_14', 'DERIVE_GARDE_FOU_ADR']).toContain(entry.origin);
@@ -29,13 +29,13 @@ describe('FISCA_ADR_INVARIANTS : structure', () => {
   });
 
   it('est gelé en profondeur', () => {
-    expect(Object.isFrozen(FISCA_ADR_INVARIANTS)).toBe(true);
-    for (const entry of FISCA_ADR_INVARIANTS) {
+    expect(Object.isFrozen(FISCA_ADR_INVARIANT_CATALOG)).toBe(true);
+    for (const entry of FISCA_ADR_INVARIANT_CATALOG) {
       expect(Object.isFrozen(entry)).toBe(true);
     }
   });
 
-  for (const entry of FISCA_ADR_INVARIANTS) {
+  for (const entry of FISCA_ADR_INVARIANT_CATALOG) {
     describe(`${entry.id} (${entry.adr})`, () => {
       it('accepte tous ses cas conformes', () => {
         expect(entry.conforming.length).toBeGreaterThan(0);

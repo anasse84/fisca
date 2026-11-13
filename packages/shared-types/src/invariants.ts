@@ -23,53 +23,187 @@ export interface AdrInvariant {
 
 // ---------------------------------------------------------------- contrôles typés
 
+export type AdrInvariantErrorCode =
+  | 'ADR_02_10_TENANT_LEAK_RISK'
+  | 'ADR_03_FLOAT_FORBIDDEN'
+  | 'ADR_04_LF2026_VAT_VIOLATION'
+  | 'ADR_04_UNREADABLE_ISSUE_DATE'
+  | 'ADR_06_LOI4320_CERT_MISMATCH'
+  | 'ADR_11_SAGE100_CORRUPTION_GUARD';
+
+/** Erreur typée des gardes ADR : le message commence toujours par le code. */
+export class AdrInvariantError extends Error {
+  readonly code: AdrInvariantErrorCode;
+
+  constructor(code: AdrInvariantErrorCode, detail: string) {
+    super(`${code}: ${detail}`);
+    this.name = 'AdrInvariantError';
+    this.code = code;
+  }
+}
+
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DAYS_IN_MONTH: readonly number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** Extrait l'année d'une date ISO `AAAA-MM-JJ` réelle (calendrier grégorien) ; undefined si illisible ou impossible. */
+export function readIsoDateYear(isoDate: string): number | undefined {
+  const match = ISO_DATE_PATTERN.exec(isoDate);
+  if (match === null) {
+    return undefined;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) {
+    return undefined;
+  }
+  const monthLength = month === 2 && isLeapYear(year) ? 29 : (DAYS_IN_MONTH[month - 1] ?? 0);
+  return day >= 1 && day <= monthLength ? year : undefined;
+}
+
+/** Vrai si la chaîne est une date calendaire ISO `AAAA-MM-JJ` existante. */
+export function isReadableIsoDate(isoDate: string): boolean {
+  return readIsoDateYear(isoDate) !== undefined;
+}
+
 export function assertSafeIntegerAmount(value: number, label: string): number {
   if (!Number.isSafeInteger(value)) {
-    throw new Error(
-      `ADR_03_FLOAT_FORBIDDEN: [${label}] doit être un entier exact en centimes/bps (reçu: ${value}).`,
+    throw new AdrInvariantError(
+      'ADR_03_FLOAT_FORBIDDEN',
+      `[${label}] doit être un entier exact en centimes/bps (reçu: ${value}).`,
     );
   }
   return value;
 }
 
 export function assertValidVatRateForIssueYear(vatRateBps: number, issueDateIso: string): void {
-  const year = Number.parseInt(issueDateIso.slice(0, 4), 10);
+  const year = readIsoDateYear(issueDateIso);
+  if (year === undefined) {
+    throw new AdrInvariantError(
+      'ADR_04_UNREADABLE_ISSUE_DATE',
+      `date d'émission illisible ou impossible [${issueDateIso}] (format AAAA-MM-JJ d'un jour réel attendu) : le taux ${vatRateBps} bps ne peut pas être validé.`,
+    );
+  }
   if (year >= 2026 && vatRateBps !== 2000 && vatRateBps !== 1000 && vatRateBps !== 0) {
-    throw new Error(
-      `ADR_04_LF2026_VAT_VIOLATION: Taux ${vatRateBps} bps interdit à partir de 2026 (seuls 2000, 1000 et 0 sont admis).`,
+    throw new AdrInvariantError(
+      'ADR_04_LF2026_VAT_VIOLATION',
+      `Taux ${vatRateBps} bps interdit à partir de 2026 (seuls 2000, 1000 et 0 sont admis).`,
     );
   }
 }
+
+/** Découpe un SubjectDN en couples (attribut, valeur) ; virgules échappées (\,) ou entre guillemets conservées dans la valeur. */
+function parseSubjectDn(subjectDn: string): readonly (readonly [string, string])[] {
+  const segments: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let index = 0; index < subjectDn.length; index += 1) {
+    const char = subjectDn.charAt(index);
+    if (char === '\\') {
+      current += char + subjectDn.charAt(index + 1);
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+      current += char;
+    } else if (char === ',' && !inQuotes) {
+      segments.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  segments.push(current);
+
+  const attributes: (readonly [string, string])[] = [];
+  for (const segment of segments) {
+    const separator = segment.indexOf('=');
+    if (separator > 0) {
+      const key = segment.slice(0, separator).trim().toUpperCase();
+      const raw = segment.slice(separator + 1).trim();
+      const unquoted = raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1) : raw;
+      attributes.push([key, unquoted.replace(/\\(.)/g, '$1').trim()]);
+    }
+  }
+  return attributes;
+}
+
+const IDENTIFIER_ATTRIBUTES: readonly string[] = [
+  'SERIALNUMBER', '2.5.4.5', 'OID.2.5.4.5',
+  'ORGANIZATIONIDENTIFIER', '2.5.4.97', 'OID.2.5.4.97',
+  'CN',
+];
+const ICE_VALUE_PATTERN = /^[0-9]{15}$/;
 
 export function assertCertificateMatchesEmitter(certSubjectDn: string, emitterIce: string, emitterIf: string): void {
-  const normalized = certSubjectDn.replace(/\s+/g, '').toUpperCase();
-  const hasIce = emitterIce.length === 15 && normalized.includes(emitterIce);
-  const hasIf = emitterIf.length >= 6 && normalized.includes(emitterIf);
-  if (!hasIce && !hasIf) {
-    throw new Error(
-      `ADR_06_LOI4320_CERT_MISMATCH: Le SubjectDN du certificat qualifié ne correspond ni à l'ICE (${emitterIce}) ni à l'IF (${emitterIf}).`,
+  const expected: string[] = [];
+  if (ICE_VALUE_PATTERN.test(emitterIce)) {
+    expected.push(emitterIce);
+  }
+  if (emitterIf.trim().length >= 6) {
+    expected.push(emitterIf.trim().toUpperCase());
+  }
+  const matches = parseSubjectDn(certSubjectDn).some(
+    ([key, value]) => IDENTIFIER_ATTRIBUTES.includes(key) && expected.includes(value.toUpperCase()),
+  );
+  if (!matches) {
+    throw new AdrInvariantError(
+      'ADR_06_LOI4320_CERT_MISMATCH',
+      `Le SubjectDN du certificat qualifié ne correspond ni à l'ICE (${emitterIce}) ni à l'IF (${emitterIf}) : aucun attribut (serialNumber, OID 2.5.4.5, organizationIdentifier, OID 2.5.4.97, CN) n'a cette valeur complète.`,
     );
   }
 }
 
-const FORBIDDEN_TOOL_KEYS: readonly string[] = ['tenantId', 'tenant_id', 'companyId', 'company_id', 'd1DatabaseId'];
+function normalizeToolKey(key: string): string {
+  return key.normalize('NFKC').toLowerCase().replace(/[\s_.\-\p{Cf}]/gu, '');
+}
+
+const FORBIDDEN_TOOL_KEYS: readonly string[] = ['tenantid', 'companyid', 'd1databaseid', 'organizationid', 'dbid'];
 
 export function assertSafeMcpToolSchema(toolName: string, parameterKeys: readonly string[]): void {
   for (const key of parameterKeys) {
-    if (FORBIDDEN_TOOL_KEYS.includes(key)) {
-      throw new Error(
-        `ADR_02_10_TENANT_LEAK_RISK: L'outil IA [${toolName}] ne doit jamais accepter [${key}] depuis le modèle.`,
+    if (FORBIDDEN_TOOL_KEYS.includes(normalizeToolKey(key))) {
+      throw new AdrInvariantError(
+        'ADR_02_10_TENANT_LEAK_RISK',
+        `L'outil IA [${toolName}] ne doit jamais accepter [${key}] depuis le modèle.`,
       );
     }
   }
 }
 
+const SAGE_FORBIDDEN_KEYWORDS =
+  /\b(INTO|EXEC|EXECUTE|CREATE|GRANT|REVOKE|DENY|ALTER|DROP|TRUNCATE|MERGE|CALL|INSERT|UPDATE|DELETE|BULK|OPENROWSET|OPENQUERY|OPENDATASOURCE|OPENXML|DBCC|BACKUP|RESTORE|SHUTDOWN|WAITFOR)\b/;
+const SAGE_STRING_LITERAL = /'(?:[^']|'')*'/g;
+
 export function assertReadOnlySageSql(sqlQuery: string): void {
-  const upper = sqlQuery.toUpperCase();
-  if (/\b(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|TRUNCATE)\b/.test(upper)) {
-    throw new Error(
-      "ADR_11_SAGE100_CORRUPTION_GUARD: Écriture SQL directe interdite sur Sage 100. Utilisez IPMEncoder ou l'export .PNM.",
+  const refuse = (reason: string): never => {
+    throw new AdrInvariantError(
+      'ADR_11_SAGE100_CORRUPTION_GUARD',
+      `Écriture SQL directe interdite sur Sage 100 (${reason}). Utilisez IPMEncoder ou l'export .PNM.`,
     );
+  };
+  const trimmed = sqlQuery.trim();
+  const statement = trimmed.endsWith(';') ? trimmed.slice(0, -1) : trimmed;
+  // Les littéraux sont neutralisés avant l'analyse : un mot-clé ou un « ; » entre apostrophes n'est pas du SQL exécutable.
+  const code = statement.replace(SAGE_STRING_LITERAL, '0').toUpperCase();
+  if (code.includes("'")) {
+    return refuse('littéral non terminé');
+  }
+  if (code.includes(';')) {
+    return refuse('instructions multiples');
+  }
+  if (code.includes('--') || code.includes('/*') || code.includes('*/')) {
+    return refuse('commentaire SQL');
+  }
+  if (!/^SELECT\b/.test(code)) {
+    return refuse('une instruction SELECT unique est requise');
+  }
+  const keyword = SAGE_FORBIDDEN_KEYWORDS.exec(code);
+  if (keyword !== null) {
+    return refuse(`mot-clé ${keyword[1] ?? ''}`);
   }
 }
 
@@ -197,10 +331,11 @@ function entry(spec: AdrInvariant): AdrInvariant {
 const ICE_SAMPLE = '003976749000084';
 
 /**
- * Les 12 ADR et leurs invariants exécutables. Chaque entrée porte une fonction de contrôle réelle
- * et des cas conformes/violants que la suite de tests rejoue.
+ * Catalogue des 13 invariants exécutables des 12 ADR. Chaque entrée porte une fonction de contrôle réelle
+ * et des cas conformes/violants que la suite de tests rejoue. (Ne pas confondre avec l'objet de gardes
+ * FISCA_ADR_INVARIANTS de Doc_05 §14, exporté en fin de fichier.)
  */
-export const FISCA_ADR_INVARIANTS: readonly AdrInvariant[] = Object.freeze([
+export const FISCA_ADR_INVARIANT_CATALOG: readonly AdrInvariant[] = Object.freeze([
   entry({
     id: 'INV-ADR-01-01', adr: 'ADR-01', origin: 'DERIVE_GARDE_FOU_ADR', errorCode: 'ADR_01_POS_PREFIX_COLLISION',
     statement: 'Chaque caisse POS porte un préfixe matériel unique et non vide, pour exclure toute collision de numérotation hors-ligne.',
@@ -341,7 +476,7 @@ export const FISCA_ADR_INVARIANTS: readonly AdrInvariant[] = Object.freeze([
 /** Rejoue tous les cas embarqués ; retourne la liste des écarts (vide = harnais sain). */
 export function runAdrInvariantSelfCheck(): readonly string[] {
   const failures: string[] = [];
-  for (const invariant of FISCA_ADR_INVARIANTS) {
+  for (const invariant of FISCA_ADR_INVARIANT_CATALOG) {
     for (const input of invariant.conforming) {
       try {
         invariant.check(input);
@@ -362,3 +497,15 @@ export function runAdrInvariantSelfCheck(): readonly string[] {
   }
   return failures;
 }
+
+/**
+ * Objet de gardes tel que Doc_05 §14, Doc_14 §05 et Doc_17 §11 l'appellent :
+ * `FISCA_ADR_INVARIANTS.assertSafeMcpToolSchema(...)`.
+ */
+export const FISCA_ADR_INVARIANTS = Object.freeze({
+  assertSafeIntegerAmount,
+  assertValidVatRateForIssueYear,
+  assertCertificateMatchesEmitter,
+  assertSafeMcpToolSchema,
+  assertReadOnlySageSql,
+});

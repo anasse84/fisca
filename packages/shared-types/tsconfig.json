@@ -3,5 +3,11 @@
   "include": [
     "src",
     "tests"
-  ]
+  ],
+  "compilerOptions": {
+    "lib": [
+      "ES2023",
+      "DOM"
+    ]
+  }
 }
