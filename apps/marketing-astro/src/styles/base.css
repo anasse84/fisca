@@ -543,3 +543,135 @@ h3 {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* ----- Guides de silo (T-P2C-04) ----- */
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.breadcrumb li + li::before {
+  content: "/";
+  margin-inline-end: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.breadcrumb a[aria-current="page"] {
+  color: var(--text-secondary);
+  text-decoration: none;
+  pointer-events: none;
+}
+
+.verdict {
+  margin-block: 1.5rem 0;
+  padding-block: 1.25rem;
+  padding-inline: 1.5rem;
+  border: 1px solid var(--line-border);
+  border-inline-start: 6px solid var(--brand-emerald);
+  border-radius: 0.75rem;
+  background: var(--bg-subtle);
+}
+
+.verdict h2 {
+  margin-block-end: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.verdict p {
+  max-inline-size: 48rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.case-list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line-border);
+  border-radius: 0.5rem;
+  background: var(--bg-surface);
+}
+
+.case-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding-block: 0.6rem;
+  padding-inline: 1rem;
+  border-block-start: 1px solid var(--line-border);
+}
+
+.case-line:first-child {
+  border-block-start: 0;
+}
+
+.case-line-result {
+  background: var(--status-cleared-bg);
+  color: var(--status-cleared-text);
+  font-weight: 700;
+}
+
+.dated-list {
+  max-inline-size: 48rem;
+  margin: 0 0 1rem;
+  padding-inline-start: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.dated-state {
+  display: inline-block;
+  padding-block: 0.05rem;
+  padding-inline: 0.5rem;
+  border-radius: 999px;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dated-state-checked {
+  background: var(--status-cleared-bg);
+  color: var(--status-cleared-text);
+}
+
+.source-list,
+.related-list,
+.hub-list {
+  max-inline-size: 48rem;
+  margin: 0 0 1rem;
+  padding-inline-start: 1.25rem;
+}
+
+.source-kind {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.hub-list {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.hub-list li {
+  padding-block: 0.75rem;
+  border-block-start: 1px solid var(--line-border);
+}
+
+.hub-list p {
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.guide-disclaimer {
+  margin-block-start: 2.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--line-border);
+}

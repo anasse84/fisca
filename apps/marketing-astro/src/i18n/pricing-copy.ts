@@ -7,6 +7,8 @@ import {
   PACK_MOWAKABA_CABINET,
   TRIAL_DAYS,
 } from '../content/pricing.ts';
+import { BILLING_POLICY, PRORATA_FAQ_TOKEN, PRORATA_INTRO_TOKEN, prorataClause } from '../content/billing-policy.ts';
+import type { BillingPolicy, ProrataClause } from '../content/billing-policy.ts';
 import type { PosCondition, PricingFamilyId } from '../content/pricing.ts';
 import { formatBpsPercent, formatCentsMad } from '../lib/money.ts';
 import { copyLocaleOf } from './copy-locale.ts';
@@ -140,7 +142,7 @@ const FR: PricingCopy = {
   families: {
     PME: { heading: 'PME, TPE et indépendants', intro: 'Trois forfaits directs pour gérer facturation et pré-comptabilité en autonomie, plus le pack Mowakaba pour les TPME éligibles.' },
     POS: { heading: 'Caisse POS', intro: 'Un connecteur pour les caisses existantes, et la caisse tactile native de Fisca.' },
-    OEC: { heading: 'Cabinets comptables et fiduciaires', intro: 'Un socle cabinet fixe plus un prix par dossier client actif, calculé au prorata journalier pour un dossier ajouté en cours de mois.' },
+    OEC: { heading: 'Cabinets comptables et fiduciaires', intro: 'Un socle cabinet fixe plus un prix par dossier client actif, {fiduciary_prorata_intro}.' },
     CORPORATE_SOUVERAIN: { heading: 'Grands comptes et Fisca Souverain', intro: `Contrats annuels facturés d’avance, pour les entreprises dont le chiffre d’affaires dépasse ${MOWAKABA_MAX} M MAD HT (hors dispositif Mowakaba) ou détenues à plus de ${GROUP_OWNERSHIP} par un grand groupe.` },
   },
   offers: {
@@ -191,7 +193,7 @@ const FR: PricingCopy = {
     { question: 'Les prix sont-ils hors taxes ?', answer: 'Oui. Tous les montants affichés sont en dirhams hors taxes ; la taxe applicable est ajoutée à la facturation.' },
     { question: 'Comment fonctionne l’essai gratuit ?', answer: `L’essai Sandbox est gratuit et dure ${DAYS} jours.` },
     { question: 'Que signifie « 2 mois offerts » ?', answer: `En paiement annuel, vous réglez ${BILLED} mensualités pour 12 mois d’utilisation.` },
-    { question: 'Comment un cabinet est-il facturé ?', answer: `Un socle mensuel fixe, plus un prix mensuel par dossier client actif, au prorata journalier pour un dossier ajouté en cours de mois. Dès ${MIN_DOSSIERS} dossiers actifs, une remise de volume de ${DISCOUNT} s’applique aux lignes de dossiers ; le socle n’est pas remisé.` },
+    { question: 'Comment un cabinet est-il facturé ?', answer: `Un socle mensuel fixe, plus un prix mensuel par dossier client actif, {fiduciary_prorata_faq}. Dès ${MIN_DOSSIERS} dossiers actifs, une remise de volume de ${DISCOUNT} s’applique aux lignes de dossiers ; le socle n’est pas remisé.` },
     { question: 'Fisca est-il validé par l’administration fiscale ?', answer: 'Non : Fisca ne revendique aucune validation officielle de la DGI ni de xHub. L’envoi à la plateforme est aujourd’hui un pilote simulé, affiché « Validation simulée ».' },
     { question: 'Où sont hébergées mes données ?', answer: 'Offres standard : hébergement principal dans l’Union européenne avec un miroir au Maroc. Fisca Souverain : tout au Maroc. Le détail est sur la page Confidentialité.' },
     { question: 'Qui peut prendre un pack Mowakaba ?', answer: `Les TPME et cabinets dont le chiffre d’affaires est inférieur ou égal à ${MOWAKABA_MAX} M MAD HT. Une éventuelle prise en charge dépend de l’organisme financeur : Fisca ne la garantit pas.` },
@@ -225,7 +227,7 @@ const AR: PricingCopy = {
   families: {
     PME: { heading: 'المقاولات الصغيرة والمتوسطة والمستقلون', intro: 'ثلاث باقات مباشرة لتدبير الفوترة والمحاسبة الأولية باستقلالية، مع حزمة Mowakaba للمقاولات الصغيرة جدا والمتوسطة المؤهلة.' },
     POS: { heading: 'الصندوق POS', intro: 'موصل للصناديق الحالية، والصندوق اللمسي الأصلي من فيسكا.' },
-    OEC: { heading: 'المكاتب المحاسبية والشركات الاستئمانية', intro: 'قاعدة مكتب ثابتة مضافا إليها سعر لكل ملف زبون نشط، يُحتسب بالتناسب اليومي للملف المضاف خلال الشهر.' },
+    OEC: { heading: 'المكاتب المحاسبية والشركات الاستئمانية', intro: 'قاعدة مكتب ثابتة مضافا إليها سعر لكل ملف زبون نشط، {fiduciary_prorata_intro}.' },
     CORPORATE_SOUVERAIN: { heading: 'الحسابات الكبرى وفيسكا السيادية', intro: `عقود سنوية تُفوتر مسبقا للمقاولات التي يتجاوز رقم معاملاتها ${MOWAKABA_MAX} مليون درهم دون احتساب الضريبة (خارج برنامج Mowakaba) أو التي تملك مجموعة كبرى أكثر من ${GROUP_OWNERSHIP} من رأسمالها.` },
   },
   offers: {
@@ -276,7 +278,7 @@ const AR: PricingCopy = {
     { question: 'هل الأسعار دون احتساب الضريبة؟', answer: 'نعم. جميع المبالغ المعروضة بالدرهم دون احتساب الضريبة، وتضاف الضريبة المطبقة عند الفوترة.' },
     { question: 'كيف تعمل التجربة المجانية؟', answer: `التجربة في بيئة Sandbox مجانية ومدتها ${DAYS} يوما.` },
     { question: 'ماذا يعني «شهران مجانا»؟', answer: `عند الأداء السنوي، تدفع ${BILLED} دفعات شهرية مقابل 12 شهرا من الاستعمال.` },
-    { question: 'كيف يُفوتر المكتب المحاسبي؟', answer: `قاعدة شهرية ثابتة، مضافا إليها سعر شهري لكل ملف زبون نشط، بالتناسب اليومي للملف المضاف خلال الشهر. ابتداء من ${MIN_DOSSIERS} ملف نشط يُطبق تخفيض على الحجم قدره ${DISCOUNT} على أسطر الملفات؛ أما القاعدة فلا تُخفض.` },
+    { question: 'كيف يُفوتر المكتب المحاسبي؟', answer: `قاعدة شهرية ثابتة، مضافا إليها سعر شهري لكل ملف زبون نشط، {fiduciary_prorata_faq}. ابتداء من ${MIN_DOSSIERS} ملف نشط يُطبق تخفيض على الحجم قدره ${DISCOUNT} على أسطر الملفات؛ أما القاعدة فلا تُخفض.` },
     { question: 'هل صادقت الإدارة الضريبية على فيسكا؟', answer: 'لا: لا تدّعي فيسكا أي مصادقة رسمية من المديرية العامة للضرائب أو من xHub. الإرسال إلى المنصة هو حاليا تجربة محاكاة، وتظهر حالته «تحقق محاكى».' },
     { question: 'أين تُستضاف معطياتي؟', answer: 'العروض العادية: استضافة رئيسية في الاتحاد الأوروبي مع مرآة بالمغرب. فيسكا السيادية: كل شيء داخل المغرب. التفاصيل في صفحة الخصوصية.' },
     { question: 'من يمكنه اقتناء حزمة Mowakaba؟', answer: `المقاولات والمكاتب التي لا يتجاوز رقم معاملاتها ${MOWAKABA_MAX} مليون درهم دون احتساب الضريبة. وأي تحمل محتمل يعود إلى الجهة الممولة، ولا تضمنه فيسكا.` },
@@ -310,7 +312,7 @@ const ARY: PricingCopy = {
   families: {
     PME: { heading: 'الشركات الصغيرة والمتوسطة والمستقلين', intro: 'تلات باقات مباشرة باش تسيّر الفاتورة والمحاسبة الأولية بوحدك، وحزمة Mowakaba للشركات المؤهلة.' },
     POS: { heading: 'الكايس POS', intro: 'موصل للكيسات اللي عندك، والكايس اللمسي ديال فيسكا.' },
-    OEC: { heading: 'مكاتب المحاسبة والفيدوسيير', intro: 'قاعدة ثابتة ديال المكتب وزايد ثمن على كل دوسي ديال كليان نشيط، كيتحسب باليوم إيلا تزاد الدوسي فوسط الشهر.' },
+    OEC: { heading: 'مكاتب المحاسبة والفيدوسيير', intro: 'قاعدة ثابتة ديال المكتب وزايد ثمن على كل دوسي ديال كليان نشيط، {fiduciary_prorata_intro}.' },
     CORPORATE_SOUVERAIN: { heading: 'الحسابات الكبرى وفيسكا السيادية', intro: `عقود سنوية كتخلص بالسبيقة، للشركات اللي رقم المعاملات ديالها كتر من ${MOWAKABA_MAX} مليون درهم بلا TVA (برا Mowakaba) ولا اللي مجموعة كبيرة عندها فوق ${GROUP_OWNERSHIP}.` },
   },
   offers: {
@@ -361,7 +363,7 @@ const ARY: PricingCopy = {
     { question: 'واش الأثمنة بلا TVA؟', answer: 'إيه. كاع المبالغ بالدرهم وبلا TVA، والضريبة المطبّقة كتزاد فالفاتورة.' },
     { question: 'كيفاش كتخدم التجربة بلا فلوس؟', answer: `تجربة Sandbox بلاش ومدتها ${DAYS} يوم.` },
     { question: 'شنو يعني «شهرين بلاش»؟', answer: `فالخلاص السنوي، كتخلص ${BILLED} شهور على 12 شهر ديال الاستعمال.` },
-    { question: 'كيفاش كيتحسب المكتب؟', answer: `قاعدة شهرية ثابتة، وزايد ثمن شهري على كل دوسي ديال كليان نشيط، باليوم إيلا تزاد الدوسي فوسط الشهر. من ${MIN_DOSSIERS} دوسي نشيط كيتطبق تخفيض ${DISCOUNT} على سطور الدوسيات؛ والقاعدة ما كتنقصش.` },
+    { question: 'كيفاش كيتحسب المكتب؟', answer: `قاعدة شهرية ثابتة، وزايد ثمن شهري على كل دوسي ديال كليان نشيط، {fiduciary_prorata_faq}. من ${MIN_DOSSIERS} دوسي نشيط كيتطبق تخفيض ${DISCOUNT} على سطور الدوسيات؛ والقاعدة ما كتنقصش.` },
     { question: 'واش الإدارة الضريبية صادقات على فيسكا؟', answer: 'لا: فيسكا ما كتدّعي حتى مصادقة رسمية من DGI ولا من xHub. السيفاط للمنصة دابا غير تجربة بالمحاكاة، والحالة كتبان «تحقق بالمحاكاة».' },
     { question: 'فين كاينين المعطيات ديالي؟', answer: 'العروض العادية: الاستضافة الأساسية فالاتحاد الأوروبي ومرآة فالمغرب. فيسكا السيادية: كلشي فالمغرب. التفاصيل فصفحة الخصوصية.' },
     { question: 'شكون يقدر ياخذ حزمة Mowakaba؟', answer: `الشركات والمكاتب اللي رقم المعاملات ديالها ما كيفوتش ${MOWAKABA_MAX} مليون درهم بلا TVA. التكفل، إيلا كان، كيرجع للجهة الممولة وفيسكا ما كتضمنوش.` },
@@ -395,7 +397,7 @@ const EN: PricingCopy = {
   families: {
     PME: { heading: 'SMEs, small businesses and freelancers', intro: 'Three direct plans to run invoicing and pre-accounting on your own, plus the Mowakaba pack for eligible small businesses.' },
     POS: { heading: 'POS', intro: 'A connector for the tills you already use, and Fisca’s native touch POS.' },
-    OEC: { heading: 'Accounting firms and fiduciaries', intro: 'A fixed firm base plus a price per active client file, prorated by day for a file added mid-month.' },
+    OEC: { heading: 'Accounting firms and fiduciaries', intro: 'A fixed firm base plus a price per active client file, {fiduciary_prorata_intro}.' },
     CORPORATE_SOUVERAIN: { heading: 'Large accounts and Fisca Souverain', intro: `Annual contracts invoiced in advance, for companies with revenue above MAD ${MOWAKABA_MAX} million excluding tax (outside the Mowakaba scheme) or more than ${GROUP_OWNERSHIP} owned by a large group.` },
   },
   offers: {
@@ -446,7 +448,7 @@ const EN: PricingCopy = {
     { question: 'Are prices excluding tax?', answer: 'Yes. All amounts shown are in dirhams excluding tax; the applicable tax is added at invoicing.' },
     { question: 'How does the free trial work?', answer: `The Sandbox trial is free and lasts ${DAYS} days.` },
     { question: 'What does “2 months free” mean?', answer: `With annual payment, you pay ${BILLED} monthly payments for 12 months of use.` },
-    { question: 'How is an accounting firm billed?', answer: `A fixed monthly base plus a monthly price per active client file, prorated by day for a file added mid-month. From ${MIN_DOSSIERS} active files, a ${DISCOUNT} volume discount applies to the file lines; the base is not discounted.` },
+    { question: 'How is an accounting firm billed?', answer: `A fixed monthly base plus a monthly price per active client file, {fiduciary_prorata_faq}. From ${MIN_DOSSIERS} active files, a ${DISCOUNT} volume discount applies to the file lines; the base is not discounted.` },
     { question: 'Is Fisca validated by the tax administration?', answer: 'No: Fisca makes no claim of official validation by the DGI or xHub. Sending to the platform is a simulated pilot today, shown as “Simulated validation”.' },
     { question: 'Where is my data hosted?', answer: 'Standard plans: primary hosting in the European Union with a mirror in Morocco. Fisca Souverain: everything in Morocco. Details are on the Privacy page.' },
     { question: 'Who can take a Mowakaba pack?', answer: `SMEs and firms with revenue at or below MAD ${MOWAKABA_MAX} million excluding tax. Any funding depends on the funding body: Fisca does not guarantee it.` },
@@ -457,6 +459,19 @@ const EN: PricingCopy = {
 
 const PRICING_COPY: Readonly<Record<CopyLocale, PricingCopy>> = { fr: FR, ar: AR, ary: ARY, en: EN };
 
-export function getPricingCopy(locale: MarketingLocale): PricingCopy {
-  return PRICING_COPY[copyLocaleOf(locale)];
+function applyProrata<T>(value: T, clause: ProrataClause): T {
+  if (typeof value === 'string') {
+    return value.replaceAll(PRORATA_INTRO_TOKEN, clause.intro).replaceAll(PRORATA_FAQ_TOKEN, clause.faq) as T;
+  }
+  if (Array.isArray(value)) return value.map((item: unknown) => applyProrata(item, clause)) as T;
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, applyProrata(v, clause)])) as T;
+  }
+  return value;
+}
+
+/** Le choix de prorata fiduciaire vient de `billing-policy.ts` (source unique, injectable pour les tests). */
+export function getPricingCopy(locale: MarketingLocale, policy: BillingPolicy = BILLING_POLICY): PricingCopy {
+  const copyLocale = copyLocaleOf(locale);
+  return applyProrata(PRICING_COPY[copyLocale], prorataClause(copyLocale, policy));
 }

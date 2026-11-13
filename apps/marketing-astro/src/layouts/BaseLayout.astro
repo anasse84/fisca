@@ -10,6 +10,9 @@ import { buildPageHead } from '../i18n/head.ts';
 import { LOCALE_URL_PREFIX } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { FALLBACK_NOTICE, getSiteCopy } from '../i18n/site-copy.ts';
+import { SILOS } from '../content/silos/registry.ts';
+import { UI } from '../content/silos/ui-copy.ts';
+import { copyLocaleOf } from '../i18n/copy-locale.ts';
 import { buildFiscaJsonLdGraph } from '../seo/jsonld.ts';
 import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
 
@@ -22,9 +25,11 @@ interface Props {
   howTo?: HowToInput;
   faqs?: readonly FaqPair[];
   catalogOffers?: readonly CatalogOffer[];
+  /** Page sous le seuil de qualité (Doc_18 S10) : noindex, follow. */
+  noindex?: boolean;
 }
 
-const { locale, slug, title, description, legislation, howTo, faqs, catalogOffers } = Astro.props;
+const { locale, slug, title, description, legislation, howTo, faqs, catalogOffers, noindex } = Astro.props;
 const head = buildPageHead(locale, slug, { title, description });
 const site = getSiteCopy(locale);
 const prefix = LOCALE_URL_PREFIX[locale];
@@ -40,6 +45,8 @@ const jsonLd = buildFiscaJsonLdGraph({
   ...(catalogOffers === undefined ? {} : { catalogOffers }),
 });
 const cndpNumbers = CNDP_REFERENCES.filter(hasCndpNumber);
+const copyLocale = copyLocaleOf(locale);
+const guideLinks = SILOS.map((silo) => ({ href: `/${prefix}/${silo.slug}`, label: silo.title[copyLocale] }));
 const current = slug.replace(/^\/+|\/+$/g, '');
 const navItems = [
   { href: `/${prefix}/`, label: site.navHome, active: current === '' },
@@ -54,6 +61,7 @@ const navItems = [
     <title>{head.title}</title>
     <meta name="description" content={head.description} />
     <meta name="color-scheme" content="light dark" />
+    {noindex === true && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={head.canonical} />
     {head.alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
     <meta property="og:type" content="website" />
@@ -105,6 +113,11 @@ const navItems = [
         <ul class="footer-links">
           {navItems.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
         </ul>
+        <nav aria-label={UI.guides[copyLocale]}>
+          <ul class="footer-links">
+            {guideLinks.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+          </ul>
+        </nav>
       </div>
     </footer>
   </body>

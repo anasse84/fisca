@@ -1,4 +1,5 @@
 import { MCP_MANIFEST_PATH, NON_INDEXABLE_HOSTS } from '../content/identity.ts';
+import { SITE_ORIGIN } from '../i18n/hreflang.ts';
 
 /** Doc_18 S03 : bots IA explicitement autorisés. */
 export const AI_BOTS_ALLOWED: readonly string[] = [
@@ -23,7 +24,7 @@ export function buildRobotsTxt(): string {
     `# Découverte agentique : /llms.txt, /llms-full.txt, ${MCP_MANIFEST_PATH}`,
     '',
   ].join('\n');
-  return `${note}${blocks.join('\n')}`;
+  return `${note}${blocks.join('\n')}\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
 }
 
 /** Contenu du robots.txt des sous-domaines app., pos. et api. */

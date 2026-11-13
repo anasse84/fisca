@@ -28,8 +28,16 @@ export function formatCentsMad(cents: number): string {
 }
 
 /** Division entière arrondie au demi supérieur, en BigInt (ERRATA D-09 : jamais `Math.round(a / b)`). */
-function divRoundHalfUp(numerator: bigint, denominator: bigint): bigint {
+export function divRoundHalfUpBigInt(numerator: bigint, denominator: bigint): bigint {
+  if (denominator <= 0n) throw new RangeError('divRoundHalfUpBigInt : diviseur positif attendu');
   return (numerator * 2n + denominator) / (denominator * 2n);
+}
+
+/** `cents x bps / 10 000`, demi supérieur, entiers uniquement (quote-part en points de base). */
+export function mulBps(amountCents: number, rateBps: number): number {
+  assertIntegerCents(amountCents);
+  if (!Number.isSafeInteger(rateBps) || rateBps < 0) throw new RangeError(`Points de base invalides : ${String(rateBps)}`);
+  return Number(divRoundHalfUpBigInt(BigInt(amountCents) * BigInt(rateBps), 10000n));
 }
 
 const BPS_SCALE = 10000;
@@ -40,7 +48,7 @@ export function applyDiscountBps(cents: number, discountBps: number): number {
   if (!Number.isSafeInteger(discountBps) || discountBps < 0 || discountBps > BPS_SCALE) {
     throw new RangeError(`Remise en points de base invalide : ${String(discountBps)}`);
   }
-  const result = divRoundHalfUp(BigInt(cents) * BigInt(BPS_SCALE - discountBps), BigInt(BPS_SCALE));
+  const result = divRoundHalfUpBigInt(BigInt(cents) * BigInt(BPS_SCALE - discountBps), BigInt(BPS_SCALE));
   return Number(result);
 }
 

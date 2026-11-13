@@ -11,6 +11,8 @@ import {
 } from './pricing.ts';
 import type { PricingFamilyId, RecurringPlanCode } from './pricing.ts';
 import { fill } from '../i18n/copy-locale.ts';
+import { BILLING_POLICY } from './billing-policy.ts';
+import type { BillingPolicy } from './billing-policy.ts';
 import { getPricingCopy } from '../i18n/pricing-copy.ts';
 import type { FaqCopy, OfferCode, PricingCopy } from '../i18n/pricing-copy.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
@@ -293,8 +295,8 @@ function enterpriseTable(copy: PricingCopy): TableView {
 }
 
 /** Modèle unique de la page tarifs : source du HTML, du miroir Markdown, de llms.txt et du JSON-LD (FAQ). */
-export function buildPricingView(locale: MarketingLocale): PricingView {
-  const copy = getPricingCopy(locale);
+export function buildPricingView(locale: MarketingLocale, policy: BillingPolicy = BILLING_POLICY): PricingView {
+  const copy = getPricingCopy(locale, policy);
   return {
     locale,
     copy,

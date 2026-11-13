@@ -2,7 +2,8 @@ import { getHomeCopy, isFallbackCopy } from '../i18n/home-copy.ts';
 import { getSiteCopy } from '../i18n/site-copy.ts';
 import { buildPricingView, pricingMarkdownSections } from './pricing-view.ts';
 import { buildPrivacyView, privacyMarkdownSections } from './privacy-view.ts';
-import type { FaqPair } from '../seo/jsonld.ts';
+import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
+import { SILO_PAGES } from './silos/registry.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES, localeFromPrefix } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { buildCanonicalUrl } from '../i18n/hreflang.ts';
@@ -26,6 +27,12 @@ export interface EditorialPage {
   readonly sections: readonly EditorialSection[];
   /** Questions fréquentes de la page : source du JSON-LD FAQPage et du miroir Markdown. */
   readonly faqs?: readonly FaqPair[];
+  /** Vrai : page servie en noindex et exclue du sitemap (seuil de qualité Doc_18 S10 non atteint). */
+  readonly noindex?: boolean;
+  /** Référence légale principale : nœud Legislation du JSON-LD. */
+  readonly legislation?: LegislationRef;
+  /** Étapes HowTo du JSON-LD. */
+  readonly howTo?: HowToInput;
 }
 
 /** Slugs des pages enregistrées (identiques dans les 6 langues, Doc_18 S11 `buildMultilingualAlternates`). */
@@ -103,16 +110,21 @@ function privacyPage(locale: MarketingLocale): EditorialPage {
   };
 }
 
-/** T-P2C-03 : accueil, tarifs et confidentialité dans les 6 langues ; les silos s'ajoutent aux tickets suivants. */
+/** T-P2C-03 : accueil, tarifs et confidentialité dans les 6 langues (socle du site, hors silos). */
 export const EDITORIAL_PAGES: readonly EditorialPage[] = [
   ...MARKETING_LOCALES.map(homePage),
   ...MARKETING_LOCALES.map(pricingPage),
   ...MARKETING_LOCALES.map(privacyPage),
 ];
 
+/** T-P2C-04 : socle + 4 hubs de silo + 78 routes de silos, chacun en 6 langues (18 + 24 + 468 = 510 pages). */
+export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES];
+
+const PAGE_INDEX: ReadonlyMap<string, EditorialPage> = new Map(ALL_EDITORIAL_PAGES.map((p) => [`${p.locale}|${p.slug}`, p]));
+
 export function findEditorialPage(locale: MarketingLocale, slug: string): EditorialPage | undefined {
   const clean = slug.replace(/^\/+|\/+$/g, '');
-  return EDITORIAL_PAGES.find((p) => p.locale === locale && p.slug === clean);
+  return PAGE_INDEX.get(`${locale}|${clean}`);
 }
 
 /** `/fr/`, `/fr`, `/fr/guides/x/` -> page du registre (chemin HTML, pas le jumeau .md). */

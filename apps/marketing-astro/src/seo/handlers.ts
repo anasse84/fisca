@@ -1,10 +1,12 @@
-import { EDITORIAL_PAGES, findEditorialPageByMirrorPath, findEditorialPageByPath } from '../content/pages.ts';
+import { ALL_EDITORIAL_PAGES, findEditorialPageByMirrorPath, findEditorialPageByPath } from '../content/pages.ts';
+import type { EditorialPage } from '../content/pages.ts';
 import { PRICING_CATALOG_OFFERS, PRICING_PLANS } from '../content/pricing.ts';
 import { buildLlmsFullTxt, buildLlmsTxt } from './llms.ts';
 import { buildMcpManifest } from './mcp-manifest.ts';
 import { markdownResponse } from './mirror.ts';
 import { prefersMarkdown } from './negotiation.ts';
 import { buildRobotsTxt } from './robots.ts';
+import { buildSitemapXml } from './sitemap.ts';
 
 const TEXT = 'text/plain; charset=utf-8';
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -15,12 +17,26 @@ function textResponse(body: string, contentType: string, extra: Readonly<Record<
   return new Response(body, { status: 200, headers: { 'Content-Type': contentType, 'Cache-Control': CACHE, ...extra } });
 }
 
+/** Pages publiées pour les agents : les pages noindex (seuil Doc_18 S10 non atteint) n'y figurent pas. */
+export function publishedPages(): readonly EditorialPage[] {
+  return ALL_EDITORIAL_PAGES.filter((p) => p.noindex !== true);
+}
+
+/** llms.txt (index court) : socle et hubs dans les 6 langues, arbre complet des guides en français. */
+export function llmsIndexPages(): readonly EditorialPage[] {
+  return publishedPages().filter((p) => p.locale === 'fr' || p.slug.split('/').length < 2);
+}
+
 export function handleLlmsTxt(): Response {
-  return textResponse(buildLlmsTxt(PRICING_PLANS, EDITORIAL_PAGES, PRICING_CATALOG_OFFERS), TEXT);
+  return textResponse(buildLlmsTxt(PRICING_PLANS, llmsIndexPages(), PRICING_CATALOG_OFFERS), TEXT);
 }
 
 export function handleLlmsFullTxt(): Response {
-  return textResponse(buildLlmsFullTxt(PRICING_PLANS, EDITORIAL_PAGES, PRICING_CATALOG_OFFERS), TEXT);
+  return textResponse(buildLlmsFullTxt(PRICING_PLANS, publishedPages(), PRICING_CATALOG_OFFERS), TEXT);
+}
+
+export function handleSitemapXml(): Response {
+  return textResponse(buildSitemapXml(ALL_EDITORIAL_PAGES), 'application/xml; charset=utf-8');
 }
 
 export function handleRobotsTxt(): Response {

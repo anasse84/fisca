@@ -20,9 +20,11 @@ export function renderPageMarkdown(page: EditorialPage): string {
 
 export function markdownResponse(page: EditorialPage, method: string): Response {
   const body = renderPageMarkdown(page);
+  const robots: Record<string, string> = page.noindex === true ? { 'X-Robots-Tag': 'noindex, follow' } : {};
   return new Response(method === 'HEAD' ? null : body, {
     status: 200,
     headers: {
+      ...robots,
       'Content-Type': MARKDOWN_CONTENT_TYPE,
       'Content-Language': page.contentLanguage,
       Vary: 'Accept',
