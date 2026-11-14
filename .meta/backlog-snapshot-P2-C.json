@@ -98,9 +98,9 @@
       "retry_count": 0,
       "tests_green": "true",
       "verify_cmd": "pnpm --filter @fisca/marketing-astro test",
-      "review_notes": "Livré sur le sous-ensemble de 60 comptes décidé par le propriétaire (2026-11-14) : 60 fiches fr/ar/en indexables (180 URL), ary et zgh en noindex, hub 6 langues. Jeu source propriétaire non recoupé. codeEdi null. 6 comptes cités sans fiche : 4481, 6114, 6193, 6195, 6701, 8600 (numéro nu). À valider : ary/zgh noindex (hreflang pointent vers noindex), intitulés d'écriture réécrits sans taux (JSON intact), traductions rédigées par la voie (rubriques, règles TVA, classes) à faire relire par un expert-comptable. Lighthouse non mesuré sur les fiches (à faire avec T-P2C-08). Registre : MKT-SILO3-CGNC PROVISIONAL.",
+      "review_notes": "Correctif V2 du propriétaire appliqué (7ebe34d) : jeu FISCA_CGNC_CORE_V2, 61 comptes, 183 URL indexables (61 × fr, ar, en), 34551 = sur immobilisations et 34552 = sur charges (règles RECOUVERABLE renommées), 1161 ajouté et 1181 relibellé, 34558/44551/44558 = subdivisions analytiques Fisca (parent 3455/4455), 44525 libellé historique « État, IGR ». Écart consigné : le propriétaire parlait de 57 + 3 = 60 ; l'ajout de 1161 donne 58 + 3 = 61. Source propriétaire non recoupée, codeEdi null. 6 comptes cités sans fiche : 4481, 6114, 6193, 6195, 6701, 8600. verify:fast exit 0 (468 tests). Lighthouse médiane de 3 passes : /fr/, /fr/tarifs, /en/, /fr/…/compte-34551 = 100 ; /ar/…/compte-44558 = perf 99, autres 100. À valider : titres analytiques sans « CGNC » ; la phrase XSD imposée contient « officiel » sur toutes les fiches ; traductions des libellés et rubriques à relire par un expert-comptable.",
       "updated_at": "2026-11-13",
-      "commit_url": "https://github.com/anasse84/fisca/commit/3da1077",
+      "commit_url": "https://github.com/anasse84/fisca/commit/7ebe34d",
       "id": "cmwegx83a01ke06ad56snnjqb"
     },
     {
