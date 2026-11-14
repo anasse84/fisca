@@ -223,7 +223,6 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
     expect((await failure(() => w.engine.visaCycle(w.aide, { entryId, idempotencyKey: w.key() }))).code).toBe('LEDGER_ACCESS_DENIED');
     expect((await failure(() => w.engine.sealEntry(fresh(w, w.aide), { entryId, idempotencyKey: w.key() }))).denialCode).toBe('RBAC_FORBIDDEN_FOR_AIDE_COMPTABLE');
     expect((await failure(() => w.engine.sealEntry(fresh(w, w.chef), { entryId, idempotencyKey: w.key() }))).denialCode).toBe('RBAC_FORBIDDEN_FOR_CHEF_MISSION');
-    expect((await failure(() => w.engine.visaCycle(w.gerant, { entryId, idempotencyKey: w.key() }))).denialCode).toBe('RBAC_FORBIDDEN_FOR_OWNER_GERANT');
     const outsider = actorOf('CHEF_MISSION', 'u-autre', { assignedCompanyIds: ['soc-autre'] }, w.clock);
     expect((await failure(() => w.engine.visaCycle(outsider, { entryId, idempotencyKey: w.key() }))).denialCode).toBe('ABAC_TENANT_OUT_OF_SCOPE');
     const mcp = actorOf('AI_MCP_ACTOR', 'u-mcp', {}, w.clock);
@@ -241,6 +240,14 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
     expect(await statusOf(w, entryId)).toBe('REVISEE_CYCLE');
     expect(await auditCount(w, entryId)).toBe(2);
     expect(BASE_EPOCH_SEC).toBeGreaterThan(0);
+  });
+
+  it('le gérant (LEDGER_VISA_CYCLE, arbitrage du propriétaire) vise un brouillon : DRAFT → REVISEE_CYCLE', async () => {
+    const w = await setup();
+    const { entryId } = await w.engine.createDraft(w.aide, draftInput());
+    await w.engine.submitDraft(w.aide, { entryId, idempotencyKey: w.key() });
+    expect(await w.engine.visaCycle(w.gerant, { entryId, idempotencyKey: w.key() })).toMatchObject({ fromState: 'DRAFT', toState: 'REVISEE_CYCLE', replayed: false });
+    expect(await statusOf(w, entryId)).toBe('REVISEE_CYCLE');
   });
 
   it('sources injectées : un identifiant qui n\'est pas un UUIDv7 et une empreinte mal formée sont refusés avant toute écriture', async () => {

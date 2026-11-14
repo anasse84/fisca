@@ -54,6 +54,16 @@ describe('POST /api/v1/ledger/entries/:id/visa (moteur : visaCycle, DRAFT → RE
     expect(await statusOf(kit, second)).toBe('DRAFT');
   });
 
+  it('le gérant (LEDGER_VISA_CYCLE, arbitrage du propriétaire, Loi 9-88) vise une pièce DRAFT : 200, statut et audit écrits', async () => {
+    const kit = await buildKit();
+    const id = await kit.entryAt('DRAFT');
+    const response = await kit.call('POST', VISA(id), { user: USER_1 });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ entryId: id, fromState: 'DRAFT', toState: 'REVISEE_CYCLE', replayed: false });
+    expect(await statusOf(kit, id)).toBe('REVISEE_CYCLE');
+    expect(await visaAudits(kit, id)).toBe(1);
+  });
+
   it('400 : identifiant non UUIDv7, corps avec champ superflu, corps illisible ; pièce intacte', async () => {
     const kit = await buildKit();
     const id = await kit.entryAt('DRAFT');
@@ -63,10 +73,10 @@ describe('POST /api/v1/ledger/entries/:id/visa (moteur : visaCycle, DRAFT → RE
     expect(await statusOf(kit, id)).toBe('DRAFT');
   });
 
-  it('403 LEDGER_ACCESS_DENIED : aide-comptable, gérant (jamais LEDGER_VISA_CYCLE), caissier ; pièce intacte, aucun audit', async () => {
+  it('403 LEDGER_ACCESS_DENIED : aide-comptable et caissier (sans LEDGER_VISA_CYCLE) ; pièce intacte, aucun audit', async () => {
     const kit = await buildKit();
     const id = await kit.entryAt('DRAFT');
-    for (const user of [USER_AIDE, USER_1, 'user-caissier']) {
+    for (const user of [USER_AIDE, 'user-caissier']) {
       expect((await problem(await kit.call('POST', VISA(id), { user }), 403)).errorCode).toBe('LEDGER_ACCESS_DENIED');
     }
     expect(await statusOf(kit, id)).toBe('DRAFT');
