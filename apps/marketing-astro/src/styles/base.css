@@ -951,3 +951,38 @@ h3 {
 .tool-results > * {
   min-inline-size: 0;
 }
+
+/* ----- Dictionnaire CGNC (T-P2C-05) ----- */
+
+.cgnc-provenance {
+  margin-block: 0.25rem 0;
+  font-weight: 600;
+}
+
+.cgnc-code-edi {
+  margin-block-start: 1rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  border-inline-start: 4px solid var(--status-warning-text);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+}
+
+.cgnc-entry tfoot th,
+.cgnc-entry tfoot td {
+  border-block-start: 2px solid var(--line-border);
+  font-weight: 700;
+}
+
+.cgnc-line-label {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.cgnc-group {
+  margin-block-end: 1.5rem;
+}
+
+.cgnc-group h3 {
+  margin-block: 1.5rem 0.5rem;
+}

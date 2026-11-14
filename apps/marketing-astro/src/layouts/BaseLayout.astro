@@ -11,6 +11,8 @@ import { LOCALE_URL_PREFIX } from '../i18n/locales.ts';
 import type { MarketingLocale } from '../i18n/locales.ts';
 import { FALLBACK_NOTICE, getSiteCopy } from '../i18n/site-copy.ts';
 import { SILOS } from '../content/silos/registry.ts';
+import { CGNC_HUB_SLUG } from '../content/cgnc/registry.ts';
+import { HUB_TITLE, cgncLocaleOf } from '../content/cgnc/copy.ts';
 import { COMMON, TOOLS_HUB_SLUG } from '../tools/copy/common.ts';
 import { UI } from '../content/silos/ui-copy.ts';
 import { copyLocaleOf } from '../i18n/copy-locale.ts';
@@ -47,7 +49,10 @@ const jsonLd = buildFiscaJsonLdGraph({
 });
 const cndpNumbers = CNDP_REFERENCES.filter(hasCndpNumber);
 const copyLocale = copyLocaleOf(locale);
-const guideLinks = SILOS.map((silo) => ({ href: `/${prefix}/${silo.slug}`, label: silo.title[copyLocale] }));
+const guideLinks = [
+  ...SILOS.map((silo) => ({ href: `/${prefix}/${silo.slug}`, label: silo.title[copyLocale] })),
+  { href: `/${prefix}/${CGNC_HUB_SLUG}`, label: HUB_TITLE[cgncLocaleOf(locale)] },
+];
 const current = slug.replace(/^\/+|\/+$/g, '');
 const navItems = [
   { href: `/${prefix}/`, label: site.navHome, active: current === '' },

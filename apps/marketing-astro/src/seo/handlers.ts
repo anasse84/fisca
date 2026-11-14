@@ -18,13 +18,21 @@ function textResponse(body: string, contentType: string, extra: Readonly<Record<
 }
 
 /** Pages publiées pour les agents : les pages noindex (seuil Doc_18 S10 non atteint) n'y figurent pas. */
+export function selectPublished(pages: readonly EditorialPage[]): readonly EditorialPage[] {
+  return pages.filter((p) => p.noindex !== true);
+}
+
 export function publishedPages(): readonly EditorialPage[] {
-  return ALL_EDITORIAL_PAGES.filter((p) => p.noindex !== true);
+  return selectPublished(ALL_EDITORIAL_PAGES);
+}
+
+export function selectLlmsIndex(pages: readonly EditorialPage[]): readonly EditorialPage[] {
+  return selectPublished(pages).filter((p) => p.locale === 'fr' || p.slug.split('/').length < 2);
 }
 
 /** llms.txt (index court) : socle et hubs dans les 6 langues, arbre complet des guides en français. */
 export function llmsIndexPages(): readonly EditorialPage[] {
-  return publishedPages().filter((p) => p.locale === 'fr' || p.slug.split('/').length < 2);
+  return selectLlmsIndex(ALL_EDITORIAL_PAGES);
 }
 
 export function handleLlmsTxt(): Response {

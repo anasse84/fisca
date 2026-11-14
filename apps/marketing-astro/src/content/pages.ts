@@ -3,6 +3,7 @@ import { getSiteCopy } from '../i18n/site-copy.ts';
 import { buildPricingView, pricingMarkdownSections } from './pricing-view.ts';
 import { buildPrivacyView, privacyMarkdownSections } from './privacy-view.ts';
 import type { FaqPair, HowToInput, LegislationRef } from '../seo/jsonld.ts';
+import { CGNC_PAGES } from './cgnc/registry.ts';
 import { SILO_PAGES } from './silos/registry.ts';
 import { TOOL_PAGES } from '../tools/registry.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES, localeFromPrefix } from '../i18n/locales.ts';
@@ -34,6 +35,8 @@ export interface EditorialPage {
   readonly legislation?: LegislationRef;
   /** Étapes HowTo du JSON-LD. */
   readonly howTo?: HowToInput;
+  /** Langues listées au sitemap pour ce slug ; absent : les 6 langues. Les autres langues restent servies, en noindex. */
+  readonly indexLocales?: readonly MarketingLocale[];
 }
 
 /** Slugs des pages enregistrées (identiques dans les 6 langues, Doc_18 S11 `buildMultilingualAlternates`). */
@@ -123,7 +126,10 @@ export const EDITORIAL_PAGES: readonly EditorialPage[] = [
  * T-P2C-06 : + hub des outils et 3 outils publics, 6 langues (24 pages) : 534 pages.
  * T-P2C-07 : + 2 outils (simulateur auto-entrepreneur, estimateur Mowakaba), 6 langues (12 pages) : 546 pages.
  */
-export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES, ...TOOL_PAGES];
+/**
+ * T-P2C-05 : + Silo 3, hub et 60 fiches de compte CGNC, 6 langues (366 pages : 546 + 366 = 912 pages).
+ */
+export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES, ...CGNC_PAGES, ...TOOL_PAGES];
 
 const PAGE_INDEX: ReadonlyMap<string, EditorialPage> = new Map(ALL_EDITORIAL_PAGES.map((p) => [`${p.locale}|${p.slug}`, p]));
 

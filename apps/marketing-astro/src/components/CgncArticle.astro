@@ -1,0 +1,110 @@
+---
+import AmountText from './AmountText.astro';
+import Money from './Money.astro';
+import type { CgncAccountView } from '../content/cgnc/build.ts';
+
+interface Props {
+  view: CgncAccountView;
+}
+
+const { view } = Astro.props;
+---
+<nav class="breadcrumb" aria-label={view.labels.breadcrumbLabel}>
+  <ol>
+    {view.breadcrumb.map((crumb, index) => (
+      <li><a href={crumb.href} aria-current={index === view.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+    ))}
+  </ol>
+</nav>
+<article>
+  <h1>{view.title}</h1>
+  <p class="note cgnc-provenance">{view.provenance}</p>
+  <section class="verdict" aria-labelledby="verdict">
+    <h2 id="verdict">{view.labels.verdict}</h2>
+    <p><AmountText text={view.verdict} /></p>
+  </section>
+  {!view.quality.indexable && <p class="note">{view.labels.notIndexed}</p>}
+
+  <section class="section" aria-labelledby="fiche">
+    <h2 id="fiche">{view.labels.tableHeading}</h2>
+    <div class="table-scroll" role="region" aria-label={view.table.caption} tabindex="0">
+      <table class="data-table">
+        <caption>{view.table.caption}</caption>
+        <thead>
+          <tr>{view.table.columns.map((column) => <th scope="col">{column}</th>)}</tr>
+        </thead>
+        <tbody>
+          {view.table.rows.map((row) => (
+            <tr>
+              <th scope="row">{row[0]}</th>
+              <td><AmountText text={row[1] ?? ''} /></td>
+              <td>{row[2]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="ecriture">
+    <h2 id="ecriture">{view.labels.caseHeading}</h2>
+    <p class="section-intro">{view.entry.description}</p>
+    <div class="table-scroll" role="region" aria-label={view.entry.caption} tabindex="0">
+      <table class="data-table cgnc-entry">
+        <caption>{view.entry.caption}</caption>
+        <thead>
+          <tr>{view.entry.columns.map((column) => <th scope="col">{column}</th>)}</tr>
+        </thead>
+        <tbody>
+          {view.entry.lines.map((line) => (
+            <tr>
+              <th scope="row">
+                {line.href !== null
+                  ? <a href={line.href} class="fisca-tabular-num" dir="ltr">{line.account}</a>
+                  : <span class="fisca-tabular-num" dir="ltr">{line.account}</span>}
+                {line.label !== null && <span class="cgnc-line-label"> {line.label}</span>}
+              </th>
+              <td>{line.debitCents !== null && <Money cents={line.debitCents} />}</td>
+              <td>{line.creditCents !== null && <Money cents={line.creditCents} />}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr class="case-line-result">
+            <th scope="row">{view.entry.totalLabel}</th>
+            <td><Money cents={view.entry.totalCents} /></td>
+            <td><Money cents={view.entry.totalCents} /></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="note cgnc-code-edi">{view.codeEdiNotice}</p>
+  </section>
+
+  <section class="section" aria-labelledby="sources">
+    <h2 id="sources">{view.labels.sourcesHeading}</h2>
+    <ul class="source-list">
+      {view.sources.map((source) => <li>{source.label} <span class="source-kind">({source.kindLabel})</span></li>)}
+    </ul>
+  </section>
+
+  <section class="section faq" aria-labelledby="faq">
+    <h2 id="faq">{view.labels.faqHeading}</h2>
+    {view.faqs.map((item) => (
+      <details>
+        <summary>{item.question}</summary>
+        <p><AmountText text={item.answer} /></p>
+      </details>
+    ))}
+  </section>
+
+  <p class="actions"><a class="button" href={view.cta.href}>{view.cta.label}</a></p>
+
+  <section class="section" aria-labelledby="liees">
+    <h2 id="liees">{view.labels.relatedHeading}</h2>
+    <ul class="related-list">
+      {view.related.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+    </ul>
+  </section>
+  <p class="note guide-disclaimer">{view.disclaimer}</p>
+</article>
