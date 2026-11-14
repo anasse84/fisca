@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement } from 'react';
 import { FISCA_LOCALES, directionOf } from '@fisca/i18n';
 import type { FiscaLocale } from '@fisca/i18n';
@@ -6,7 +6,11 @@ import { buildConversionUrl, resolveConversionView } from '../b2b/qr-conversion.
 import type { ConversionTracker, ConversionView } from '../b2b/qr-conversion.ts';
 import { readTicketConversion } from '../b2b/ticket-conversion-reader.ts';
 import { buildOfflineIndicatorModel } from '../offline/offline-indicator.ts';
-import { evaluateOfflineWindow } from '../offline/offline-window.ts';
+import { OFFLINE_WINDOW_HOURS, evaluateOfflineWindow } from '../offline/offline-window.ts';
+import type { ClosingPorts } from '../closing/closing-ports.ts';
+import { buildZDocument, renderZEscPos } from '../closing/z-print.ts';
+import type { ZTicketData } from '../closing/z-layout.ts';
+import type { SyncStateSource } from '../sync/sync-types.ts';
 import { EscPosBuilder, columnsForWidth } from '../printing/escpos.ts';
 import type { PaperWidthMm, PrinterProfile } from '../printing/escpos.ts';
 import { PrintError } from '../printing/print-queue.ts';
@@ -24,11 +28,13 @@ import type { CashStampRulePort } from '../ticketing/cash-stamp.ts';
 import { B2bQrPanel } from './B2bQrPanel.tsx';
 import { CartPanel } from './CartPanel.tsx';
 import { CatalogGrid } from './CatalogGrid.tsx';
+import { ClosingFlow } from './ClosingFlow.tsx';
+import { SyncIndicator } from './SyncIndicator.tsx';
 import { OfflineBanner } from './OfflineBanner.tsx';
 import { PaymentPad } from './PaymentPad.tsx';
 import type { PaymentMethod } from './PaymentPad.tsx';
 import { ReceiptPreview } from './ReceiptPreview.tsx';
-import { receiptLabelSetOf, resolvePosLabels, translateStrict } from './labels.ts';
+import { receiptLabelSetOf, resolvePosLabels, translateStrict, zLabelSetOf } from './labels.ts';
 import './pos.css';
 
 export interface SyncSnapshotProp {
@@ -58,9 +64,13 @@ export interface PosCounterAppProps {
   readonly receipt: ReceiptConfig;
   readonly printQueue?: PrintQueue;
   readonly conversion: ConversionTracker;
+  /** Ports de fin de poste (comptage aveugle, Ticket Z) : absents, pas de bouton de clôture. */
+  readonly closing?: ClosingPorts;
+  /** État du synchroniseur (moteur ou équivalent) : absent, pas d'indicateur de synchro. */
+  readonly syncSource?: SyncStateSource;
 }
 
-type View = 'sale' | 'pay' | 'receipt';
+type View = 'sale' | 'pay' | 'receipt' | 'closing';
 
 interface PaymentState {
   readonly method: PaymentMethod;
@@ -95,7 +105,14 @@ export function PosCounterApp(props: PosCounterAppProps): ReactElement {
   const [widthMm, setWidthMm] = useState<PaperWidthMm>(props.receipt.profile.paperWidthMm);
   const [printedNotice, setPrintedNotice] = useState(false);
   const [printError, setPrintError] = useState<PrintError | null>(null);
+  const [sessionClosed, setSessionClosed] = useState(props.closing?.sealedClosure !== undefined && props.closing.sealedClosure !== null);
   const [, bump] = useReducer((n: number) => n + 1, 0);
+  const noSource = useMemo<SyncStateSource | null>(() => null, []);
+  const syncSource = props.syncSource ?? noSource;
+  const syncState = useSyncExternalStore(
+    useCallback((listener: () => void) => (syncSource === null ? () => undefined : syncSource.subscribe(listener)), [syncSource]),
+    () => (syncSource === null ? null : syncSource.getState()),
+  );
   const catalogRef = useRef(props.catalog);
   catalogRef.current = props.catalog;
 
@@ -257,6 +274,11 @@ export function PosCounterApp(props: PosCounterAppProps): ReactElement {
     void props.printQueue.retry().then(() => setPrintedNotice(true), (error: unknown) => setPrintError(error instanceof PrintError ? error : new PrintError('TRANSPORT_FAILED', String(error))));
   };
 
+  const printZ = async (data: ZTicketData): Promise<void> => {
+    if (props.printQueue === undefined) return;
+    await props.printQueue.enqueue(renderZEscPos(buildZDocument(data, profile, zLabelSetOf('fr'), zLabelSetOf('ar')), profile));
+  };
+
   const retryLabel = translateStrict(locale, 'common', 'actions.retry');
   const errorText = errorCode === null ? null : labels.err[errorCode];
   const emptySettlement: Settlement = { status: 'EMPTY', goodsTtcCents: totals.totalTtcCents, cardCents: 0, deliveryCents: 0, cashShareCents: 0, stampCents: 0, cashDueCents: 0, cashTenderedCents: 0, changeCents: 0, shortfallCents: 0, remainingCents: 0 };
@@ -266,6 +288,14 @@ export function PosCounterApp(props: PosCounterAppProps): ReactElement {
       <header className="pos-header">
         <h1 className="pos-title">{labels.title}</h1>
         <OfflineBanner model={indicator} regionLabel={labels.net.status} />
+        {syncState === null || syncSource === null ? null : (
+          <SyncIndicator labels={labels.sync} state={syncState} blocked={!windowState.canSell} nowMs={props.nowMs()} hours={OFFLINE_WINDOW_HOURS} onRetry={() => void syncSource.syncNow()} />
+        )}
+        {props.closing === undefined || view === 'closing' || view === 'pay' ? null : (
+          <button type="button" className="pos-action" data-testid="closing-open" onClick={() => setView('closing')}>
+            {labels.closing.open}
+          </button>
+        )}
         <div className="pos-group" role="group" aria-label={labels.language.label}>
           {FISCA_LOCALES.map((l) => (
             <button key={l} type="button" className="pos-lang-btn" lang={l} aria-pressed={l === locale} data-testid={`lang-${l}`} onClick={() => props.onLocaleChange(l)}>
@@ -289,15 +319,31 @@ export function PosCounterApp(props: PosCounterAppProps): ReactElement {
           <>
             <CatalogGrid title={labels.sale.catalog} emptyLabel={labels.sale.catalogEmpty} items={items} addLabel={labels.sale.addItem} onAdd={onAdd} />
             <CartPanel
-              labels={{ ...labels.sale }}
+              labels={{ ...labels.sale, blocked: sessionClosed ? labels.z.noSale : labels.sale.blocked }}
               cart={cart}
               totals={totals}
-              salesBlocked={indicator.salesBlocked}
+              salesBlocked={indicator.salesBlocked || sessionClosed}
               onChangeQuantity={onChangeQuantity}
               onRemove={onRemove}
               onClear={() => setCart([])}
               onPay={startPayment}
             />
+          </>
+        ) : null}
+        {view === 'closing' && props.closing !== undefined ? (
+          <>
+            <ClosingFlow
+              locale={locale}
+              profile={profile}
+              {...props.closing}
+              onSealed={() => setSessionClosed(true)}
+              {...(props.printQueue === undefined ? {} : { printZ: printZ })}
+            />
+            <div className="pos-actions pos-main__full">
+              <button type="button" className="pos-action" data-testid="closing-back" onClick={() => setView('sale')}>
+                {labels.closing.back}
+              </button>
+            </div>
           </>
         ) : null}
         {view === 'pay' ? (

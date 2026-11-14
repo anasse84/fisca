@@ -632,6 +632,86 @@
         "terminalNotPaired": "الجهاز ماشي مقرون",
         "stampRuleMissing": "قاعدة الطابع ماكايناش: البيع تحبس",
         "generic": "ما قدرناش نطلعو التيكي"
+      },
+      "count": {
+        "title": "عدّان د الكيسة",
+        "instruction": "عدّ الأوراق والقطع لي ف الدرج وسجل الكميات.",
+        "blindNotice": "العدّ أعمى: سجل غير لي عدّيتي.",
+        "banknotes": "الأوراق",
+        "coins": "القطع",
+        "increase": "زيد وحدة د {value}",
+        "decrease": "نقص وحدة د {value}",
+        "quantity": "كمية {value}",
+        "counted": "المجموع لي تعدّ",
+        "lock": "قفّل العدّ",
+        "locking": "كنقفلو…",
+        "locked": "العدّ تقفل",
+        "lockedWait": "عطي الكيسة للمشرف باش يراقب.",
+        "error": {
+          "invalid": "العدّ ماشي صحيح: شوف الكميات.",
+          "notActive": "العدّ تقفل ديجا.",
+          "generic": "ما قدرناش نسجلو العدّ."
+        },
+        "emptyGrid": "ما كاين حتى فئة د الفلوس للعدّ"
+      },
+      "variance": {
+        "title": "مراقبة المشرف",
+        "counted": "المبلغ لي تعدّ",
+        "expected": "المبلغ المنتظر",
+        "difference": "الفرق",
+        "shortage": "نقص",
+        "overage": "زيادة",
+        "balanced": "الكيسة مضبوطة",
+        "loading": "كنحسبو الفرق…",
+        "error": "الفرق ماشي متاح ليك"
+      },
+      "z": {
+        "title": "تيكي Z",
+        "preview": "معاينة د تيكي Z",
+        "closureNumber": "الإقفال نمرة {number}",
+        "businessDate": "تاريخ الحساب",
+        "ticketCount": "{count} د التيكيات",
+        "ht": "المجموع HT ب {rate} %",
+        "vat": "الضريبة TVA ب {rate} %",
+        "stamp": "واجب الطابع",
+        "tpeGross": "مجموع TPE",
+        "hash": "بصمة Z",
+        "prevHash": "البصمة لي قبلها",
+        "thanks": "سالات الخدمة",
+        "seal": "ختم إقفال Z",
+        "sealing": "كنختمو…",
+        "sealed": "إقفال Z تختم",
+        "print": "طبع تيكي Z",
+        "printed": "تيكي Z تطبع",
+        "noSale": "الجلسة تسدات: ما يمكنش تبيع.",
+        "error": {
+          "notReady": "قفّل العدّ قبل.",
+          "generic": "ما قدرناش نختمو الإقفال."
+        },
+        "loading": "كنحضرو تيكي Z…"
+      },
+      "sync": {
+        "status": "المزامنة",
+        "state": {
+          "pending": "كيتسنى",
+          "syncing": "المزامنة خدامة",
+          "error": "مشكل ف المزامنة",
+          "synced": "تزامن"
+        },
+        "pendingTickets": "{count} د التيكيات كيتسناو المزامنة",
+        "pendingClosures": "{count} د الإقفالات كيتسناو المزامنة",
+        "blocked": "البيع واقف: فات {hours} ساعة بلا مزامنة",
+        "retry": "عاود دابا",
+        "retryIn": "محاولة جديدة من بعد {seconds} ثانية",
+        "cause": {
+          "NETWORK": "الشبكة ماكايناش",
+          "SERVER": "السيرفور ما خدامش",
+          "REJECTED": "السيرفور رفض الدفعة"
+        }
+      },
+      "closing": {
+        "open": "نهاية الخدمة",
+        "back": "رجع للبيع"
       }
     }
   }

@@ -498,3 +498,102 @@
   font-weight: 600;
   margin: 0;
 }
+
+/* Fin de poste : comptage aveugle, contrôle superviseur, Ticket Z (T-P2B-12). Libellés et montants comptables au jeton --text-primary. */
+.pos-closing {
+  display: grid;
+  gap: var(--pos-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .pos-closing {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.pos-amount {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.pos-count__group {
+  margin: 0 0 var(--pos-gap);
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pos-count__legend {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-weight: 700;
+  padding-inline: 0;
+  margin-block-end: 6px;
+}
+
+.pos-count__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(var(--pos-touch), 96px) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.pos-count__value {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: start;
+}
+
+.pos-count__input {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  inline-size: 100%;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+
+.pos-count__total {
+  --pos-text: accounting;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--pos-gap);
+  margin-block: var(--pos-gap);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pos-variance__kind {
+  --pos-text: accounting;
+  margin: var(--pos-gap) 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pos-sync {
+  flex: 1 1 280px;
+}
+
+.pos-sync[data-tone="INFO"] {
+  border-inline-start-color: var(--brand-indigo);
+}
+
+.pos-sync[data-tone="WARNING"] {
+  border-inline-start-color: var(--status-warning-text);
+}
+
+.pos-sync[data-tone="CRITICAL"] {
+  border-inline-start-color: var(--status-danger-text);
+}

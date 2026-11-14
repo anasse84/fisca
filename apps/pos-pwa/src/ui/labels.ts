@@ -2,6 +2,8 @@ import { FISCA_LOCALES, flattenKeys, getDictionary } from '@fisca/i18n';
 import type { FiscaLocale, FiscaNamespace } from '@fisca/i18n';
 import type { B2bConversionState } from '../b2b/qr-conversion.ts';
 import type { ReceiptLabelSet } from '../printing/receipt-layout.ts';
+import type { ZLabelSet } from '../closing/z-layout.ts';
+import type { SyncErrorCode } from '../sync/sync-types.ts';
 import type { PrintErrorCode } from '../printing/print-queue.ts';
 
 /** Résolveur de libellé : renvoie le texte ou lève `I18N_KEY_MISSING` (jamais la clé brute ni un repli). Motif copié de la couche partagée de l'espace PME. */
@@ -129,7 +131,70 @@ export const POS_LABEL_KEYS = [
   'err.sessionNotOpen',
   'err.terminalNotPaired',
   'err.stampRuleMissing',
-  'err.generic',] as const;
+  'err.generic',
+  'count.title',
+  'count.instruction',
+  'count.blindNotice',
+  'count.banknotes',
+  'count.coins',
+  'count.increase',
+  'count.decrease',
+  'count.quantity',
+  'count.counted',
+  'count.lock',
+  'count.locking',
+  'count.locked',
+  'count.lockedWait',
+  'count.error.invalid',
+  'count.error.notActive',
+  'count.error.generic',
+  'count.emptyGrid',
+  'variance.title',
+  'variance.counted',
+  'variance.expected',
+  'variance.difference',
+  'variance.shortage',
+  'variance.overage',
+  'variance.balanced',
+  'variance.loading',
+  'variance.error',
+  'z.title',
+  'z.preview',
+  'z.closureNumber',
+  'z.businessDate',
+  'z.ticketCount',
+  'z.ht',
+  'z.vat',
+  'z.stamp',
+  'z.tpeGross',
+  'z.hash',
+  'z.prevHash',
+  'z.thanks',
+  'z.seal',
+  'z.sealing',
+  'z.sealed',
+  'z.print',
+  'z.printed',
+  'z.noSale',
+  'z.error.notReady',
+  'z.error.generic',
+  'z.loading',
+  'sync.status',
+  'sync.state.pending',
+  'sync.state.syncing',
+  'sync.state.error',
+  'sync.state.synced',
+  'sync.pendingTickets',
+  'sync.pendingClosures',
+  'sync.blocked',
+  'sync.retry',
+  'sync.retryIn',
+  'sync.cause.NETWORK',
+  'sync.cause.SERVER',
+  'sync.cause.REJECTED',
+  'closing.open',
+  'closing.back',
+] as const;
 
 export type PosLabelKey = (typeof POS_LABEL_KEYS)[number];
 
@@ -219,6 +284,66 @@ export interface PosLabels {
     readonly link: string;
   };
   readonly err: { readonly sessionNotOpen: string; readonly terminalNotPaired: string; readonly stampRuleMissing: string; readonly generic: string };
+  readonly count: {
+    readonly title: string;
+    readonly instruction: string;
+    readonly blindNotice: string;
+    readonly banknotes: string;
+    readonly coins: string;
+    readonly increase: (value: string) => string;
+    readonly decrease: (value: string) => string;
+    readonly quantity: (value: string) => string;
+    readonly counted: string;
+    readonly lock: string;
+    readonly locking: string;
+    readonly locked: string;
+    readonly lockedWait: string;
+    readonly error: { readonly invalid: string; readonly notActive: string; readonly generic: string };
+    readonly emptyGrid: string;
+  };
+  readonly variance: {
+    readonly title: string;
+    readonly counted: string;
+    readonly expected: string;
+    readonly difference: string;
+    readonly shortage: string;
+    readonly overage: string;
+    readonly balanced: string;
+    readonly loading: string;
+    readonly error: string;
+  };
+  readonly z: {
+    readonly title: string;
+    readonly preview: string;
+    readonly closureNumber: (number: string) => string;
+    readonly businessDate: string;
+    readonly ticketCount: (count: string) => string;
+    readonly ht: (rate: string) => string;
+    readonly vat: (rate: string) => string;
+    readonly stamp: string;
+    readonly tpeGross: string;
+    readonly hash: string;
+    readonly prevHash: string;
+    readonly seal: string;
+    readonly sealing: string;
+    readonly sealed: string;
+    readonly print: string;
+    readonly printed: string;
+    readonly noSale: string;
+    readonly loading: string;
+    readonly error: { readonly notReady: string; readonly generic: string };
+  };
+  readonly sync: {
+    readonly status: string;
+    readonly state: Readonly<Record<'pending' | 'syncing' | 'error' | 'synced', string>>;
+    readonly pendingTickets: (count: number) => string;
+    readonly pendingClosures: (count: number) => string;
+    readonly blocked: (hours: number) => string;
+    readonly retry: string;
+    readonly retryIn: (seconds: number) => string;
+    readonly cause: Readonly<Record<SyncErrorCode, string>>;
+  };
+  readonly closing: { readonly open: string; readonly back: string };
 }
 
 export function resolvePosLabels(locale: FiscaLocale, t: TranslateStrict = translateStrict): PosLabels {
@@ -323,6 +448,84 @@ export function resolvePosLabels(locale: FiscaLocale, t: TranslateStrict = trans
       stampRuleMissing: g('err.stampRuleMissing'),
       generic: g('err.generic'),
     },
+    count: {
+      title: g('count.title'),
+      instruction: g('count.instruction'),
+      blindNotice: g('count.blindNotice'),
+      banknotes: g('count.banknotes'),
+      coins: g('count.coins'),
+      increase: (value) => fill(g('count.increase'), { value }),
+      decrease: (value) => fill(g('count.decrease'), { value }),
+      quantity: (value) => fill(g('count.quantity'), { value }),
+      counted: g('count.counted'),
+      lock: g('count.lock'),
+      locking: g('count.locking'),
+      locked: g('count.locked'),
+      lockedWait: g('count.lockedWait'),
+      error: { invalid: g('count.error.invalid'), notActive: g('count.error.notActive'), generic: g('count.error.generic') },
+      emptyGrid: g('count.emptyGrid'),
+    },
+    variance: {
+      title: g('variance.title'),
+      counted: g('variance.counted'),
+      expected: g('variance.expected'),
+      difference: g('variance.difference'),
+      shortage: g('variance.shortage'),
+      overage: g('variance.overage'),
+      balanced: g('variance.balanced'),
+      loading: g('variance.loading'),
+      error: g('variance.error'),
+    },
+    z: {
+      title: g('z.title'),
+      preview: g('z.preview'),
+      closureNumber: (number) => fill(g('z.closureNumber'), { number }),
+      businessDate: g('z.businessDate'),
+      ticketCount: (count) => fill(g('z.ticketCount'), { count }),
+      ht: (rate) => fill(g('z.ht'), { rate }),
+      vat: (rate) => fill(g('z.vat'), { rate }),
+      stamp: g('z.stamp'),
+      tpeGross: g('z.tpeGross'),
+      hash: g('z.hash'),
+      prevHash: g('z.prevHash'),
+      seal: g('z.seal'),
+      sealing: g('z.sealing'),
+      sealed: g('z.sealed'),
+      print: g('z.print'),
+      printed: g('z.printed'),
+      noSale: g('z.noSale'),
+      loading: g('z.loading'),
+      error: { notReady: g('z.error.notReady'), generic: g('z.error.generic') },
+    },
+    sync: {
+      status: g('sync.status'),
+      state: { pending: g('sync.state.pending'), syncing: g('sync.state.syncing'), error: g('sync.state.error'), synced: g('sync.state.synced') },
+      pendingTickets: (count) => fill(g('sync.pendingTickets'), { count: String(count) }),
+      pendingClosures: (count) => fill(g('sync.pendingClosures'), { count: String(count) }),
+      blocked: (hours) => fill(g('sync.blocked'), { hours: String(hours) }),
+      retry: g('sync.retry'),
+      retryIn: (seconds) => fill(g('sync.retryIn'), { seconds: String(seconds) }),
+      cause: { NETWORK: g('sync.cause.NETWORK'), SERVER: g('sync.cause.SERVER'), REJECTED: g('sync.cause.REJECTED') },
+    },
+    closing: { open: g('closing.open'), back: g('closing.back') },
+  };
+}
+
+/** Libellés du Ticket Z imprimé : bilingue français / arabe comme le ticket de vente, quelle que soit la langue de l'interface. */
+export function zLabelSetOf(locale: FiscaLocale, t: TranslateStrict = translateStrict): ZLabelSet {
+  const g = (key: string): string => t(locale, 'common', `ui.pos.z.${key}`);
+  return {
+    title: g('title'),
+    closureNumber: (number) => fill(g('closureNumber'), { number }),
+    businessDate: g('businessDate'),
+    ticketCount: (count) => fill(g('ticketCount'), { count }),
+    ht: (rate) => fill(g('ht'), { rate }),
+    vat: (rate) => fill(g('vat'), { rate }),
+    stamp: g('stamp'),
+    tpeGross: g('tpeGross'),
+    hash: g('hash'),
+    prevHash: g('prevHash'),
+    thanks: g('thanks'),
   };
 }
 

@@ -632,6 +632,86 @@
         "terminalNotPaired": "Terminal non appairé",
         "stampRuleMissing": "Règle de timbre indisponible : vente refusée",
         "generic": "Émission impossible"
+      },
+      "count": {
+        "title": "Comptage de caisse",
+        "instruction": "Comptez les billets et pièces du tiroir, puis saisissez les quantités.",
+        "blindNotice": "Comptage à l’aveugle : saisissez uniquement ce que vous comptez.",
+        "banknotes": "Billets",
+        "coins": "Pièces",
+        "increase": "Ajouter un exemplaire de {value}",
+        "decrease": "Retirer un exemplaire de {value}",
+        "quantity": "Quantité de {value}",
+        "counted": "Total compté",
+        "lock": "Verrouiller le comptage",
+        "locking": "Verrouillage…",
+        "locked": "Comptage verrouillé",
+        "lockedWait": "Remettez la caisse au superviseur pour le contrôle.",
+        "error": {
+          "invalid": "Comptage invalide : vérifiez les quantités.",
+          "notActive": "Le comptage est déjà verrouillé.",
+          "generic": "Le comptage n’a pas pu être enregistré."
+        },
+        "emptyGrid": "Aucune coupure disponible pour le comptage"
+      },
+      "variance": {
+        "title": "Contrôle superviseur",
+        "counted": "Montant compté",
+        "expected": "Montant attendu",
+        "difference": "Écart",
+        "shortage": "Manquant",
+        "overage": "Excédent",
+        "balanced": "Caisse juste",
+        "loading": "Calcul de l’écart…",
+        "error": "Écart indisponible pour ce rôle"
+      },
+      "z": {
+        "title": "Ticket Z",
+        "preview": "Aperçu du Ticket Z",
+        "closureNumber": "Clôture n° {number}",
+        "businessDate": "Date comptable",
+        "ticketCount": "{count} ticket(s)",
+        "ht": "HT à {rate} %",
+        "vat": "TVA à {rate} %",
+        "stamp": "Droit de timbre",
+        "tpeGross": "TPE brut",
+        "hash": "Empreinte Z",
+        "prevHash": "Empreinte précédente",
+        "thanks": "Fin de poste",
+        "seal": "Sceller la clôture Z",
+        "sealing": "Scellement…",
+        "sealed": "Clôture Z scellée",
+        "print": "Imprimer le Ticket Z",
+        "printed": "Ticket Z imprimé",
+        "noSale": "Session clôturée : aucune vente n’est possible.",
+        "error": {
+          "notReady": "Verrouillez d’abord le comptage de caisse.",
+          "generic": "La clôture n’a pas pu être scellée."
+        },
+        "loading": "Préparation du Ticket Z…"
+      },
+      "sync": {
+        "status": "Synchronisation",
+        "state": {
+          "pending": "En attente",
+          "syncing": "Synchronisation en cours",
+          "error": "Erreur de synchronisation",
+          "synced": "Synchronisé"
+        },
+        "pendingTickets": "{count} ticket(s) en attente",
+        "pendingClosures": "{count} clôture(s) en attente",
+        "blocked": "Ventes bloquées : plus de {hours} h sans synchronisation",
+        "retry": "Réessayer maintenant",
+        "retryIn": "Nouvelle tentative dans {seconds} s",
+        "cause": {
+          "NETWORK": "Réseau indisponible",
+          "SERVER": "Serveur indisponible",
+          "REJECTED": "Lot refusé par le serveur"
+        }
+      },
+      "closing": {
+        "open": "Fin de poste",
+        "back": "Retour à la vente"
       }
     }
   }

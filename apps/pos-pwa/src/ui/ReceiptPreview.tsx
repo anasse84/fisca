@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import type { ReceiptElement } from '../printing/receipt-layout.ts';
-import { QrCode } from './QrCode.tsx';
+import { PaperDocument } from './PaperDocument.tsx';
 import type { PaperWidthMm } from '../printing/escpos.ts';
 
 export interface ReceiptPreviewLabels {
@@ -31,18 +31,9 @@ export interface ReceiptPreviewProps {
   readonly onRetry: () => void;
 }
 
-const isArabicLine = (text: string): boolean => /[\u0600-\u06FF]/u.test(text);
-
-/** Alignement logique : `right` du ticket devient `start` dans une ligne RTL et `end` dans une ligne LTR. */
-function alignOf(align: 'left' | 'center' | 'right', rtl: boolean): 'start' | 'center' | 'end' {
-  if (align === 'center') return 'center';
-  return (align === 'right') === rtl ? 'start' : 'end';
-}
-
 /** Aperçu fidèle du ticket : même document que celui qui produit les octets ESC/POS. */
 export function ReceiptPreview(props: ReceiptPreviewProps): ReactElement {
   const { labels, columns } = props;
-  const style = { '--cols': String(columns) } as CSSProperties;
   return (
     <section className="pos-panel" aria-labelledby="pos-preview-title">
       <h2 className="pos-panel__title" id="pos-preview-title">
@@ -57,43 +48,7 @@ export function ReceiptPreview(props: ReceiptPreviewProps): ReactElement {
           {labels.width80}
         </button>
       </div>
-      <div className="pos-paper" dir="ltr" data-testid="receipt-preview" data-columns={columns} style={style}>
-        {props.document.map((el, index) => {
-          const key = `${el.kind}-${String(index)}`;
-          switch (el.kind) {
-            case 'text': {
-              const rtl = isArabicLine(el.text);
-              return (
-                <div
-                  key={key}
-                  className={`pos-paper__text${el.bold ? ' pos-paper__row--bold' : ''}`}
-                  dir={rtl ? 'rtl' : 'ltr'}
-                  style={{ textAlign: alignOf(el.align, rtl), fontSize: el.large ? '1.25em' : undefined }}
-                >
-                  {el.text}
-                </div>
-              );
-            }
-            case 'columns':
-              return (
-                <div key={key} className={`pos-paper__row${el.bold ? ' pos-paper__row--bold' : ''}`}>
-                  <span>{el.left}</span>
-                  <span dir="ltr">{el.right}</span>
-                </div>
-              );
-            case 'separator':
-              return <hr key={key} className="pos-paper__sep" />;
-            case 'qr':
-              return (
-                <div key={key} className="pos-qr">
-                  <QrCode data={el.data} label={labels.qrAlt} />
-                </div>
-              );
-            case 'feed':
-              return null;
-          }
-        })}
-      </div>
+      <PaperDocument document={props.document} columns={columns} qrAlt={labels.qrAlt} testId="receipt-preview" />
       <div className="pos-actions pos-actions--spaced">
         <button type="button" className="pos-action pos-action--primary" data-testid="print-button" disabled={!props.canPrint} onClick={props.onPrint}>
           {labels.action}

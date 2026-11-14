@@ -115,6 +115,25 @@ describe('contraste : libellés comptables au jeton de texte principal (≥ 7:1,
   });
 });
 
+describe('fin de poste (T-P2B-12) : libellés comptables au jeton de texte principal', () => {
+  it('montants, coupures, total compté, écart et légendes de comptage portent --pos-text: accounting et var(--text-primary)', () => {
+    for (const selector of ['.pos-amount', '.pos-count__legend', '.pos-count__value', '.pos-count__total', '.pos-variance__kind']) {
+      const rule = rules.find((r) => r.selector === selector);
+      expect(rule?.declarations.get('--pos-text'), selector).toBe('accounting');
+      expect(rule?.declarations.get('color'), selector).toBe('var(--text-primary)');
+    }
+  });
+
+  it('le champ de quantité est une cible tactile (56 px, 44 px sous 768 px) ; l’indigo reste une bordure, jamais un texte', () => {
+    const input = rules.find((r) => r.selector === '.pos-count__input');
+    expect(input?.declarations.get('--pos-target')).toBe('touch');
+    expect(input?.declarations.get('min-block-size')).toBe('var(--pos-touch)');
+    const sync = rules.find((r) => r.selector === '.pos-sync[data-tone="INFO"]');
+    expect(sync?.declarations.get('border-inline-start-color')).toBe('var(--brand-indigo)');
+    expect(sync?.declarations.has('color')).toBe(false);
+  });
+});
+
 describe('CSS logique et tokens', () => {
   it('aucune propriété physique (left, right, margin-left, padding-right, text-align left/right)', () => {
     expect(CSS).not.toMatch(/(^|[\s;{])(margin|padding|border)-(left|right)\s*:/m);

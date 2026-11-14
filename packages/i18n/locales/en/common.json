@@ -632,6 +632,86 @@
         "terminalNotPaired": "Terminal not paired",
         "stampRuleMissing": "Stamp rule unavailable: sale refused",
         "generic": "Issuing failed"
+      },
+      "count": {
+        "title": "Cash count",
+        "instruction": "Count the notes and coins in the drawer, then enter the quantities.",
+        "blindNotice": "Blind count: enter only what you count.",
+        "banknotes": "Banknotes",
+        "coins": "Coins",
+        "increase": "Add one {value}",
+        "decrease": "Remove one {value}",
+        "quantity": "Quantity of {value}",
+        "counted": "Counted total",
+        "lock": "Lock the count",
+        "locking": "Locking…",
+        "locked": "Count locked",
+        "lockedWait": "Hand the drawer to the supervisor for review.",
+        "error": {
+          "invalid": "Invalid count: check the quantities.",
+          "notActive": "The count is already locked.",
+          "generic": "The count could not be saved."
+        },
+        "emptyGrid": "No denominations available for counting"
+      },
+      "variance": {
+        "title": "Supervisor review",
+        "counted": "Counted amount",
+        "expected": "Expected amount",
+        "difference": "Difference",
+        "shortage": "Shortage",
+        "overage": "Overage",
+        "balanced": "Drawer balanced",
+        "loading": "Computing the difference…",
+        "error": "Difference not available for this role"
+      },
+      "z": {
+        "title": "Z report",
+        "preview": "Z report preview",
+        "closureNumber": "Closure no. {number}",
+        "businessDate": "Business date",
+        "ticketCount": "Tickets: {count}",
+        "ht": "Excl. VAT at {rate} %",
+        "vat": "VAT at {rate} %",
+        "stamp": "Stamp duty",
+        "tpeGross": "Card terminal gross",
+        "hash": "Z hash",
+        "prevHash": "Previous hash",
+        "thanks": "End of shift",
+        "seal": "Seal the Z closure",
+        "sealing": "Sealing…",
+        "sealed": "Z closure sealed",
+        "print": "Print the Z report",
+        "printed": "Z report printed",
+        "noSale": "Session closed: no sale is possible.",
+        "error": {
+          "notReady": "Lock the cash count first.",
+          "generic": "The closure could not be sealed."
+        },
+        "loading": "Preparing the Z report…"
+      },
+      "sync": {
+        "status": "Synchronization",
+        "state": {
+          "pending": "Pending",
+          "syncing": "Syncing",
+          "error": "Sync error",
+          "synced": "Synced"
+        },
+        "pendingTickets": "{count} ticket(s) waiting to sync",
+        "pendingClosures": "{count} closure(s) waiting to sync",
+        "blocked": "Sales blocked: more than {hours} h without sync",
+        "retry": "Retry now",
+        "retryIn": "Next attempt in {seconds} s",
+        "cause": {
+          "NETWORK": "Network unavailable",
+          "SERVER": "Server unavailable",
+          "REJECTED": "Batch rejected by the server"
+        }
+      },
+      "closing": {
+        "open": "End of shift",
+        "back": "Back to sales"
       }
     }
   }

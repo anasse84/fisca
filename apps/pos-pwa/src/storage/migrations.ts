@@ -10,6 +10,10 @@ import type { PosStorage } from './ports.ts';
  * Migration 2 : tables et déclencheurs propres au terminal (identité, séquenceur, état de synchronisation, périphériques).
  *   L'inviolabilité serveur (triggers v4 : pas de DELETE) est reprise localement et durcie : pas d'UPDATE non plus,
  *   puisque l'état de synchronisation vit dans une table à part.
+ * Migration 3 (T-P2B-12) : scellement et file de synchronisation de la clôture Z. `pos_z_closures` n'a pas de colonne de signature
+ *   et reste inchangée (immuable) : la signature ECDSA vit dans `pos_z_seals` (immuable aussi), la file d'envoi dans
+ *   `pos_z_sync_status` (même modèle que `pos_ticket_sync_status`). Un déclencheur interdit en plus tout ticket dont la session
+ *   n'est plus ouverte (impossible de vendre après le comptage verrouillé ou la clôture).
  */
 
 const POS_SESSION_STATUSES = ['SESSION_OUVERTE_ACTIVE', 'COMPTAGE_AVEUGLE_PRE_Z', 'CLOTURE_TICKET_Z_SCELLEE'] as const;
@@ -120,6 +124,18 @@ const CREATE_POS_TICKET_SYNC_STATUS = `CREATE TABLE pos_ticket_sync_status (
     synced_at TEXT
 )`;
 
+const CREATE_POS_Z_SEALS = `CREATE TABLE pos_z_seals (
+    closure_id TEXT PRIMARY KEY REFERENCES pos_z_closures(id),
+    ecdsa_signature_b64 TEXT NOT NULL CHECK (length(ecdsa_signature_b64) > 0),
+    sealed_at TEXT NOT NULL
+)`;
+
+const CREATE_POS_Z_SYNC_STATUS = `CREATE TABLE pos_z_sync_status (
+    closure_id TEXT PRIMARY KEY REFERENCES pos_z_closures(id),
+    queued_at TEXT NOT NULL,
+    synced_at TEXT
+)`;
+
 const CREATE_POS_PAIRED_PERIPHERALS = `CREATE TABLE pos_paired_peripherals (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL CHECK (kind IN ('usb', 'bluetooth')),
@@ -137,6 +153,13 @@ const CREATE_TRIGGERS: readonly string[] = [
   `CREATE TRIGGER prevent_pos_z_closure_delete BEFORE DELETE ON pos_z_closures BEGIN ${raise('VIOLATION_PAF_CGI_ART_145: Suppression de clôture Z interdite.')}; END`,
   `CREATE TRIGGER prevent_pos_z_closure_update BEFORE UPDATE ON pos_z_closures BEGIN ${raise('VIOLATION_PAF_CGI_ART_145: Modification de clôture Z interdite.')}; END`,
   `CREATE TRIGGER queue_pos_ticket_for_sync AFTER INSERT ON pos_tickets BEGIN INSERT INTO pos_ticket_sync_status (ticket_id, queued_at) VALUES (NEW.id, NEW.issued_at); END`,
+];
+
+const CLOSURE_TRIGGERS: readonly string[] = [
+  `CREATE TRIGGER prevent_pos_z_seal_delete BEFORE DELETE ON pos_z_seals BEGIN ${raise('VIOLATION_PAF_CGI_ART_145: Suppression de scellé de clôture Z interdite.')}; END`,
+  `CREATE TRIGGER prevent_pos_z_seal_update BEFORE UPDATE ON pos_z_seals BEGIN ${raise('VIOLATION_PAF_CGI_ART_145: Modification de scellé de clôture Z interdite.')}; END`,
+  `CREATE TRIGGER queue_pos_z_closure_for_sync AFTER INSERT ON pos_z_closures BEGIN INSERT INTO pos_z_sync_status (closure_id, queued_at) VALUES (NEW.id, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')); END`,
+  `CREATE TRIGGER prevent_pos_ticket_after_session_close BEFORE INSERT ON pos_tickets WHEN COALESCE((SELECT status FROM pos_sessions WHERE id = NEW.session_id), '') <> 'SESSION_OUVERTE_ACTIVE' BEGIN ${raise('VIOLATION_POS_SESSION: Aucune vente possible : la session de caisse n’est plus ouverte.')}; END`,
 ];
 
 export interface LocalMigration {
@@ -168,6 +191,12 @@ export const LOCAL_MIGRATIONS: readonly LocalMigration[] = [
       ...CREATE_TRIGGERS,
     ],
     expectedSha256Hex: '955a6eb8b45ba94b7ffc781a643e6855b629d797e22c6416063c4d9fc802b2fb',
+  },
+  {
+    version: 3,
+    name: 'local_z_seals_closure_sync_queue_no_sale_after_close',
+    upSqlStatements: [CREATE_POS_Z_SEALS, CREATE_POS_Z_SYNC_STATUS, ...CLOSURE_TRIGGERS],
+    expectedSha256Hex: 'f058ce8f5155ad11d11df33f6f7740768cfc13e3367deebe6669cc04451014f3',
   },
 ];
 

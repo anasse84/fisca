@@ -632,6 +632,86 @@
         "terminalNotPaired": "Aserdas ur yettwasnaɣ ara",
         "stampRuleMissing": "Alugen n ttabeɛ ulac-it: azenz yettwagi",
         "generic": "Asuffeɣ ur izmir ara"
+      },
+      "count": {
+        "title": "Amḍan n tqasa",
+        "instruction": "Amḍ ukac akk deg tanaka, sakin sekcem amḍan n yal taggayt.",
+        "blindNotice": "Amḍan aɛmaw: sekcem kan ayen i d-tamḍeḍ.",
+        "banknotes": "Tkaɣḍin",
+        "coins": "Idrimen",
+        "increase": "Rnu yiwen n {value}",
+        "decrease": "Kkes yiwen n {value}",
+        "quantity": "Acḥal n {value}",
+        "counted": "Amatu yettwamḍen",
+        "lock": "Sekker amḍan",
+        "locking": "Asekker…",
+        "locked": "Amḍan yettwasekker",
+        "lockedWait": "Efk tanaka i uɛessas i usenqed.",
+        "error": {
+          "invalid": "Amḍan ur ṣeḥḥi ara: senqed acḥal.",
+          "notActive": "Amḍan yettwasekker yakan.",
+          "generic": "Amḍan ur yettwasekles ara."
+        },
+        "emptyGrid": "Ulac taggayt i usemḍen"
+      },
+      "variance": {
+        "title": "Asenqed n uɛessas",
+        "counted": "Amḍan yettwamḍen",
+        "expected": "Amḍan yettwaṛjan",
+        "difference": "Amgirred",
+        "shortage": "Anqis",
+        "overage": "Ugar",
+        "balanced": "Tanaka tṣeḥḥa",
+        "loading": "Asiḍen n umgirred…",
+        "error": "Amgirred ulac-it i uzemmur-a"
+      },
+      "z": {
+        "title": "Tikt Z",
+        "preview": "Taskant n tikt Z",
+        "closureNumber": "Asekker uṭṭun {number}",
+        "businessDate": "Azemz amḥasab",
+        "ticketCount": "{count} n tiktiyin",
+        "ht": "Amatu HT {rate} %",
+        "vat": "Amatu TVA {rate} %",
+        "stamp": "Azal n ttabeɛ",
+        "tpeGross": "Amatu TPE",
+        "hash": "Aseklu Z",
+        "prevHash": "Aseklu n zik",
+        "thanks": "Tagara n uxeddim",
+        "seal": "Ssekyed asekker Z",
+        "sealing": "Assekyed…",
+        "sealed": "Asekker Z yettwasekyed",
+        "print": "Siggez tikt Z",
+        "printed": "Tikt Z tettwasigzen",
+        "noSale": "Tiɣimit tesekker: ulac azenzi.",
+        "error": {
+          "notReady": "Sekker amḍan n tqasa uqbel.",
+          "generic": "Asekker ur yettwasekyed ara."
+        },
+        "loading": "Aheyyi n tikt Z…"
+      },
+      "sync": {
+        "status": "Asemlil",
+        "state": {
+          "pending": "Yettraju",
+          "syncing": "Asemlil teddu",
+          "error": "Tuccḍa deg usemlil",
+          "synced": "Yettwasemlil"
+        },
+        "pendingTickets": "{count} n tiktiyin ttrajunt asemlil",
+        "pendingClosures": "{count} n yisekkren ttrajunt asemlil",
+        "blocked": "Azenzi yeḥbes: ugar n {hours} n tsaɛtin war usemlil",
+        "retry": "Ɛiwed tura",
+        "retryIn": "Tarazzunt tamaynut deg {seconds} n tsinin",
+        "cause": {
+          "NETWORK": "Tiẓeṭṭa ulac-itt",
+          "SERVER": "Aqeddac ulac-it",
+          "REJECTED": "Aqeddac yugi aduddu"
+        }
+      },
+      "closing": {
+        "open": "Tagara n uxeddim",
+        "back": "Uɣal ɣer uzenzi"
       }
     }
   }

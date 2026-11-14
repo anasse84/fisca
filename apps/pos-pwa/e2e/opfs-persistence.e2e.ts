@@ -17,7 +17,7 @@ test('OPFS : écrire un ticket signé, recharger la page, relire la ligne identi
 
   const init = await page.evaluate(() => window.fiscaPosE2E.initialise());
   expect(init.secureContext).toBe(true);
-  expect(init.appliedMigrations).toEqual([1, 2]);
+  expect(init.appliedMigrations).toEqual([1, 2, 3]);
 
   const written = await page.evaluate(() => window.fiscaPosE2E.writeTicket());
   expect(written['terminal_seq_number']).toBe('POS-M01-C01-2026-000001');

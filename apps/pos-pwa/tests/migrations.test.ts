@@ -52,7 +52,7 @@ describe('migrations locales versionnées', () => {
     expect(first.applied).toEqual(LOCAL_MIGRATIONS.map((migration) => migration.version));
     const second = await runLocalMigrations(storage, NOW);
     expect(second.applied).toEqual([]);
-    expect(LOCAL_MIGRATIONS.map((m) => m.version)).toEqual([1, 2]);
+    expect(LOCAL_MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3]);
   });
 
   it('les trois tables caisse ont exactement les colonnes, types, NOT NULL, défauts et clés du DDL serveur', async () => {
