@@ -624,6 +624,32 @@ describe.each(BACKENDS)('ImmutableCgncLedgerEngine sur $name', (backendSpec) => 
       expect(await netOf(w, '34552000')).toBe(8000);
     });
 
+    it('PCGE : TVA récupérable sur immobilisations en 34551 et sur charges en 34552, jamais croisées (arbitrage du propriétaire)', async () => {
+      const w = await setup();
+      const buy = (label: string) =>
+        postEntry(
+          w,
+          draftInput({
+            journalId: 'jr-ach',
+            sourceDocumentType: 'INVOICE',
+            reviewCycle: 'ACHATS',
+            lines: [L(label, 40000, 0), L('34558000', 8000, 0), L('44110000', 0, 48000)],
+          }),
+        );
+      const immob = await buy('23400000');
+      const clearing = await w.engine.createVatClearingDraft(w.aide, clearingInput(immob, { settledNowCents: 48000, recoverableTarget: 'VAT_RECOVERABLE_IMMOB' }));
+      await w.engine.visaCycle(w.chef, { entryId: clearing.entryId, idempotencyKey: w.key() });
+      await w.engine.sealEntry(fresh(w, w.oec), { entryId: clearing.entryId, idempotencyKey: w.key() });
+      expect(await netOf(w, '34551000')).toBe(8000);
+      expect(await netOf(w, '34552000')).toBe(0);
+      const charge = await buy('61110000');
+      const clearing2 = await w.engine.createVatClearingDraft(w.aide, clearingInput(charge, { settledNowCents: 48000, recoverableTarget: 'VAT_RECOVERABLE_CHARGES' }));
+      await w.engine.visaCycle(w.chef, { entryId: clearing2.entryId, idempotencyKey: w.key() });
+      await w.engine.sealEntry(fresh(w, w.oec), { entryId: clearing2.entryId, idempotencyKey: w.key() });
+      expect(await netOf(w, '34551000')).toBe(8000);
+      expect(await netOf(w, '34552000')).toBe(8000);
+    });
+
     it('effet de commerce (42_EFFET_LCN) : aucune TVA à la remise de l\'effet, seulement à l\'encaissement bancaire effectif', async () => {
       const w = await setup();
       const invoice = await postInvoice(w);
