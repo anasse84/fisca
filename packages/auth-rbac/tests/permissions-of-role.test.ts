@@ -43,8 +43,10 @@ describe('permissionsOfRole', () => {
     });
   }
 
-  it("OWNER_GERANT n'a pas LEDGER_VISA_CYCLE", () => {
-    expect(permissionsOfRole('OWNER_GERANT').has('LEDGER_VISA_CYCLE')).toBe(false);
+  it('OWNER_GERANT et DAF_TRESORIER ont LEDGER_VISA_CYCLE (arbitrage du propriétaire, Loi 9-88 : le dirigeant arrête ses comptes)', () => {
+    expect(permissionsOfRole('OWNER_GERANT').has('LEDGER_VISA_CYCLE')).toBe(true);
+    expect(permissionsOfRole('DAF_TRESORIER').has('LEDGER_VISA_CYCLE')).toBe(true);
+    expect(permissionsOfRole('COMMERCIAL_FACTURATION').has('LEDGER_VISA_CYCLE')).toBe(false);
   });
 
   it('le résultat est isolé : muter la copie ne change pas un second appel', () => {

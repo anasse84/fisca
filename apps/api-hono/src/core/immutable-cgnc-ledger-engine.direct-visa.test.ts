@@ -1,5 +1,5 @@
 /**
- * Visa implicite du mode direct (Doc_09 § 06B réconciliant Doc_02) : OWNER_GERANT n'a jamais LEDGER_VISA_CYCLE ; sans mandat cabinet
+ * Visa implicite du mode direct (Doc_09 § 06B réconciliant Doc_02) : OWNER_GERANT a LEDGER_VISA_CYCLE depuis l'arbitrage du propriétaire (Loi 9-88), mais le scellement direct reste en 2 transitions ; sans mandat cabinet
  * actif, son scellement enchaîne DRAFT → REVISEE_CYCLE (acteur système, au nom du gérant) puis REVISEE_CYCLE → POSTED (le gérant),
  * dans le MÊME lot atomique, avec deux lignes de `state_transition_audit`.
  */
@@ -126,12 +126,12 @@ describe.each(BACKENDS)('visa implicite du mode direct sur $name', (backendSpec)
     expect((await w.audits(entryId)).length).toBe(before + 2);
   });
 
-  it('le gérant n\'obtient JAMAIS LEDGER_VISA_CYCLE : visaCycle reste refusé, même en direct sans mandat', async () => {
+  it('le gérant a LEDGER_VISA_CYCLE : visaCycle fait DRAFT → REVISEE_CYCLE (une seule transition, pas de scellement)', async () => {
     const w = await setup();
     const entryId = await w.draft();
     const gerant = w.direct('OWNER_GERANT', 'u-gerant', { activeCpaMandate: false });
-    expect((await failure(() => w.engine.visaCycle(gerant, { entryId, idempotencyKey: w.key() }))).denialCode).toBe('RBAC_FORBIDDEN_FOR_OWNER_GERANT');
-    expect(await w.status(entryId)).toBe('DRAFT');
+    expect(await w.engine.visaCycle(gerant, { entryId, idempotencyKey: w.key() })).toMatchObject({ fromState: 'DRAFT', toState: 'REVISEE_CYCLE' });
+    expect(await w.status(entryId)).toBe('REVISEE_CYCLE');
   });
 
   it('gérant avec mandat cabinet actif (ou information inconnue, ou plan non direct) : refusé sans visa du chef, brouillon intact', async () => {
