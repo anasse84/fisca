@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Money from '../../components/Money.astro';
+import { PRICING_SLUG, PRIVACY_SLUG } from '../../content/pages.ts';
+import { PRICING_PLANS } from '../../content/pricing.ts';
+import { getHomeCopy } from '../../i18n/home-copy.ts';
+import { LOCALE_URL_PREFIX, localeFromPrefix } from '../../i18n/locales.ts';
+import { getPricingCopy } from '../../i18n/pricing-copy.ts';
+
+const locale = localeFromPrefix(Astro.params['locale']);
+if (locale === null) {
+  return new Response(null, { status: 404 });
+}
+const copy = getHomeCopy(locale);
+const pricingCopy = getPricingCopy(locale);
+const prefix = LOCALE_URL_PREFIX[locale];
+const teaserPlans = PRICING_PLANS.filter((p) => p.kind === 'RECURRING');
+---
+<BaseLayout locale={locale} slug="" title={copy.title} description={copy.description}>
+  <section class="hero" aria-labelledby="titre-accueil">
+    <h1 id="titre-accueil">{copy.heading}</h1>
+    <p class="lead">{copy.lead}</p>
+    <div class="actions">
+      <a class="button" href={`/${prefix}/${PRICING_SLUG}`}>{copy.ctaPricing}</a>
+      <a class="button button-secondary" href="https://app.fisca.ma/" rel="noopener">{copy.ctaTrial}</a>
+    </div>
+    <p class="note">{copy.heroNote}</p>
+  </section>
+
+  <section class="section" aria-labelledby="avantages">
+    <h2 id="avantages">{copy.benefits.heading}</h2>
+    <ul class="grid">
+      {copy.benefits.items.map((item) => (
+        <li class="card">
+          <h3>{item.title}</h3>
+          <p class="card-audience">{item.body}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="validation-simulee">
+    <div class="panel">
+      <p><span class="badge badge-simulated">{copy.simulated.badge}</span></p>
+      <h2 id="validation-simulee">{copy.simulated.heading}</h2>
+      {copy.simulated.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="souverainete">
+    <h2 id="souverainete">{copy.sovereignty.heading}</h2>
+    <p class="section-intro">{copy.sovereignty.intro}</p>
+    <ul class="grid">
+      {copy.sovereignty.items.map((item) => (
+        <li class="card">
+          <h3>{item.title}</h3>
+          <p class="card-audience">{item.body}</p>
+        </li>
+      ))}
+    </ul>
+    <a class="link-more" href={`/${prefix}/${PRIVACY_SLUG}`}>{copy.sovereignty.link}</a>
+  </section>
+
+  <section class="section" aria-labelledby="grille">
+    <h2 id="grille">{copy.pricingTeaser.heading}</h2>
+    <p class="section-intro">{copy.pricingTeaser.body}</p>
+    <ul class="grid">
+      {teaserPlans.map((plan) => (
+        <li class="card">
+          <h3>{pricingCopy.offers[plan.code].name}</h3>
+          <p class="card-audience">{pricingCopy.offers[plan.code].audience}</p>
+          <p class="price-main">
+            <span class="price-unit">{copy.pricingTeaser.fromLabel}</span>
+            {plan.kind === 'RECURRING' && <Money cents={plan.monthly_ht_cents} />}
+            <span class="price-unit">{copy.pricingTeaser.perMonthHt}</span>
+          </p>
+        </li>
+      ))}
+    </ul>
+    <a class="link-more" href={`/${prefix}/${PRICING_SLUG}`}>{copy.pricingTeaser.cta}</a>
+  </section>
+</BaseLayout>

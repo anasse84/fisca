@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { localeFromPrefix } from '../../../i18n/locales.ts';
+import { buildToolsHubView } from '../../../tools/registry.ts';
+
+const locale = localeFromPrefix(Astro.params['locale']);
+if (locale === null) {
+  return new Response(null, { status: 404 });
+}
+const hub = buildToolsHubView(locale);
+---
+<BaseLayout locale={locale} slug={hub.slug} title={hub.title} description={hub.description}>
+  <nav class="breadcrumb" aria-label={hub.breadcrumbLabel}>
+    <ol>
+      {hub.breadcrumb.map((crumb, index) => (
+        <li><a href={crumb.href} aria-current={index === hub.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+      ))}
+    </ol>
+  </nav>
+  <h1>{hub.title}</h1>
+  <p class="lead">{hub.lead}</p>
+  <section class="section" aria-labelledby="outils">
+    <h2 id="outils">{hub.title}</h2>
+    <ul class="hub-list">
+      {hub.entries.map((entry) => (
+        <li>
+          <a href={entry.href}>{entry.label}</a>
+          <p>{entry.summary}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

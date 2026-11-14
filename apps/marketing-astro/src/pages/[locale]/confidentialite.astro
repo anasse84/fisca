@@ -1,0 +1,128 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { buildPrivacyView } from '../../content/privacy-view.ts';
+import { localeFromPrefix } from '../../i18n/locales.ts';
+
+const locale = localeFromPrefix(Astro.params['locale']);
+if (locale === null) {
+  return new Response(null, { status: 404 });
+}
+const view = buildPrivacyView(locale);
+const { copy } = view;
+---
+<BaseLayout locale={locale} slug="confidentialite" title={copy.title} description={copy.description}>
+  <h1>{copy.heading}</h1>
+  <p class="lead">{copy.lead}</p>
+
+  <section class="section" aria-labelledby="responsable">
+    <h2 id="responsable">{copy.controller.heading}</h2>
+    <p>{copy.controller.body}</p>
+    <ul class="plain-list">
+      <li>{copy.controller.addressLabel} : {copy.controller.address}</li>
+      <li>{copy.controller.contactLabel} : <a href={`mailto:${view.contactEmail}`} dir="ltr">{view.contactEmail}</a></li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="roles">
+    <h2 id="roles">{copy.roles.heading}</h2>
+    <ul class="plain-list">
+      {copy.roles.items.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="finalites">
+    <h2 id="finalites">{copy.purposes.heading}</h2>
+    <p class="section-intro">{copy.purposes.intro}</p>
+    <div class="table-scroll" role="region" aria-label={copy.purposes.heading} tabindex="0">
+      <table class="data-table">
+        <caption>{copy.purposes.heading}</caption>
+        <thead>
+          <tr>
+            {copy.purposes.columns.map((column) => <th scope="col">{column}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {view.processings.map((row) => (
+            <tr>
+              <th scope="row"><span class="fisca-tabular-num" dir="ltr">{row.id}</span></th>
+              <td>{row.purpose}</td>
+              <td>{row.data}</td>
+              <td>{row.retention}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">{copy.purposes.noCardData}</p>
+  </section>
+
+  <section class="section" aria-labelledby="durees">
+    <h2 id="durees">{copy.retention.heading}</h2>
+    <ul class="plain-list">
+      <li>{copy.retention.fiscal}</li>
+      <li>{copy.retention.nonAccounting}</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="droits">
+    <h2 id="droits">{copy.rights.heading}</h2>
+    <p class="section-intro">{copy.rights.intro}</p>
+    <ul class="grid">
+      {copy.rights.items.map((item) => (
+        <li class="card">
+          <h3>{item.title}</h3>
+          <p class="card-audience">{item.body}</p>
+        </li>
+      ))}
+    </ul>
+    <p>{copy.rights.howTo} <a href={`mailto:${view.contactEmail}`} dir="ltr">{view.contactEmail}</a></p>
+    <p class="note">{copy.rights.delay}</p>
+    <p class="note">{copy.rights.fiscalLimit}</p>
+  </section>
+
+  <section class="section" aria-labelledby="cndp">
+    <h2 id="cndp">{copy.cndp.heading}</h2>
+    <p class="section-intro">{copy.cndp.intro}</p>
+    <p class="cndp-status">{copy.cndp.registering}</p>
+    <ul class="plain-list">
+      {view.references.map((ref) => (
+        <li>
+          {ref.label}
+          {ref.number !== null && <Fragment> — {copy.cndp.numberLabel} : <span class="fisca-tabular-num" dir="ltr">{ref.number}</span></Fragment>}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="hebergement">
+    <h2 id="hebergement">{copy.hosting.heading}</h2>
+    <p class="section-intro">{copy.hosting.intro}</p>
+    <div class="table-scroll" role="region" aria-label={copy.hosting.heading} tabindex="0">
+      <table class="data-table">
+        <caption>{copy.hosting.heading}</caption>
+        <thead>
+          <tr>
+            {copy.hosting.columns.map((column) => <th scope="col">{column}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {view.subProcessors.map((row) => (
+            <tr>
+              <th scope="row">{row.name}</th>
+              <td>{row.role}</td>
+              <td>{row.regionLabel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">{copy.hosting.legalBasis}</p>
+  </section>
+
+  <section class="section" aria-labelledby="traceurs">
+    <h2 id="traceurs">{copy.cookies.heading}</h2>
+    <ul class="plain-list">
+      {copy.cookies.items.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+</BaseLayout>

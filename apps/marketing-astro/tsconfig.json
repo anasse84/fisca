@@ -5,10 +5,14 @@
       "ES2023",
       "DOM",
       "DOM.Iterable"
+    ],
+    "types": [
+      "node"
     ]
   },
   "include": [
     "src",
-    "tests"
+    "tests",
+    "e2e"
   ]
 }

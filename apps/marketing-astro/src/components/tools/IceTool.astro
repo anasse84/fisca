@@ -1,0 +1,48 @@
+---
+import { ICE_UI } from '../../tools/copy/ice-ui.ts';
+import { ICE_EXISTENCE_NOTICE } from '../../tools/copy/ice.ts';
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import TrialHandoff from './TrialHandoff.astro';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const { locale } = Astro.props;
+const ui = ICE_UI[locale];
+---
+<div class="tool" data-tool="ice" data-copy={JSON.stringify(ui)}>
+  <label class="dropzone" data-role="drop" for="ice-file">
+    <input id="ice-file" class="dropzone-input" type="file" accept=".csv,.txt,.tsv,.xlsx" data-role="file" aria-describedby="ice-drop-hint" />
+    <span class="dropzone-title">{ui.dropTitle}</span>
+    <span class="dropzone-hint" id="ice-drop-hint">{ui.dropHint} {ui.dropFormats}</span>
+  </label>
+  <p class="tool-status" role="status" aria-live="polite" data-role="status"></p>
+  <p class="tool-error" role="alert" data-role="error" hidden></p>
+  <div class="tool-grid" data-role="options" hidden>
+    <div class="field">
+      <label for="ice-column">{ui.columnLabel}</label>
+      <select id="ice-column" data-role="column"></select>
+    </div>
+    <div class="field field-check">
+      <input id="ice-header" type="checkbox" data-role="header" />
+      <label for="ice-header">{ui.headerLabel}</label>
+    </div>
+  </div>
+  <div class="tool-results" data-role="results" hidden>
+    <h3>{ui.summaryHeading}</h3>
+    <dl class="result-list" data-role="summary"></dl>
+    <div class="table-scroll" role="region" aria-label={ui.tableCaption} tabindex="0" data-role="table"></div>
+    <p><button type="button" class="button" data-role="export">{ui.exportButton}</button></p>
+    <p class="note">{ui.exportNote}</p>
+    <p class="note" role="note">{ICE_EXISTENCE_NOTICE[locale]}</p>
+  </div>
+</div>
+
+<TrialHandoff locale={locale} id="ice" />
+
+<script>
+  import { mountIceTool } from '../../tools/ui/ice-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="ice"]')) mountIceTool(root);
+</script>

@@ -1,0 +1,80 @@
+---
+import { fill } from '../../i18n/copy-locale.ts';
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { formatCentsMad } from '../../lib/money.ts';
+import { MOWAKABA_UI } from '../../tools/copy/mowakaba.ts';
+import { mowakabaPackPrices, rulesPayload } from '../../tools/registry.ts';
+import { MOWAKABA_PARAM_KEYS, ruleParam } from '../../tools/rule-params.ts';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const PACK_NAMES = {
+  tpme: { fr: 'Pack TPME', en: 'SME Pack', ar: 'باقة TPME', ary: 'باقة TPME' },
+  cabinet: { fr: 'Pack Fiduciaire (Cabinet)', en: 'Accounting-firm Pack', ar: 'باقة المكاتب المحاسبية', ary: 'باقة المكاتب المحاسبية' },
+} as const;
+
+const { locale } = Astro.props;
+const ui = MOWAKABA_UI[locale];
+const prices = mowakabaPackPrices();
+const low = ruleParam('mowakaba_coverage_low_bps');
+const high = ruleParam('mowakaba_coverage_high_bps');
+const rules = rulesPayload(MOWAKABA_PARAM_KEYS, locale);
+const display = (key: string): string => rules.items.find((i) => i.key === key)?.display ?? '';
+const payload = {
+  copy: ui,
+  rules,
+  params: {
+    coverageLowBps: low.value,
+    coverageHighBps: high.value,
+    maxRevenueHtCents: ruleParam('mowakaba_max_revenue_ht_cents').value,
+    maxGroupOwnershipBps: ruleParam('mowakaba_group_ownership_max_bps').value,
+  },
+};
+const packs = [
+  { id: 'tpme', name: PACK_NAMES.tpme[locale], cents: prices.tpmeCents },
+  { id: 'cabinet', name: PACK_NAMES.cabinet[locale], cents: prices.cabinetCents },
+];
+const range = fill(ui.coverageRange, { low: display('mowakaba_coverage_low_bps'), high: display('mowakaba_coverage_high_bps') });
+---
+<div class="tool" data-tool="mowakaba" data-payload={JSON.stringify(payload)}>
+  <form novalidate class="tool-form" aria-describedby="mow-error">
+    <div class="tool-grid">
+      <div class="field">
+        <label for="mow-revenue">{ui.revenueLabel}</label>
+        <input id="mow-revenue" name="revenue" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" placeholder={ui.revenueHint} />
+      </div>
+      <div class="field">
+        <label for="mow-ownership">{ui.ownershipLabel}</label>
+        <input id="mow-ownership" name="ownership" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="mow-ownership-hint" />
+        <p class="field-hint" id="mow-ownership-hint">{ui.ownershipHint}</p>
+      </div>
+      <div class="field">
+        <label for="mow-pack">{ui.packLabel}</label>
+        <select id="mow-pack" name="pack">
+          {packs.map((p, index) => <option value={String(p.cents)} data-pack={p.id} selected={index === 0}>{fill(ui.packOption, { name: p.name, price: formatCentsMad(p.cents) })}</option>)}
+        </select>
+      </div>
+      <div class="field">
+        <label for="mow-coverage">{ui.coverageLabel}</label>
+        <input id="mow-coverage" name="coverage" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="mow-coverage-hint" />
+        <p class="field-hint" id="mow-coverage-hint">{range} {ui.coverageHint}</p>
+      </div>
+    </div>
+    <p class="tool-error" id="mow-error" role="alert" data-role="error" hidden></p>
+    <p><button type="submit" class="button">{ui.submit}</button></p>
+  </form>
+  <div class="tool-results" data-role="results" aria-live="polite" hidden>
+    <h3>{ui.resultHeading}</h3>
+    <dl class="result-list" data-role="list"></dl>
+    <div data-role="table"></div>
+    <div class="rules-used" data-role="rules"></div>
+  </div>
+</div>
+
+<script>
+  import { mountMowakabaTool } from '../../tools/ui/mowakaba-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="mowakaba"]')) mountMowakabaTool(root);
+</script>

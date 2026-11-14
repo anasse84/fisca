@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiloArticle from '../../components/SiloArticle.astro';
+import CgncArticle from '../../components/CgncArticle.astro';
+import { buildCgncAccountView, buildCgncHubView } from '../../content/cgnc/build.ts';
+import { CGNC_HUB_SLUG, findCgncAccountBySlug } from '../../content/cgnc/registry.ts';
+import { findEditorialPage } from '../../content/pages.ts';
+import { SILOS, buildHubView, buildSiloViewBySlug } from '../../content/silos/registry.ts';
+import { localeFromPrefix } from '../../i18n/locales.ts';
+
+const locale = localeFromPrefix(Astro.params['locale']);
+const slug = (Astro.params['slug'] ?? '').replace(/^\/+|\/+$/g, '');
+if (locale === null) {
+  return new Response(null, { status: 404 });
+}
+const hubSilo = SILOS.find((s) => s.slug === slug);
+const cgncRecord = findCgncAccountBySlug(slug);
+const cgncView = cgncRecord === undefined ? undefined : buildCgncAccountView(locale, cgncRecord);
+const cgncHub = slug === CGNC_HUB_SLUG ? buildCgncHubView(locale) : undefined;
+const isCgnc = cgncView !== undefined || cgncHub !== undefined;
+const view = hubSilo === undefined && !isCgnc ? buildSiloViewBySlug(locale, slug) : undefined;
+if (hubSilo === undefined && view === undefined && !isCgnc) {
+  return new Response(null, { status: 404 });
+}
+const hub = hubSilo === undefined ? undefined : buildHubView(locale, hubSilo.id);
+// Fiche CGNC : noindex si le seuil Doc_18 S10 n'est pas atteint ou si la langue n'est pas indexée (fr, ar, en) ; la décision vit dans le registre.
+const cgncNoindex = cgncView !== undefined && findEditorialPage(locale, cgncView.slug)?.noindex === true;
+const noindex = (view !== undefined && !view.quality.indexable) || cgncNoindex;
+if (noindex) Astro.response.headers.set('X-Robots-Tag', 'noindex, follow');
+---
+{view !== undefined && (
+  <BaseLayout
+    locale={locale}
+    slug={view.slug}
+    title={view.title}
+    description={view.description}
+    noindex={noindex}
+    faqs={view.faqs}
+    {...(view.legislation === null ? {} : { legislation: view.legislation })}
+    {...(view.steps.length === 0 ? {} : { howTo: { name: view.labels.howToName, steps: view.steps } })}
+  >
+    <SiloArticle view={view} />
+  </BaseLayout>
+)}
+{hub !== undefined && (
+  <BaseLayout locale={locale} slug={hub.slug} title={hub.title} description={hub.description}>
+    <nav class="breadcrumb" aria-label={hub.breadcrumbLabel}>
+      <ol>
+        {hub.breadcrumb.map((crumb, index) => (
+          <li><a href={crumb.href} aria-current={index === hub.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+        ))}
+      </ol>
+    </nav>
+    <h1>{hub.title}</h1>
+    <p class="lead">{hub.lead}</p>
+    <section class="section" aria-labelledby="pages">
+      <h2 id="pages">{hub.headingPages}</h2>
+      <ul class="hub-list">
+        {hub.entries.map((entry) => (
+          <li>
+            <a href={entry.href}>{entry.label}</a>
+            <p>{entry.summary}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </BaseLayout>
+)}
+{cgncView !== undefined && (
+  <BaseLayout
+    locale={locale}
+    slug={cgncView.slug}
+    title={cgncView.title}
+    description={cgncView.description}
+    noindex={noindex}
+    faqs={cgncView.faqs}
+    legislation={cgncView.legislation}
+    howTo={{ name: cgncView.labels.howToName, steps: cgncView.steps }}
+  >
+    <CgncArticle view={cgncView} />
+  </BaseLayout>
+)}
+{cgncHub !== undefined && (
+  <BaseLayout locale={locale} slug={cgncHub.slug} title={cgncHub.title} description={cgncHub.description}>
+    <nav class="breadcrumb" aria-label={cgncHub.breadcrumbLabel}>
+      <ol>
+        {cgncHub.breadcrumb.map((crumb, index) => (
+          <li><a href={crumb.href} aria-current={index === cgncHub.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+        ))}
+      </ol>
+    </nav>
+    <h1>{cgncHub.title}</h1>
+    <p class="lead">{cgncHub.lead}</p>
+    <p class="note cgnc-provenance">{cgncHub.provenance}</p>
+    <p class="note cgnc-code-edi">{cgncHub.codeEdiNotice}</p>
+    <section class="section" aria-labelledby="pages">
+      <h2 id="pages">{cgncHub.headingPages}</h2>
+      {cgncHub.groups.map((group) => (
+        <section class="cgnc-group">
+          <h3>{group.title}</h3>
+          <ul class="hub-list">
+            {group.entries.map((entry) => (
+              <li>
+                <a href={entry.href}><span class="fisca-tabular-num" dir="ltr">{entry.number}</span> — {entry.label}</a>
+                <p>{entry.summary}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </section>
+    <p class="note guide-disclaimer">{cgncHub.disclaimer}</p>
+  </BaseLayout>
+)}

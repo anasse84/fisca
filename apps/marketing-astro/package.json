@@ -4,9 +4,28 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lighthouse:check": "node e2e/lighthouse-check.ts",
+    "check": "astro check",
+    "typecheck": "tsc --noEmit && astro check",
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.13",
+    "astro": "^5.18.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@fontsource/noto-sans-arabic": "^5.3.0",
+    "@types/node": "^24.19.2",
+    "lighthouse": "^13.6.0",
+    "playwright": "^1.65.1",
+    "tslib": "^2.9.1",
+    "typescript": "~6.0.3",
+    "wrangler": "^4.162.0"
   }
 }

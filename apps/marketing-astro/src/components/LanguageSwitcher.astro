@@ -1,0 +1,31 @@
+---
+import { LANGUAGE_NATIVE_NAMES } from '../i18n/site-copy.ts';
+import { LOCALE_URL_PREFIX, MARKETING_LOCALES, getLocaleMeta } from '../i18n/locales.ts';
+import type { MarketingLocale } from '../i18n/locales.ts';
+
+interface Props {
+  current: MarketingLocale;
+  slug: string;
+  label: string;
+}
+
+const { current, slug, label } = Astro.props;
+const cleanSlug = slug.replace(/^\/+|\/+$/g, '');
+const hrefOf = (loc: MarketingLocale): string =>
+  cleanSlug === '' ? `/${LOCALE_URL_PREFIX[loc]}/` : `/${LOCALE_URL_PREFIX[loc]}/${cleanSlug}`;
+---
+<nav class="lang-nav" aria-label={label}>
+  <span class="lang-label" aria-hidden="true">{label}</span>
+  <ul class="lang-list">
+    {MARKETING_LOCALES.map((loc) => (
+      <li>
+        <a
+          href={hrefOf(loc)}
+          hreflang={getLocaleMeta(loc).hreflang}
+          lang={getLocaleMeta(loc).hreflang}
+          aria-current={loc === current ? 'page' : undefined}
+        >{LANGUAGE_NATIVE_NAMES[loc]}</a>
+      </li>
+    ))}
+  </ul>
+</nav>

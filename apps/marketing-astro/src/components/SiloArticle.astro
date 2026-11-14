@@ -1,0 +1,111 @@
+---
+import AmountText from './AmountText.astro';
+import Money from './Money.astro';
+import type { SiloPageView } from '../content/silos/build.ts';
+
+interface Props {
+  view: SiloPageView;
+}
+
+const { view } = Astro.props;
+const checked = (state: string): boolean => state === 'RECOUPÉ';
+---
+<nav class="breadcrumb" aria-label={view.labels.breadcrumbLabel}>
+  <ol>
+    {view.breadcrumb.map((crumb, index) => (
+      <li><a href={crumb.href} aria-current={index === view.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+    ))}
+  </ol>
+</nav>
+<article>
+  <h1>{view.title}</h1>
+  <section class="verdict" aria-labelledby="verdict">
+    <h2 id="verdict">{view.labels.verdict}</h2>
+    <p><AmountText text={view.verdict} /></p>
+  </section>
+  {!view.quality.indexable && <p class="note">{view.labels.notIndexed}</p>}
+
+  <section class="section" aria-labelledby="tableau">
+    <h2 id="tableau">{view.labels.tableHeading}</h2>
+    <div class="table-scroll" role="region" aria-label={view.table.caption} tabindex="0">
+      <table class="data-table">
+        <caption>{view.table.caption}</caption>
+        <thead>
+          <tr>{view.table.columns.map((column) => <th scope="col">{column}</th>)}</tr>
+        </thead>
+        <tbody>
+          {view.table.rows.map((row) => (
+            <tr>
+              <th scope="row">{row[0]}</th>
+              <td><AmountText text={row[1] ?? ''} /></td>
+              <td>{row[2]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {view.case !== null && (
+    <section class="section" aria-labelledby="cas">
+      <h2 id="cas">{view.labels.caseHeading}</h2>
+      <h3>{view.case.title}</h3>
+      <p class="section-intro">{view.case.scenario}</p>
+      <ol class="case-list">
+        {view.case.lines.map((line) => (
+          <li class={line.isResult ? 'case-line case-line-result' : 'case-line'}>
+            <span>{line.label}</span>
+            {line.cents !== null
+              ? <Money cents={line.cents} />
+              : <span dir="ltr" class="fisca-tabular-num">{line.text}</span>}
+          </li>
+        ))}
+      </ol>
+      <p class="note">{view.case.basisLabel} : <span dir="ltr">{view.case.basis.join(', ')}</span>. {view.case.note}</p>
+    </section>
+  )}
+
+  {view.datedValues.length > 0 && (
+    <section class="section" aria-labelledby="valeurs-datees">
+      <h2 id="valeurs-datees">{view.labels.datedHeading}</h2>
+      <p class="section-intro">{view.labels.datedIntro}</p>
+      <ul class="dated-list">
+        {view.datedValues.map((d) => (
+          <li>
+            <code dir="ltr">{d.key}</code> :
+            <span dir="ltr" class="fisca-tabular-num"> {d.display}</span>
+            (<span dir="ltr">{d.as_of}</span>)
+            <span class={checked(d.state) ? 'dated-state dated-state-checked' : 'dated-state'} dir="ltr">{d.state}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <section class="section" aria-labelledby="sources">
+    <h2 id="sources">{view.labels.sourcesHeading}</h2>
+    <ul class="source-list">
+      {view.sources.map((source) => <li>{source.label} <span class="source-kind">({source.kindLabel})</span></li>)}
+    </ul>
+  </section>
+
+  <section class="section faq" aria-labelledby="faq">
+    <h2 id="faq">{view.labels.faqHeading}</h2>
+    {view.faqs.map((item) => (
+      <details>
+        <summary>{item.question}</summary>
+        <p><AmountText text={item.answer} /></p>
+      </details>
+    ))}
+  </section>
+
+  <p class="actions"><a class="button" href={view.cta.href} rel="noopener">{view.cta.label}</a></p>
+
+  <section class="section" aria-labelledby="liees">
+    <h2 id="liees">{view.labels.relatedHeading}</h2>
+    <ul class="related-list">
+      {view.related.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+    </ul>
+  </section>
+  <p class="note guide-disclaimer">{view.labels.disclaimer}</p>
+</article>

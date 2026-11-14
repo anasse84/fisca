@@ -1,0 +1,1953 @@
+{
+  "dataset_id": "FISCA_CGNC_CORE_V2",
+  "legal_source": "Loi n° 9-88 relative aux obligations comptables des commerçants & Plan Comptable Général des Entreprises (CGNC Maroc)",
+  "accounts_count": 61,
+  "locales": [
+    "fr",
+    "ar",
+    "en"
+  ],
+  "indexed_urls_count": 183,
+  "simpl_is_code_edi_note": "simpl_is_code_edi est volontairement null tant que l'annexe XSD officielle SIMPL-IS v2.0.3 de la DGI n'est pas importée dans le dépôt (zéro codeEdi inventé).",
+  "accounts": [
+    {
+      "account_number": "1111",
+      "cgnc_class": 1,
+      "label_fr": "Capital social",
+      "label_ar": "رأس المال الاجتماعي",
+      "label_en": "Share capital",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Libération du capital social initial par virement bancaire",
+        "total_cents": 10000000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 10000000
+          },
+          {
+            "account_number": "1111",
+            "side": "CREDIT",
+            "amount_cents": 10000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1140",
+      "cgnc_class": 1,
+      "label_fr": "Réserve légale",
+      "label_ar": "الاحتياطي القانوني",
+      "label_en": "Legal reserve",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Affectation de 5 % du bénéfice net à la réserve légale",
+        "total_cents": 500000,
+        "lines": [
+          {
+            "account_number": "1191",
+            "side": "DEBIT",
+            "amount_cents": 500000
+          },
+          {
+            "account_number": "1140",
+            "side": "CREDIT",
+            "amount_cents": 500000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1161",
+      "cgnc_class": 1,
+      "label_fr": "Report à nouveau (solde créditeur)",
+      "label_ar": "الترحيل من جديد (رصيد دائن)",
+      "label_en": "Retained earnings (credit balance)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Affectation par l'assemblée du résultat en instance au report à nouveau",
+        "total_cents": 2500000,
+        "lines": [
+          {
+            "account_number": "1181",
+            "side": "DEBIT",
+            "amount_cents": 2500000
+          },
+          {
+            "account_number": "1161",
+            "side": "CREDIT",
+            "amount_cents": 2500000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1181",
+      "cgnc_class": 1,
+      "label_fr": "Résultats nets en instance d'affectation (solde créditeur)",
+      "label_ar": "النتائج الصافية في انتظار التخصيص (رصيد دائن)",
+      "label_en": "Net results pending appropriation (credit balance)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation du résultat net de l'exercice en instance d'affectation, dans l'attente de la décision de l'assemblée",
+        "total_cents": 2500000,
+        "lines": [
+          {
+            "account_number": "1191",
+            "side": "DEBIT",
+            "amount_cents": 2500000
+          },
+          {
+            "account_number": "1181",
+            "side": "CREDIT",
+            "amount_cents": 2500000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1191",
+      "cgnc_class": 1,
+      "label_fr": "Résultat net de l'exercice (créditeur)",
+      "label_ar": "النتيجة الصافية للسنة المالية (دائنة)",
+      "label_en": "Net profit for the fiscal year",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation du bénéfice net à l'ouverture de l'exercice suivant",
+        "total_cents": 3000000,
+        "lines": [
+          {
+            "account_number": "8800",
+            "side": "DEBIT",
+            "amount_cents": 3000000
+          },
+          {
+            "account_number": "1191",
+            "side": "CREDIT",
+            "amount_cents": 3000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1481",
+      "cgnc_class": 1,
+      "label_fr": "Emprunts auprès des établissements de crédit",
+      "label_ar": "الاقتراضات لدى مؤسسات الائتمان",
+      "label_en": "Borrowings from credit institutions",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_C_DETTES_FINANCEMENT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Déblocage d'un emprunt bancaire d'investissement moyen terme",
+        "total_cents": 50000000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 50000000
+          },
+          {
+            "account_number": "1481",
+            "side": "CREDIT",
+            "amount_cents": 50000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1511",
+      "cgnc_class": 1,
+      "label_fr": "Provisions pour litiges",
+      "label_ar": "مؤونة النزاعات",
+      "label_en": "Provisions for litigation",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_D_PROVISIONS_DURABLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Dotation d'une provision durable pour litige commercial",
+        "total_cents": 1500000,
+        "lines": [
+          {
+            "account_number": "6195",
+            "side": "DEBIT",
+            "amount_cents": 1500000
+          },
+          {
+            "account_number": "1511",
+            "side": "CREDIT",
+            "amount_cents": 1500000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2111",
+      "cgnc_class": 2,
+      "label_fr": "Frais de constitution",
+      "label_ar": "مصاريف التأسيس",
+      "label_en": "Incorporation expenses",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_A_IMMOB_NON_VALEUR",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Inscription des droits d'enregistrement et frais de création",
+        "total_cents": 400000,
+        "lines": [
+          {
+            "account_number": "2111",
+            "side": "DEBIT",
+            "amount_cents": 400000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 400000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2230",
+      "cgnc_class": 2,
+      "label_fr": "Fonds commercial",
+      "label_ar": "الأصل التجاري",
+      "label_en": "Commercial goodwill",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_B_IMMOB_INCORPORELLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Acquisition d'un fonds commercial par virement notarié",
+        "total_cents": 30000000,
+        "lines": [
+          {
+            "account_number": "2230",
+            "side": "DEBIT",
+            "amount_cents": 30000000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 30000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2321",
+      "cgnc_class": 2,
+      "label_fr": "Bâtiments",
+      "label_ar": "المباني",
+      "label_en": "Buildings",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_C_IMMOB_CORPORELLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Acquisition d'un local professionnel neuf (TVA 20 % sur immob.)",
+        "total_cents": 96000000,
+        "lines": [
+          {
+            "account_number": "2321",
+            "side": "DEBIT",
+            "amount_cents": 80000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 16000000
+          },
+          {
+            "account_number": "4481",
+            "side": "CREDIT",
+            "amount_cents": 96000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2332",
+      "cgnc_class": 2,
+      "label_fr": "Matériel et outillage",
+      "label_ar": "المعدات والأدوات",
+      "label_en": "Plant and equipment",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_C_IMMOB_CORPORELLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture d'achat d'une machine industrielle (TVA 20 % en attente)",
+        "total_cents": 18000000,
+        "lines": [
+          {
+            "account_number": "2332",
+            "side": "DEBIT",
+            "amount_cents": 15000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 3000000
+          },
+          {
+            "account_number": "4481",
+            "side": "CREDIT",
+            "amount_cents": 18000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2340",
+      "cgnc_class": 2,
+      "label_fr": "Matériel de transport",
+      "label_ar": "معدات النقل",
+      "label_en": "Transport equipment",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_C_IMMOB_CORPORELLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Acquisition d'un véhicule utilitaire de livraison (HT + TVA immob.)",
+        "total_cents": 30000000,
+        "lines": [
+          {
+            "account_number": "2340",
+            "side": "DEBIT",
+            "amount_cents": 25000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 5000000
+          },
+          {
+            "account_number": "4481",
+            "side": "CREDIT",
+            "amount_cents": 30000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2355",
+      "cgnc_class": 2,
+      "label_fr": "Matériel informatique",
+      "label_ar": "المعدات المعلوماتية",
+      "label_en": "Computer hardware",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_C_IMMOB_CORPORELLES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Achat de postes de travail et terminaux tactiles (TVA 20 %)",
+        "total_cents": 3600000,
+        "lines": [
+          {
+            "account_number": "2355",
+            "side": "DEBIT",
+            "amount_cents": 3000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "4481",
+            "side": "CREDIT",
+            "amount_cents": 3600000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2486",
+      "cgnc_class": 2,
+      "label_fr": "Dépôts et cautionnements versés",
+      "label_ar": "الودائع والكفالات المدفوعة",
+      "label_en": "Deposits and guarantees paid",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_D_IMMOB_FINANCIERES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Versement de deux mois de caution de bail commercial",
+        "total_cents": 2000000,
+        "lines": [
+          {
+            "account_number": "2486",
+            "side": "DEBIT",
+            "amount_cents": 2000000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 2000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "2835",
+      "cgnc_class": 2,
+      "label_fr": "Amortissements du mobilier, matériel de bureau et informatique",
+      "label_ar": "اهتلاكات الأثاث ومعدات المكتب والمعلوماتيات",
+      "label_en": "Accumulated depreciation of office & IT equipment",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_C_AMORTISSEMENTS",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Dotation annuelle aux amortissements du parc informatique",
+        "total_cents": 600000,
+        "lines": [
+          {
+            "account_number": "6193",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "2835",
+            "side": "CREDIT",
+            "amount_cents": 600000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3111",
+      "cgnc_class": 3,
+      "label_fr": "Marchandises (groupe A)",
+      "label_ar": "البضائع",
+      "label_en": "Merchandise inventory",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_F_STOCKS",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation du stock final de marchandises à l'inventaire",
+        "total_cents": 12000000,
+        "lines": [
+          {
+            "account_number": "3111",
+            "side": "DEBIT",
+            "amount_cents": 12000000
+          },
+          {
+            "account_number": "6114",
+            "side": "CREDIT",
+            "amount_cents": 12000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3421",
+      "cgnc_class": 3,
+      "label_fr": "Clients",
+      "label_ar": "الزبناء",
+      "label_en": "Trade receivables",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture de vente B2B à crédit (TVA collectée en attente 44558)",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 1200000
+          },
+          {
+            "account_number": "7111",
+            "side": "CREDIT",
+            "amount_cents": 1000000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3424",
+      "cgnc_class": 3,
+      "label_fr": "Clients douteux ou litigieux",
+      "label_ar": "الزبناء المشكوك فيهم أو المتنازع معهم",
+      "label_en": "Doubtful or disputed trade receivables",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Reclassement d'une créance client impayée en client douteux",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "3424",
+            "side": "DEBIT",
+            "amount_cents": 1200000
+          },
+          {
+            "account_number": "3421",
+            "side": "CREDIT",
+            "amount_cents": 1200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3425",
+      "cgnc_class": 3,
+      "label_fr": "Clients - effets à recevoir",
+      "label_ar": "الزبناء - أوراق القبض",
+      "label_en": "Trade notes receivable (LCN)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Acceptation d'une LCN client (TVA reste en 44558 jusqu'à encaissement)",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "3425",
+            "side": "DEBIT",
+            "amount_cents": 1200000
+          },
+          {
+            "account_number": "3421",
+            "side": "CREDIT",
+            "amount_cents": 1200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3453",
+      "cgnc_class": 3,
+      "label_fr": "Acomptes sur impôts sur les résultats",
+      "label_ar": "الدفعات المقدمة على الضرائب على النتائج",
+      "label_en": "Corporate income tax (IS) installments",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Paiement d'un acompte provisionnel trimestriel d'IS à la DGI",
+        "total_cents": 750000,
+        "lines": [
+          {
+            "account_number": "3453",
+            "side": "DEBIT",
+            "amount_cents": 750000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 750000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "34551",
+      "cgnc_class": 3,
+      "label_fr": "État - TVA récupérable sur immobilisations",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد على المستقرات",
+      "label_en": "Recoverable VAT on fixed assets",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_IMMOB_34551",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Activation de la TVA récupérable sur immobilisation après règlement",
+        "total_cents": 600000,
+        "lines": [
+          {
+            "account_number": "34551",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "34558",
+            "side": "CREDIT",
+            "amount_cents": 600000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "34552",
+      "cgnc_class": 3,
+      "label_fr": "État - TVA récupérable sur charges",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد على التكاليف",
+      "label_en": "Recoverable VAT on operating expenses",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Virement de la TVA sur charges devenue déductible au décaissement",
+        "total_cents": 200000,
+        "lines": [
+          {
+            "account_number": "34552",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "34558",
+            "side": "CREDIT",
+            "amount_cents": 200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "34558",
+      "cgnc_class": 3,
+      "label_fr": "État - TVA récupérable en attente de décaissement",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد في انتظار الأداء",
+      "label_en": "Pending recoverable VAT (cash basis)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_PENDING_34558",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation de la TVA en attente sur facture fournisseur non réglée",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "6125",
+            "side": "DEBIT",
+            "amount_cents": 1000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 1200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "3455"
+    },
+    {
+      "account_number": "3456",
+      "cgnc_class": 3,
+      "label_fr": "État - crédit de TVA (suivant déclarations)",
+      "label_ar": "الدولة - فائض الضريبة على القيمة المضافة",
+      "label_en": "VAT credit carryforward",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Liquidation mensuelle SIMPL-TVA dégageant un crédit reportable",
+        "total_cents": 400000,
+        "lines": [
+          {
+            "account_number": "44551",
+            "side": "DEBIT",
+            "amount_cents": 300000
+          },
+          {
+            "account_number": "3456",
+            "side": "DEBIT",
+            "amount_cents": 100000
+          },
+          {
+            "account_number": "34552",
+            "side": "CREDIT",
+            "amount_cents": 400000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3488",
+      "cgnc_class": 3,
+      "label_fr": "Divers débiteurs (débours refacturables)",
+      "label_ar": "مدينون مختلفون (مصاريف مؤداة لحساب الغير)",
+      "label_en": "Sundry debtors & pass-through disbursements",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Avance de frais administratifs au nom et pour le compte du client",
+        "total_cents": 50000,
+        "lines": [
+          {
+            "account_number": "3488",
+            "side": "DEBIT",
+            "amount_cents": 50000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 50000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "3497",
+      "cgnc_class": 3,
+      "label_fr": "Comptes transitoires ou d'attente - débiteurs",
+      "label_ar": "حسابات انتقالية أو انتظارية - مدينة",
+      "label_en": "Suspense accounts (debit)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Isolement d'un prélèvement bancaire ambigu en attente de pièce",
+        "total_cents": 450000,
+        "lines": [
+          {
+            "account_number": "3497",
+            "side": "DEBIT",
+            "amount_cents": 450000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 450000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4411",
+      "cgnc_class": 4,
+      "label_fr": "Fournisseurs",
+      "label_ar": "الموردون",
+      "label_en": "Trade payables",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Réception d'une facture fournisseur de marchandises à 60 jours",
+        "total_cents": 2400000,
+        "lines": [
+          {
+            "account_number": "6111",
+            "side": "DEBIT",
+            "amount_cents": 2000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 400000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 2400000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4415",
+      "cgnc_class": 4,
+      "label_fr": "Fournisseurs - effets à payer",
+      "label_ar": "الموردون - أوراق الدفع",
+      "label_en": "Trade notes payable (LCN)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Remise d'une LCN à échéance au fournisseur (TVA reste en 34558)",
+        "total_cents": 2400000,
+        "lines": [
+          {
+            "account_number": "4411",
+            "side": "DEBIT",
+            "amount_cents": 2400000
+          },
+          {
+            "account_number": "4415",
+            "side": "CREDIT",
+            "amount_cents": 2400000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4421",
+      "cgnc_class": 4,
+      "label_fr": "Clients - avances et acomptes reçus sur commandes en cours",
+      "label_ar": "الزبناء - التسبيقات والدفعات المقدمة المستلمة",
+      "label_en": "Customer advances and deposits received",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "COLLECTED_DUE_44551",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Encaissement d'un acompte client avec exigibilité immédiate de TVA",
+        "total_cents": 600000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "4421",
+            "side": "CREDIT",
+            "amount_cents": 500000
+          },
+          {
+            "account_number": "44551",
+            "side": "CREDIT",
+            "amount_cents": 100000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4432",
+      "cgnc_class": 4,
+      "label_fr": "Rémunérations dues au personnel",
+      "label_ar": "الأجور المستحقة للمستخدمين",
+      "label_en": "Net salaries payable to employees",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Virement des salaires nets mensuels au personnel",
+        "total_cents": 3800000,
+        "lines": [
+          {
+            "account_number": "4432",
+            "side": "DEBIT",
+            "amount_cents": 3800000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 3800000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4441",
+      "cgnc_class": 4,
+      "label_fr": "Caisse Nationale de Sécurité Sociale (CNSS)",
+      "label_ar": "الصندوق الوطني للضمان الاجتماعي",
+      "label_en": "Social security payables (CNSS)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Télépaiement DAMANCOM des cotisations salariales et patronales CNSS",
+        "total_cents": 920000,
+        "lines": [
+          {
+            "account_number": "4441",
+            "side": "DEBIT",
+            "amount_cents": 920000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 920000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "44525",
+      "cgnc_class": 4,
+      "label_fr": "État - IR sur salaires",
+      "label_ar": "الدولة - الضريبة على الدخل على الأجور",
+      "label_en": "Personal income tax withheld on payroll (IR)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Reversement mensuel SIMPL-IR de l'impôt retenu sur salaires",
+        "total_cents": 410000,
+        "lines": [
+          {
+            "account_number": "44525",
+            "side": "DEBIT",
+            "amount_cents": 410000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 410000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true,
+      "official_historical_label_fr": "État, IGR"
+    },
+    {
+      "account_number": "4453",
+      "cgnc_class": 4,
+      "label_fr": "État - impôts sur les résultats",
+      "label_ar": "الدولة - الضرائب على النتائج",
+      "label_en": "Corporate income tax payable (IS)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation de l'impôt sur les sociétés dû en fin d'exercice",
+        "total_cents": 900000,
+        "lines": [
+          {
+            "account_number": "6701",
+            "side": "DEBIT",
+            "amount_cents": 900000
+          },
+          {
+            "account_number": "4453",
+            "side": "CREDIT",
+            "amount_cents": 900000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "44551",
+      "cgnc_class": 4,
+      "label_fr": "État - TVA facturée exigible",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة المفوترة المستحقة",
+      "label_en": "Collected VAT due (upon cash receipt)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "COLLECTED_DUE_44551",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Bascule de la TVA collectée en attente vers TVA exigible à l'encaissement",
+        "total_cents": 200000,
+        "lines": [
+          {
+            "account_number": "44558",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "44551",
+            "side": "CREDIT",
+            "amount_cents": 200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "4455"
+    },
+    {
+      "account_number": "44558",
+      "cgnc_class": 4,
+      "label_fr": "État - TVA facturée en attente d'encaissement",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة المفوترة في انتظار التحصيل",
+      "label_en": "Pending collected VAT (cash basis)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "COLLECTED_PENDING_44558",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Émission d'une facture client non encore encaissée (régime encaissement)",
+        "total_cents": 600000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "7121",
+            "side": "CREDIT",
+            "amount_cents": 500000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 100000
+          }
+        ]
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "4455"
+    },
+    {
+      "account_number": "4456",
+      "cgnc_class": 4,
+      "label_fr": "État - TVA due (suivant déclarations)",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة المستحقة الأداء",
+      "label_en": "Net VAT payable per SIMPL-TVA return",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Centralisation de la déclaration SIMPL-TVA mensuelle nette à payer",
+        "total_cents": 500000,
+        "lines": [
+          {
+            "account_number": "44551",
+            "side": "DEBIT",
+            "amount_cents": 500000
+          },
+          {
+            "account_number": "34552",
+            "side": "CREDIT",
+            "amount_cents": 320000
+          },
+          {
+            "account_number": "4456",
+            "side": "CREDIT",
+            "amount_cents": 180000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4457",
+      "cgnc_class": 4,
+      "label_fr": "État - impôts et taxes à payer (RAS-TVA, RAS IR/IS, Timbre)",
+      "label_ar": "الدولة - ضرائب ورسوم مستحقة الأداء (الاقتطاع من المنبع والدمغة)",
+      "label_en": "Withholding taxes & stamp duties payable",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Règlement fournisseur avec retenue à la source RAS-TVA 75 % (Art. 117)",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "4411",
+            "side": "DEBIT",
+            "amount_cents": 1200000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 1050000
+          },
+          {
+            "account_number": "4457",
+            "side": "CREDIT",
+            "amount_cents": 150000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "4497",
+      "cgnc_class": 4,
+      "label_fr": "Comptes transitoires ou d'attente - créditeurs",
+      "label_ar": "حسابات انتقالية أو انتظارية - دائنة",
+      "label_en": "Suspense accounts (credit)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_F_DETTES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Réception d'un virement bancaire sans référence client identifiable",
+        "total_cents": 450000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 450000
+          },
+          {
+            "account_number": "4497",
+            "side": "CREDIT",
+            "amount_cents": 450000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "5141",
+      "cgnc_class": 5,
+      "label_fr": "Banques (soldes débiteurs)",
+      "label_ar": "البنوك (أرصدة مدينة)",
+      "label_en": "Cash at bank (debit balances)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_I_TRESORERIE_ACTIF",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Encaissement par virement bancaire d'une facture client échue",
+        "total_cents": 1200000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 1200000
+          },
+          {
+            "account_number": "3421",
+            "side": "CREDIT",
+            "amount_cents": 1200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "5161",
+      "cgnc_class": 5,
+      "label_fr": "Caisses (solde toujours positif ou nul)",
+      "label_ar": "الصندوق",
+      "label_en": "Cash on hand (petty cash & POS register)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_ACTIF_I_TRESORERIE_ACTIF",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Encaissement espèces clôture Ticket Z (ventes HT 20 % + TVA + timbre 0,25 %)",
+        "total_cents": 120300,
+        "lines": [
+          {
+            "account_number": "5161",
+            "side": "DEBIT",
+            "amount_cents": 120300
+          },
+          {
+            "account_number": "7111",
+            "side": "CREDIT",
+            "amount_cents": 100000
+          },
+          {
+            "account_number": "44551",
+            "side": "CREDIT",
+            "amount_cents": 20000
+          },
+          {
+            "account_number": "4457",
+            "side": "CREDIT",
+            "amount_cents": 300
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "5541",
+      "cgnc_class": 5,
+      "label_fr": "Banques (soldes créditeurs / facilités de caisse)",
+      "label_ar": "البنوك (أرصدة دائنة)",
+      "label_en": "Bank overdrafts (credit balances)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_H_TRESORERIE_PASSIF",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Remboursement d'une ligne de découvert bancaire court terme",
+        "total_cents": 3000000,
+        "lines": [
+          {
+            "account_number": "5541",
+            "side": "DEBIT",
+            "amount_cents": 3000000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 3000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6111",
+      "cgnc_class": 6,
+      "label_fr": "Achats de marchandises (groupe A)",
+      "label_ar": "مشتريات البضائع",
+      "label_en": "Purchases of merchandise",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_611",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Achat de marchandises destinées à la revente en l'état (TVA 20 %)",
+        "total_cents": 3600000,
+        "lines": [
+          {
+            "account_number": "6111",
+            "side": "DEBIT",
+            "amount_cents": 3000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 600000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 3600000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6121",
+      "cgnc_class": 6,
+      "label_fr": "Achats de matières premières",
+      "label_ar": "مشتريات المواد الأولية",
+      "label_en": "Purchases of raw materials",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_612",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Approvisionnement en matières premières de production",
+        "total_cents": 4800000,
+        "lines": [
+          {
+            "account_number": "6121",
+            "side": "DEBIT",
+            "amount_cents": 4000000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 800000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 4800000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6125",
+      "cgnc_class": 6,
+      "label_fr": "Achats non stockés de matières et de fournitures (eau, électricité, carburant)",
+      "label_ar": "مشتريات غير مخزنة من المواد واللوازم",
+      "label_en": "Non-stocked supplies & utilities",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_612",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture d'électricité professionnelle réglée par prélèvement bancaire",
+        "total_cents": 240000,
+        "lines": [
+          {
+            "account_number": "6125",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "34552",
+            "side": "DEBIT",
+            "amount_cents": 40000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 240000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6131",
+      "cgnc_class": 6,
+      "label_fr": "Locations et charges locatives",
+      "label_ar": "الكراء والتكاليف الإيجارية",
+      "label_en": "Rent and lease expenses",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Paiement du loyer mensuel de bureaux avec retenue RAS sur loyer 10 %",
+        "total_cents": 1500000,
+        "lines": [
+          {
+            "account_number": "6131",
+            "side": "DEBIT",
+            "amount_cents": 1500000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 1350000
+          },
+          {
+            "account_number": "4457",
+            "side": "CREDIT",
+            "amount_cents": 150000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6134",
+      "cgnc_class": 6,
+      "label_fr": "Primes d'assurances",
+      "label_ar": "أقساط التأمين",
+      "label_en": "Insurance premiums",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Règlement de la prime annuelle d'assurance multirisque professionnelle",
+        "total_cents": 650000,
+        "lines": [
+          {
+            "account_number": "6134",
+            "side": "DEBIT",
+            "amount_cents": 650000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 650000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6136",
+      "cgnc_class": 6,
+      "label_fr": "Rémunérations d'intermédiaires et honoraires",
+      "label_ar": "أتعاب الوسطاء والأتعاب المهنية",
+      "label_en": "Professional fees and commissions",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture d'honoraires fiduciaire OEC (TVA 20 % en attente)",
+        "total_cents": 360000,
+        "lines": [
+          {
+            "account_number": "6136",
+            "side": "DEBIT",
+            "amount_cents": 300000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 60000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 360000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6142",
+      "cgnc_class": 6,
+      "label_fr": "Transports",
+      "label_ar": "النقل",
+      "label_en": "Freight and transport services",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture de transport routier national de marchandises",
+        "total_cents": 300000,
+        "lines": [
+          {
+            "account_number": "6142",
+            "side": "DEBIT",
+            "amount_cents": 250000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 50000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 300000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6145",
+      "cgnc_class": 6,
+      "label_fr": "Frais postaux et frais de télécommunications",
+      "label_ar": "مصاريف البريد والمواصلات السلكية واللاسلكية",
+      "label_en": "Postal and telecommunications expenses",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture mensuelle fibre optique et flotte mobile (TVA 20 %)",
+        "total_cents": 96000,
+        "lines": [
+          {
+            "account_number": "6145",
+            "side": "DEBIT",
+            "amount_cents": 80000
+          },
+          {
+            "account_number": "34558",
+            "side": "DEBIT",
+            "amount_cents": 16000
+          },
+          {
+            "account_number": "4411",
+            "side": "CREDIT",
+            "amount_cents": 96000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "61473",
+      "cgnc_class": 6,
+      "label_fr": "Frais et commissions sur services bancaires et TPE",
+      "label_ar": "مصاريف وعمولات الخدمات البنكية",
+      "label_en": "Bank service charges & card processing fees",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Prélèvement de commission monétique TPE (TVA bancaire au taux de 10 %)",
+        "total_cents": 22000,
+        "lines": [
+          {
+            "account_number": "61473",
+            "side": "DEBIT",
+            "amount_cents": 20000
+          },
+          {
+            "account_number": "34552",
+            "side": "DEBIT",
+            "amount_cents": 2000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 22000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6171",
+      "cgnc_class": 6,
+      "label_fr": "Rémunérations du personnel",
+      "label_ar": "أجور المستخدمين",
+      "label_en": "Employee gross salaries and wages",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_617",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Comptabilisation du livre de paie mensuel (brut, CNSS salariale, IR, net)",
+        "total_cents": 4500000,
+        "lines": [
+          {
+            "account_number": "6171",
+            "side": "DEBIT",
+            "amount_cents": 4500000
+          },
+          {
+            "account_number": "4441",
+            "side": "CREDIT",
+            "amount_cents": 290000
+          },
+          {
+            "account_number": "44525",
+            "side": "CREDIT",
+            "amount_cents": 410000
+          },
+          {
+            "account_number": "4432",
+            "side": "CREDIT",
+            "amount_cents": 3800000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6311",
+      "cgnc_class": 6,
+      "label_fr": "Intérêts des emprunts et dettes",
+      "label_ar": "فوائد الاقتراضات والديون",
+      "label_en": "Interest expense on borrowings",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
+      "cgnc_statement_rubric": "CPC_FINANCIER_CHARGES_631",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Prélèvement des intérêts mensuels d'emprunt bancaire (TVA 10 %)",
+        "total_cents": 110000,
+        "lines": [
+          {
+            "account_number": "6311",
+            "side": "DEBIT",
+            "amount_cents": 100000
+          },
+          {
+            "account_number": "34552",
+            "side": "DEBIT",
+            "amount_cents": 10000
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 110000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "6583",
+      "cgnc_class": 6,
+      "label_fr": "Pénalités et amendes fiscales ou pénales (non déductibles IS)",
+      "label_ar": "الغرامات والذعائر الضريبية أو الجنائية",
+      "label_en": "Tax & regulatory penalties (non-deductible, incl. Law 69-21)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "CPC_NON_COURANT_CHARGES_658",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Paiement d'une amende pécuniaire Loi 69-21 à réintégrer au Tableau 3 IS",
+        "total_cents": 44500,
+        "lines": [
+          {
+            "account_number": "6583",
+            "side": "DEBIT",
+            "amount_cents": 44500
+          },
+          {
+            "account_number": "5141",
+            "side": "CREDIT",
+            "amount_cents": 44500
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7111",
+      "cgnc_class": 7,
+      "label_fr": "Ventes de marchandises au Maroc",
+      "label_ar": "مبيعات البضائع بالمغرب",
+      "label_en": "Domestic sales of merchandise",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_PRODUITS_711",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facture de vente de marchandises au Maroc soumise à la TVA à 20 %",
+        "total_cents": 2400000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 2400000
+          },
+          {
+            "account_number": "7111",
+            "side": "CREDIT",
+            "amount_cents": 2000000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 400000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7119",
+      "cgnc_class": 7,
+      "label_fr": "Rabais, remises et ristournes accordés par l'entreprise (marchandises)",
+      "label_ar": "التخفيضات والحسومات الممنوحة على البضائع",
+      "label_en": "Sales discounts and rebates granted (merchandise)",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_PRODUITS_711",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Émission d'une facture d'avoir UBL 381 pour remise commerciale sur ventes",
+        "total_cents": 240000,
+        "lines": [
+          {
+            "account_number": "7119",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "44558",
+            "side": "DEBIT",
+            "amount_cents": 40000
+          },
+          {
+            "account_number": "3421",
+            "side": "CREDIT",
+            "amount_cents": 240000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7121",
+      "cgnc_class": 7,
+      "label_fr": "Ventes de biens produits au Maroc",
+      "label_ar": "مبيعات السلع المنتجة بالمغرب",
+      "label_en": "Domestic sales of manufactured goods",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_PRODUITS_712",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facturation de produits finis livrés à un client industriel marocain",
+        "total_cents": 6000000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 6000000
+          },
+          {
+            "account_number": "7121",
+            "side": "CREDIT",
+            "amount_cents": 5000000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 1000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7124",
+      "cgnc_class": 7,
+      "label_fr": "Ventes de services produits au Maroc",
+      "label_ar": "مبيعات الخدمات المنتجة بالمغرب",
+      "label_en": "Domestic rendering of services",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_PRODUITS_712",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Facturation d'une prestation de conseil informatique au Maroc (TVA 20 %)",
+        "total_cents": 1800000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 1800000
+          },
+          {
+            "account_number": "7124",
+            "side": "CREDIT",
+            "amount_cents": 1500000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 300000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7127",
+      "cgnc_class": 7,
+      "label_fr": "Ventes de produits accessoires (ports facturés, commissions)",
+      "label_ar": "مبيعات المنتجات التبعية",
+      "label_en": "Ancillary operating revenues",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "BASE_HT_SUBJECT_TO_ENCASHMENT",
+      "cgnc_statement_rubric": "CPC_EXPLOITATION_PRODUITS_712",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Refacturation de frais de livraison forfaitaires sur facture client",
+        "total_cents": 60000,
+        "lines": [
+          {
+            "account_number": "3421",
+            "side": "DEBIT",
+            "amount_cents": 60000
+          },
+          {
+            "account_number": "7127",
+            "side": "CREDIT",
+            "amount_cents": 50000
+          },
+          {
+            "account_number": "44558",
+            "side": "CREDIT",
+            "amount_cents": 10000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "7381",
+      "cgnc_class": 7,
+      "label_fr": "Intérêts et produits assimilés",
+      "label_ar": "الفوائد والمنتجات المماثلة",
+      "label_en": "Interest and similar financial income",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "EXEMPT_OR_OUT_OF_SCOPE",
+      "cgnc_statement_rubric": "CPC_FINANCIER_PRODUITS_738",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Encaissement net d'intérêts créditeurs sur dépôt à terme bancaire",
+        "total_cents": 100000,
+        "lines": [
+          {
+            "account_number": "5141",
+            "side": "DEBIT",
+            "amount_cents": 80000
+          },
+          {
+            "account_number": "3453",
+            "side": "DEBIT",
+            "amount_cents": 20000
+          },
+          {
+            "account_number": "7381",
+            "side": "CREDIT",
+            "amount_cents": 100000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "8100",
+      "cgnc_class": 8,
+      "label_fr": "Résultat d'exploitation",
+      "label_ar": "نتيجة الاستغلال",
+      "label_en": "Operating income / result",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "ESG_SOLDE_EXPLOITATION",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Virement pour solde des produits et charges d'exploitation à la clôture",
+        "total_cents": 20000000,
+        "lines": [
+          {
+            "account_number": "7111",
+            "side": "DEBIT",
+            "amount_cents": 20000000
+          },
+          {
+            "account_number": "6111",
+            "side": "CREDIT",
+            "amount_cents": 14000000
+          },
+          {
+            "account_number": "8100",
+            "side": "CREDIT",
+            "amount_cents": 6000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "8800",
+      "cgnc_class": 8,
+      "label_fr": "Résultat après impôts",
+      "label_ar": "النتيجة بعد الضرائب",
+      "label_en": "Net income after corporate tax",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "ESG_RESULTAT_NET",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Détermination du résultat net comptable après imputation de l'IS",
+        "total_cents": 4000000,
+        "lines": [
+          {
+            "account_number": "8600",
+            "side": "DEBIT",
+            "amount_cents": 4000000
+          },
+          {
+            "account_number": "6701",
+            "side": "CREDIT",
+            "amount_cents": 1000000
+          },
+          {
+            "account_number": "8800",
+            "side": "CREDIT",
+            "amount_cents": 3000000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    }
+  ],
+  "revision_note": "V2 (2026-11-14, correctif du propriétaire) : 34551/34552 inversés (immobilisations/charges), 1181 relibellé, 1161 ajouté, indicateur is_official_cgnc_base et parent_cgnc_account. Source propriétaire, non recoupée avec le texte officiel."
+}

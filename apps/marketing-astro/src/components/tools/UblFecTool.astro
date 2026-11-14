@@ -1,0 +1,51 @@
+---
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { validatorUiCopy } from '../../tools/copy/ubl-fec-ui.ts';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const { locale } = Astro.props;
+const ui = validatorUiCopy(locale);
+---
+<div class="tool" data-tool="ubl-fec" data-copy={JSON.stringify(ui)}>
+  <p class="notice" role="note"><strong>{ui.indicativeBanner}</strong> {ui.localProcessing}</p>
+
+  <section class="tool-block" aria-labelledby="fec-title">
+    <h3 id="fec-title">{ui.fecHeading}</h3>
+    <label class="dropzone" data-role="fec-drop" for="fec-file">
+      <input id="fec-file" class="dropzone-input" type="file" accept=".txt,.csv,text/plain" data-role="fec-file" aria-describedby="fec-hint" />
+      <span class="dropzone-title">{ui.fecDropTitle}</span>
+      <span class="dropzone-hint" id="fec-hint">{ui.fecDropHint}</span>
+    </label>
+    <p class="tool-status" role="status" aria-live="polite" data-role="fec-status"></p>
+    <p class="tool-error" role="alert" data-role="fec-error" hidden></p>
+    <div class="tool-results" data-role="fec-results" aria-live="polite" hidden></div>
+  </section>
+
+  <section class="tool-block" aria-labelledby="ubl-title">
+    <h3 id="ubl-title">{ui.ublHeading}</h3>
+    <form novalidate class="tool-form" data-role="ubl-form" aria-describedby="ubl-formats">
+      <div class="field">
+        <label for="ubl-file">{ui.ublFileLabel}</label>
+        <input id="ubl-file" type="file" accept=".xml,application/xml,text/xml" data-role="ubl-file" />
+      </div>
+      <div class="field">
+        <label for="ubl-text">{ui.ublTextLabel}</label>
+        <textarea id="ubl-text" name="ubl-text" rows="10" dir="ltr" spellcheck="false" autocomplete="off" data-role="ubl-text" aria-describedby="ubl-formats"></textarea>
+        <p class="field-hint" id="ubl-formats">{ui.ublFormats}</p>
+      </div>
+      <p><button type="submit" class="button">{ui.ublRun}</button></p>
+    </form>
+    <p class="tool-status" role="status" aria-live="polite" data-role="ubl-status"></p>
+    <p class="tool-error" role="alert" data-role="ubl-error" hidden></p>
+    <div class="tool-results" data-role="ubl-results" aria-live="polite" hidden></div>
+  </section>
+</div>
+
+<script>
+  import { mountUblFecTool } from '../../tools/ui/ubl-fec-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="ubl-fec"]')) mountUblFecTool(root);
+</script>

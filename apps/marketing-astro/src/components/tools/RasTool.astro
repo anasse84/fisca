@@ -1,0 +1,126 @@
+---
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { ROLE_LABELS } from '../../tools/copy/common.ts';
+import { RAS_UI } from '../../tools/copy/ras.ts';
+import { paramView, rulesPayload } from '../../tools/registry.ts';
+import { CASH_PARAM_KEYS, RAS_PARAM_KEYS, ruleParam } from '../../tools/rule-params.ts';
+
+interface Props {
+  locale: CopyLocale;
+}
+
+const { locale } = Astro.props;
+const ui = RAS_UI[locale];
+const keys = [...new Set([...RAS_PARAM_KEYS, ...CASH_PARAM_KEYS])];
+const roles: Record<string, string> = {};
+for (const [role, label] of Object.entries(ROLE_LABELS)) roles[role] = label[locale];
+const payload = {
+  copy: ui,
+  rules: rulesPayload(keys, locale),
+  roles,
+  params: {
+    reducedBps: ruleParam('ras_reduced_bps').value,
+    fullBps: ruleParam('ras_full_bps').value,
+    attestationMonths: ruleParam('ras_attestation_months').value,
+    thresholdCents: ruleParam('ras_exclusion_threshold_ttc_cents').value,
+    capDayCents: ruleParam('cash_cap_day_cents').value,
+    capMonthCents: ruleParam('cash_cap_month_cents').value,
+  },
+  // Exemple D-20 (ERRATA) : onze règlements de 4 800 MAD TTC, un par jour d'un même mois, au même fournisseur.
+  example: { firstDate: '2026-11-01', count: 11, amountMad: '4800' },
+};
+const vatOptions = [paramView('vat_standard_bps', locale), paramView('vat_reduced_bps', locale), paramView('vat_zero_bps', locale)];
+const note = (state: string, as_of: string): string => `${state}, ${as_of}`;
+---
+<div class="tool" data-tool="ras" data-payload={JSON.stringify(payload)}>
+  <section class="tool-block" aria-labelledby="ras-titre">
+    <h3 id="ras-titre">{ui.rasHeading}</h3>
+    <form novalidate class="tool-form" data-role="ras-form" aria-describedby="ras-error">
+      <div class="tool-grid">
+        <div class="field">
+          <label for="ras-ht">{ui.htLabel}</label>
+          <input id="ras-ht" name="ht" type="text" inputmode="decimal" autocomplete="off" dir="ltr" class="fisca-tabular-num" />
+        </div>
+        <div class="field">
+          <label for="ras-vat">{ui.vatRateLabel}</label>
+          <select id="ras-vat" name="vat">
+            {vatOptions.map((v, index) => <option value={String(v.value)} data-key={v.key} selected={index === 0}>{v.display} ({note(v.state, v.as_of)})</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="ras-payment-date">{ui.paymentDateLabel}</label>
+          <input id="ras-payment-date" name="payment-date" type="date" dir="ltr" class="fisca-tabular-num" />
+        </div>
+        <div class="field">
+          <label for="ras-attestation">{ui.attestationLabel}</label>
+          <input id="ras-attestation" name="attestation" type="date" dir="ltr" class="fisca-tabular-num" aria-describedby="ras-attestation-hint" />
+          <p class="field-hint" id="ras-attestation-hint">{ui.attestationHint}</p>
+        </div>
+        <div class="field">
+          <label for="ras-payment-account">{ui.paymentAccountLabel}</label>
+          <input id="ras-payment-account" name="payment-account" type="text" inputmode="numeric" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="ras-account-hint" />
+        </div>
+        <div class="field">
+          <label for="ras-due-account">{ui.withheldAccountLabel}</label>
+          <input id="ras-due-account" name="due-account" type="text" inputmode="numeric" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="ras-account-hint" />
+          <p class="field-hint" id="ras-account-hint">{ui.accountHint}</p>
+        </div>
+      </div>
+      <p class="tool-error" id="ras-error" role="alert" data-role="ras-error" hidden></p>
+      <p><button type="submit" class="button">{ui.rasSubmit}</button></p>
+    </form>
+    <div class="tool-results" data-role="ras-results" aria-live="polite" hidden>
+      <dl class="result-list" data-role="ras-list"></dl>
+      <div data-role="ras-entry"></div>
+      <div class="rules-used" data-role="ras-rules"></div>
+    </div>
+  </section>
+
+  <section class="tool-block" aria-labelledby="cash-titre">
+    <h3 id="cash-titre">{ui.cashHeading}</h3>
+    <form novalidate class="tool-form" data-role="cash-form" aria-describedby="cash-error">
+      <div class="tool-grid">
+        <div class="field field-wide">
+          <label for="cash-lines">{ui.linesLabel}</label>
+          <textarea id="cash-lines" name="lines" rows="6" dir="ltr" class="fisca-tabular-num" autocomplete="off" spellcheck="false" aria-describedby="cash-lines-hint"></textarea>
+          <p class="field-hint" id="cash-lines-hint">{ui.linesHint}</p>
+        </div>
+        <div class="field">
+          <label for="cash-vat">{ui.vatRateLabel}</label>
+          <select id="cash-vat" name="cash-vat">
+            {vatOptions.map((v, index) => <option value={String(v.value)} data-key={v.key} selected={index === 0}>{v.display} ({note(v.state, v.as_of)})</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="cash-basis">{ui.capBasisLabel}</label>
+          <select id="cash-basis" name="basis">
+            <option value="TTC" selected>{ui.capBasisTtc}</option>
+            <option value="HT">{ui.capBasisHt}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cash-expense">{ui.expenseAccountLabel}</label>
+          <input id="cash-expense" name="expense-account" type="text" inputmode="numeric" autocomplete="off" dir="ltr" class="fisca-tabular-num" aria-describedby="cash-expense-hint" />
+          <p class="field-hint" id="cash-expense-hint">{ui.accountHint}</p>
+        </div>
+      </div>
+      <p class="tool-error" id="cash-error" role="alert" data-role="cash-error" hidden></p>
+      <p class="actions">
+        <button type="submit" class="button">{ui.cashSubmit}</button>
+        <button type="button" class="button button-secondary" data-role="load-example">{ui.loadExample}</button>
+      </p>
+    </form>
+    <div class="tool-results" data-role="cash-results" aria-live="polite" hidden>
+      <dl class="result-list" data-role="cash-summary"></dl>
+      <div data-role="cash-table"></div>
+      <div data-role="cash-entry"></div>
+      <div class="rules-used" data-role="cash-rules"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { mountRasTool } from '../../tools/ui/ras-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool="ras"]')) mountRasTool(root);
+</script>

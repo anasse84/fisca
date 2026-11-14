@@ -1,0 +1,86 @@
+---
+import AmountText from '../AmountText.astro';
+import type { ToolView } from '../../tools/registry.ts';
+
+interface Props {
+  view: ToolView;
+}
+
+const { view } = Astro.props;
+const checked = (state: string): boolean => state === 'RECOUPÉ';
+---
+<nav class="breadcrumb" aria-label={view.labels.breadcrumbLabel}>
+  <ol>
+    {view.breadcrumb.map((crumb, index) => (
+      <li><a href={crumb.href} aria-current={index === view.breadcrumb.length - 1 ? 'page' : undefined}>{crumb.label}</a></li>
+    ))}
+  </ol>
+</nav>
+<article>
+  <h1>{view.heading}</h1>
+  <p class="lead">{view.lead}</p>
+  <p class="note local-note">{view.localProcessing}</p>
+
+  <section class="section" aria-labelledby="outil">
+    <h2 id="outil">{view.labels.toolHeading}</h2>
+    <noscript><p class="notice">{view.labels.jsRequired}</p></noscript>
+    <slot />
+  </section>
+
+  {view.existenceNotice !== null && (
+    <section class="section" aria-labelledby="existence">
+      <h2 id="existence">{view.labels.existenceHeading}</h2>
+      <p class="panel" role="note">{view.existenceNotice}</p>
+    </section>
+  )}
+
+  <section class="section" aria-labelledby="comment">
+    <h2 id="comment">{view.labels.howToHeading}</h2>
+    <ol class="steps-list">
+      {view.steps.map((step) => <li><strong>{step.name}</strong> : {step.text}</li>)}
+    </ol>
+  </section>
+
+  {view.sections.map((section, index) => (
+    <section class="section" aria-labelledby={`section-${String(index)}`}>
+      <h2 id={`section-${String(index)}`}>{section.heading}</h2>
+      {section.paragraphs.map((p) => <p class="section-intro"><AmountText text={p} /></p>)}
+      {section.bullets !== undefined && (
+        <ul class="plain-list">{section.bullets.map((b) => <li><AmountText text={b} /></li>)}</ul>
+      )}
+    </section>
+  ))}
+
+  <section class="section" aria-labelledby="valeurs-datees">
+    <h2 id="valeurs-datees">{view.labels.rulesHeading}</h2>
+    <p class="section-intro">{view.labels.rulesIntro}</p>
+    <ul class="dated-list">
+      {view.params.map((p) => (
+        <li>
+          {p.label} : <span dir="ltr" class="fisca-tabular-num">{p.display}</span>
+          ({view.labels.asOf} <span dir="ltr">{p.as_of}</span>)
+          <span class={checked(p.state) ? 'dated-state dated-state-checked' : 'dated-state'} dir="ltr">{p.state}</span>
+          <span class="note"> : {p.stateLabel}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="section faq" aria-labelledby="faq">
+    <h2 id="faq">{view.labels.faqHeading}</h2>
+    {view.faqs.map((item) => (
+      <details>
+        <summary>{item.question}</summary>
+        <p><AmountText text={item.answer} /></p>
+      </details>
+    ))}
+  </section>
+
+  <section class="section" aria-labelledby="autres-outils">
+    <h2 id="autres-outils">{view.labels.otherTools}</h2>
+    <ul class="related-list">
+      {view.related.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+    </ul>
+  </section>
+  <p class="note guide-disclaimer" role="note">{view.disclaimer}</p>
+</article>

@@ -1,0 +1,6 @@
+---
+import { resolveRootRedirect } from '../i18n/redirect.ts';
+
+const target = resolveRootRedirect();
+return Astro.redirect(target.location, target.status);
+---

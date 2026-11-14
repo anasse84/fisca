@@ -1,0 +1,17 @@
+---
+import { wrapLtrIsolated } from '../lib/numeric.ts';
+
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+/** Isole en dir="ltr" tout montant « 25 000,00 MAD » rencontré dans un texte libre (Doc_08 S03 et S08). */
+const AMOUNT = /(\d[\d ]*,\d{2} MAD)/g;
+const parts = text.split(AMOUNT).map((part, index) => ({ part, isAmount: index % 2 === 1 }));
+---
+{parts.map(({ part, isAmount }) => {
+  if (!isAmount) return part;
+  const isolated = wrapLtrIsolated(part);
+  return <span dir={isolated.dir} class={isolated.class}>{isolated.text}</span>;
+})}

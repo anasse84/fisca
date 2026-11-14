@@ -1,0 +1,7 @@
+/_astro/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=31536000, immutable
