@@ -24,6 +24,10 @@
     "./certify": {
       "types": "./src/certify/index.ts",
       "default": "./src/certify/index.ts"
+    },
+    "./pos": {
+      "types": "./src/pos/index.ts",
+      "default": "./src/pos/index.ts"
     }
   },
   "dependencies": {

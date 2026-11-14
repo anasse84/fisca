@@ -1,0 +1,175 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-10",
+  "description": "Empreintes POS (D-22) : SHA-256 hexadécimal minuscule de l'UTF-8 de JSON.stringify du tuple FISCA_POS_TKT_V1 (13 éléments) ou FISCA_POS_Z_V1 (12 éléments). Amorce de la chaîne POS = 64 zéros (CHECK v4 de 64 hexadécimaux), PAS la genèse de 45 caractères.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "staleValues": {
+    "note": "Anciennes empreintes calculées avec la genèse de 45 caractères GENESIS_HASH_+32 zéros : PÉRIMÉES, à ne pas utiliser.",
+    "ticketPOS-TKT-01": "78ae3cdac0f54daa0c8d72dd417d1a972c1b3c90024248d8a59950021bcf75ee",
+    "closurePOS-Z-01": "3721227a052b7f5ffce0a10702ed9a49d582a10cf3b1010c56e196cf2f3d7a97"
+  },
+  "vectors": [
+    {
+      "id": "POS-TKT-01",
+      "title": "Empreinte d'or : premier ticket du terminal, amorce de 64 zéros",
+      "kind": "TICKET",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "SHA-256(UTF-8(JSON.stringify([\"FISCA_POS_TKT_V1\",\"POS-M01-C01\",1,\"2026-11-13T10:15:00.000Z\",\"SALE\",10000,2000,0,0,0,30,12030,\"0\"×64]))) ; TVA 20 % de 10000 = 2000 ; timbre 30 ; TTC 10000+2000+30 = 12030",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "terminalSeqNumber": 1,
+        "issuedAtIso": "2026-11-13T10:15:00.000Z",
+        "ticketKind": "SALE",
+        "ht20Cents": 10000,
+        "vat20Cents": 2000,
+        "ht10Cents": 0,
+        "vat10Cents": 0,
+        "ht0Cents": 0,
+        "stampDutyCents": 30,
+        "totalTtcCents": 12030,
+        "prevTicketSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "ticketSha256": "a9677d45d9429b948d9d36c01641db05086575926ef658879d61c8e57d32c7fe"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+    },
+    {
+      "id": "POS-TKT-02",
+      "title": "Ticket chaîné : prev = empreinte du ticket 1, taux de 10 %",
+      "kind": "TICKET",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "prevTicketSha256 = POS-TKT-01 ; HT 10 % 5000, TVA 500, sans timbre, TTC 5500",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "terminalSeqNumber": 2,
+        "issuedAtIso": "2026-11-13T10:20:00.000Z",
+        "ticketKind": "SALE",
+        "ht20Cents": 0,
+        "vat20Cents": 0,
+        "ht10Cents": 5000,
+        "vat10Cents": 500,
+        "ht0Cents": 0,
+        "stampDutyCents": 0,
+        "totalTtcCents": 5500,
+        "prevTicketSha256": "a9677d45d9429b948d9d36c01641db05086575926ef658879d61c8e57d32c7fe"
+      },
+      "expected": {
+        "ticketSha256": "e2e821a8de48fb7c1c9139f5838620167ea1680cb24b292dc68502569222767d"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+    },
+    {
+      "id": "POS-TKT-03",
+      "title": "Cas limite : -0 sérialisé 0 (même empreinte que POS-TKT-01)",
+      "kind": "TICKET",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "JSON.stringify(-0) vaut \"0\" : ht0Cents = -0 donne l'empreinte d'or POS-TKT-01",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "terminalSeqNumber": 1,
+        "issuedAtIso": "2026-11-13T10:15:00.000Z",
+        "ticketKind": "SALE",
+        "ht20Cents": 10000,
+        "vat20Cents": 2000,
+        "ht10Cents": 0,
+        "vat10Cents": 0,
+        "ht0Cents": 0,
+        "stampDutyCents": 30,
+        "totalTtcCents": 12030,
+        "prevTicketSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "ticketSha256": "a9677d45d9429b948d9d36c01641db05086575926ef658879d61c8e57d32c7fe"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable",
+      "negativeZeroField": "ht0Cents"
+    },
+    {
+      "id": "POS-TKT-04",
+      "title": "Cas limite : ticketKind différent (SALE_B2C au lieu de SALE) donne une autre empreinte",
+      "kind": "TICKET",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "Seule l'étiquette de nature change : l'empreinte diffère de POS-TKT-01",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "terminalSeqNumber": 1,
+        "issuedAtIso": "2026-11-13T10:15:00.000Z",
+        "ticketKind": "SALE_B2C",
+        "ht20Cents": 10000,
+        "vat20Cents": 2000,
+        "ht10Cents": 0,
+        "vat10Cents": 0,
+        "ht0Cents": 0,
+        "stampDutyCents": 30,
+        "totalTtcCents": 12030,
+        "prevTicketSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "ticketSha256": "46bbdd353ed86a48d2e8c698a2b91777dc51060f35691061e6bf0576cabe4e9f"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+    },
+    {
+      "id": "POS-Z-01",
+      "title": "Empreinte d'or : première clôture Z du terminal, amorce de 64 zéros",
+      "kind": "CLOSURE",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "SHA-256(UTF-8(JSON.stringify([\"FISCA_POS_Z_V1\",\"POS-M01-C01\",1,\"2026-11-13\",10000,2000,0,0,0,30,0,\"0\"×64])))",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "closureNumber": 1,
+        "businessDate": "2026-11-13",
+        "netB2cHt20Cents": 10000,
+        "netB2cVat20Cents": 2000,
+        "netB2cHt10Cents": 0,
+        "netB2cVat10Cents": 0,
+        "netB2cHt0Cents": 0,
+        "totalStampDutyCents": 30,
+        "tpeGrossCents": 0,
+        "prevZSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "zSha256": "da7c65662e8e03d044f41f6f91957b6c850e9bc8a54195f36cea8b382691d7c2"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto"
+    },
+    {
+      "id": "POS-Z-02",
+      "title": "Clôture Z chaînée : prev = empreinte de la clôture 1",
+      "kind": "CLOSURE",
+      "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "prevZSha256 = POS-Z-01 ; net B2C 10 % : HT 5000, TVA 500",
+      "input": {
+        "terminalId": "POS-M01-C01",
+        "closureNumber": 2,
+        "businessDate": "2026-11-14",
+        "netB2cHt20Cents": 0,
+        "netB2cVat20Cents": 0,
+        "netB2cHt10Cents": 5000,
+        "netB2cVat10Cents": 500,
+        "netB2cHt0Cents": 0,
+        "totalStampDutyCents": 0,
+        "tpeGrossCents": 0,
+        "prevZSha256": "da7c65662e8e03d044f41f6f91957b6c850e9bc8a54195f36cea8b382691d7c2"
+      },
+      "expected": {
+        "zSha256": "9c21b9652a8c1dc7cd7a1d9d519c4bccb39f719934a7a79dae7fd79b7c7850ed"
+      },
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto"
+    }
+  ]
+}
