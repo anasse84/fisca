@@ -77,4 +77,10 @@ export const KNOWN_PROFILE_LIMITATIONS: readonly KnownProfileLimitation[] = [
     statement: 'Contrôle RFC 3161 partiel : structure, empreinte, nonce et genTime seulement ; signature de la TSA, chaîne de certification et révocation non évaluées.',
     behavior: 'Le résultat de vérification porte trust = NOT_EVALUATED ; aucun horodatage n’est présenté comme qualifié.',
   },
+  {
+    id: 'FACTURX_EMBEDS_UBL_NOT_CII',
+    statement:
+      'Factur-X : UBL embarqué en ubl-invoice.xml, fx:ConformanceLevel=UBL21-PROVISIONAL (valeur non standard) ; écart avec le standard Factur-X qui exige CII.',
+    behavior: 'Profil provisoire : le PDF produit n’est pas présenté comme un Factur-X standard ; aucune conformité Factur-X n’est revendiquée.',
+  },
 ];

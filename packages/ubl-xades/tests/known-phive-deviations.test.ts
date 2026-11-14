@@ -22,6 +22,7 @@ describe('KNOWN_PROFILE_LIMITATIONS (limites du profil de signature, hors règle
       'SERIAL_NUMBER_OVER_24_DIGITS_REFUSED_BY_XMLLINT',
       'PADES_CLASSIC_XREF_ONLY',
       'RFC3161_PARTIAL_CHECK',
+      'FACTURX_EMBEDS_UBL_NOT_CII',
     ]);
   });
 
@@ -38,5 +39,13 @@ describe('KNOWN_PROFILE_LIMITATIONS (limites du profil de signature, hors règle
     const rfc = KNOWN_PROFILE_LIMITATIONS.find((limitation) => limitation.id === 'RFC3161_PARTIAL_CHECK');
     expect(rfc?.statement).toContain('signature de la TSA, chaîne de certification et révocation non évaluées');
     expect(rfc?.statement).not.toMatch(/horodatage qualifi/i);
+  });
+
+  it('Factur-X : l’UBL embarqué et la valeur non standard UBL21-PROVISIONAL sont déclarés comme écart avec le standard (CII)', () => {
+    const facturx = KNOWN_PROFILE_LIMITATIONS.find((limitation) => limitation.id === 'FACTURX_EMBEDS_UBL_NOT_CII');
+    expect(facturx?.statement).toContain('ubl-invoice.xml');
+    expect(facturx?.statement).toContain('fx:ConformanceLevel=UBL21-PROVISIONAL');
+    expect(facturx?.statement).toContain('valeur non standard');
+    expect(facturx?.statement).toContain('exige CII');
   });
 });
