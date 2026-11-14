@@ -35,3 +35,34 @@ export type {
   VatRateCatalogSource,
   VatRateOption,
 } from './ports.ts';
+export { PurchaseInboxScreen } from './PurchaseInboxScreen.tsx';
+export type { PurchaseInboxScreenProps } from './PurchaseInboxScreen.tsx';
+export { BankReconciliationScreen } from './BankReconciliationScreen.tsx';
+export type { BankReconciliationScreenProps } from './BankReconciliationScreen.tsx';
+export { LawRadarScreen } from './LawRadarScreen.tsx';
+export type { LawRadarScreenProps } from './LawRadarScreen.tsx';
+export { createPmeApi, UBL_PAYMENT_CODES } from './pme-api.ts';
+export type { CreateEntryRequest, CreateEntryResponse, PmeApi, PmeApiOptions, PmeFetch, PmeProblem, PmeResult, ReconcileRequest, ReconcileResponse, TransitionResponse, UblPaymentCode } from './pme-api.ts';
+export { connectPurchaseStream, PURCHASE_EVENT_TYPES } from './purchase-stream.ts';
+export type { EventSourceFactory, EventSourceFactoryRequest, EventSourceLike, PurchaseStreamStatus } from './purchase-stream.ts';
+export { createFetchEventSource } from './sse-fetch.ts';
+export type { FetchEventSourceOptions, StreamFetch } from './sse-fetch.ts';
+export { createPurchaseInboxStore, parsePurchaseEvent } from './purchase-model.ts';
+export type { PurchaseInboxStore, PurchaseProposal, PurchaseRow, PurchaseStreamEvent } from './purchase-model.ts';
+export { buildReconcileRequest, classifySuggestion } from './bank-model.ts';
+export { newIdempotencyKey, uuidV7 } from './uuid-v7.ts';
+export type {
+  BankContext,
+  BankEntryCandidate,
+  BankReconciliationSource,
+  BankStatementLine,
+  BankWorkspace,
+  DisputeEvidencePort,
+  EvidenceFile,
+  EvidenceOutcome,
+  EvidencePolicy,
+  LateInvoice,
+  LateInvoiceRadar,
+  LateInvoiceRadarSource,
+  ReconcileSuggestion,
+} from './ports-ops.ts';

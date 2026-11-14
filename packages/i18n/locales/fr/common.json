@@ -312,6 +312,200 @@
         "totalTtc": "Total TTC",
         "legalReason": "Motif légal",
         "arrete": "Arrêtée la présente facture à la somme de :"
+      },
+      "purchases": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support."
+        },
+        "density": {
+          "comfortable": "Confort (44 px)",
+          "compact": "Haute densité (28 px)"
+        },
+        "title": "Boîte d’achats",
+        "gridLabel": "Pièces d’achat reçues en temps réel",
+        "newRows": "Nouvelles lignes : {count}",
+        "keyboardHint": "J / K ou flèches : parcourir ; Entrée : ouvrir ; Mod+Entrée : valider.",
+        "empty": "Aucune pièce reçue pour l’instant.",
+        "open": "Ouvrir",
+        "openLabel": "Ouvrir la pièce {name}",
+        "illegible": "Montant illisible",
+        "col": {
+          "source": "Pièce",
+          "supplier": "Fournisseur",
+          "date": "Date",
+          "total": "Total TTC",
+          "status": "Statut d’extraction",
+          "alert": "Alerte",
+          "open": "Revue"
+        },
+        "status": {
+          "queued": "En file d’attente",
+          "extracted": "Champs extraits",
+          "proposed": "Écriture proposée"
+        },
+        "alert": {
+          "cashSplit": "Point à examiner : scission espèces"
+        },
+        "connection": {
+          "connecting": "Connexion au flux…",
+          "open": "Flux en direct connecté",
+          "reconnecting": "Reconnexion en cours, reprise au dernier événement…",
+          "closed": "Flux fermé"
+        },
+        "drawer": {
+          "title": "Pièce d’achat {name}",
+          "entryTitle": "Écriture comptable proposée",
+          "account": "Compte",
+          "description": "Libellé",
+          "debit": "Débit",
+          "credit": "Crédit",
+          "totals": "Totaux",
+          "noProposal": "Aucune proposition comptable pour l’instant."
+        },
+        "stage": {
+          "running": "Envoi en cours…",
+          "submitted": "Écriture soumise en brouillon. Le visa reste à donner.",
+          "visaed": "Écriture visée par un humain."
+        },
+        "visa": {
+          "action": "Viser l’écriture (visa humain)",
+          "notice": "Le visa du cycle est un second geste humain, distinct de la validation de la proposition."
+        }
+      },
+      "bank": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support.",
+          "alreadyReconciled": "Cette ligne bancaire est déjà traitée."
+        },
+        "title": "Rapprochement bancaire",
+        "statementTitle": "Relevé bancaire",
+        "entriesTitle": "Écritures de factures ouvertes",
+        "decisionTitle": "Décision de rapprochement",
+        "selectPrompt": "Sélectionnez une ligne du relevé pour voir la suggestion.",
+        "dueDate": "Échéance",
+        "candidate": "Candidate",
+        "score": "Score de la suggestion",
+        "notice": {
+          "humanValidation": "Aucun rapprochement n’est enregistré sans votre validation explicite."
+        },
+        "suggestion": {
+          "none": "Aucune écriture candidate pour cette ligne.",
+          "unique": "Une écriture candidate : à valider par vous.",
+          "ambiguous": "Plusieurs écritures candidates : le rapprochement est ambigu, le lettrage automatique est interdit. Choisissez de mettre la ligne en suspens."
+        },
+        "method": {
+          "label": "Mode de règlement",
+          "placeholder": "Choisir un mode de règlement",
+          "cash": "Espèces",
+          "cheque": "Chèque",
+          "transfer": "Virement",
+          "lcn": "Effet de commerce (LCN)",
+          "card": "Carte bancaire",
+          "offset": "Compensation"
+        },
+        "actions": {
+          "validate": "Valider le rapprochement",
+          "suspend": "Mettre en suspens (3497 / 4497)"
+        },
+        "suspenseNotice": "La ligne sera isolée dans les comptes de suspens 3497 / 4497 ; aucune facture n’est lettrée.",
+        "state": {
+          "unmatched": "À rapprocher",
+          "matched": "Rapprochée",
+          "partial": "Rapprochée partiellement",
+          "suspense": "En suspens",
+          "noMatch": "Non rapprochée"
+        },
+        "outcome": {
+          "matched": "Rapprochement enregistré : brouillon d’écriture de lettrage créé.",
+          "partial": "Rapprochement partiel enregistré : brouillon créé pour le montant réglé.",
+          "suspense": "Ligne mise en suspens (3497 / 4497) : aucune facture lettrée.",
+          "noMatch": "Aucun rapprochement : rien n’a été écrit."
+        }
+      },
+      "radar": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support."
+        },
+        "density": {
+          "comfortable": "Confort (44 px)",
+          "compact": "Haute densité (28 px)"
+        },
+        "title": "Radar Loi 69-21",
+        "gridLabel": "Factures clients en retard de paiement",
+        "asOf": "Situation au {date}",
+        "note": {
+          "serverComputed": "Jours de retard, pénalité et gel sont calculés par le serveur : l’interface les affiche sans les recalculer."
+        },
+        "col": {
+          "invoice": "Facture",
+          "customer": "Client",
+          "due": "Échéance",
+          "daysLate": "Jours de retard",
+          "amountDue": "Reste dû",
+          "penalty": "Pénalité",
+          "penaltyState": "État de la pénalité",
+          "dispute": "Litige",
+          "action": "Preuves"
+        },
+        "penalty": {
+          "frozen": "Pénalité gelée (litige)",
+          "active": "Pénalité en cours"
+        },
+        "dispute": {
+          "none": "Aucun litige",
+          "documented": "Litige documenté"
+        },
+        "evidence": {
+          "open": "Déposer une preuve",
+          "openLabel": "Déposer une preuve pour la facture {number}",
+          "title": "Preuves de litige — facture {number}",
+          "frozenNotice": "Le gel éventuel de la pénalité est décidé par le serveur selon le statut du litige ; cet écran ne l’applique jamais lui-même.",
+          "policy": "Taille maximale par fichier : {maxSize} ; types acceptés : {types} ; {maxFiles} fichiers au plus.",
+          "pick": "Choisir un ou plusieurs fichiers",
+          "hash": "Empreinte SHA-256",
+          "hashing": "Calcul de l’empreinte…",
+          "remove": "Retirer",
+          "removeLabel": "Retirer le fichier {name}",
+          "submit": "Déposer les preuves",
+          "submitting": "Dépôt en cours…",
+          "sent": "Preuves déposées. Le statut du litige et le gel éventuel sont mis à jour par le serveur.",
+          "unit": {
+            "byte": "o",
+            "kb": "Ko",
+            "mb": "Mo"
+          },
+          "errors": {
+            "tooLarge": "Fichier {name} trop volumineux.",
+            "type": "Type de fichier non accepté : {name}.",
+            "empty": "Fichier vide : {name}.",
+            "tooMany": "Trop de fichiers : {name} n’a pas été retenu.",
+            "hash": "Empreinte impossible à calculer pour {name}."
+          }
+        }
       }
     }
   }

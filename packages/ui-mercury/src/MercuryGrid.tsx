@@ -161,6 +161,8 @@ export function MercuryGrid<TRow extends GridRowBase>(props: MercuryGridProps<TR
     scrollMargin: headerHeight,
     getItemKey,
     initialRect: { width: 0, height: initialViewportHeight },
+    // Le défilement programmé (ancrage SSE) se fait pendant un effet de mise en page : flushSync y est interdit par React.
+    useFlushSync: false,
     rangeExtractor: (range) => windowIndexes(range, activeIndexRef.current),
   });
 

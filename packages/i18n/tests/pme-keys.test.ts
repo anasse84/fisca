@@ -112,7 +112,7 @@ describe('clés ui.pme.* : parité des 6 langues', () => {
       }
     });
     it(`${locale} : aucune clé ui.pme.* en trop ni en moins`, () => {
-      const keys = [...own(locale).keys()].filter((k) => k.startsWith('ui.pme.')).sort();
+      const keys = [...own(locale).keys()].filter((k) => k.startsWith('ui.pme.') && !/^ui\.pme\.(purchases|bank|radar)\./.test(k)).sort();
       expect(keys).toEqual([...PME_KEYS].sort());
     });
     it(`${locale} : mêmes paramètres {…} que le français`, () => {

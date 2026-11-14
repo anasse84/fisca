@@ -312,6 +312,200 @@
         "totalTtc": "Total incl. VAT",
         "legalReason": "Legal reason",
         "arrete": "This invoice is closed at the sum of:"
+      },
+      "purchases": {
+        "errors": {
+          "network": "The server cannot be reached. Check your connection and retry.",
+          "session": "Your session has expired. Sign in again.",
+          "forbidden": "Your role does not allow this action.",
+          "invalid": "The submitted data is invalid. Check and retry.",
+          "conflict": "The document state changed meanwhile. Refresh before continuing.",
+          "notFound": "Item not found on the server.",
+          "idempotency": "This request was already processed or is being processed.",
+          "unavailable": "Service temporarily unavailable. Try again shortly.",
+          "generic": "The operation failed. Try again or contact support."
+        },
+        "density": {
+          "comfortable": "Comfort (44 px)",
+          "compact": "High density (28 px)"
+        },
+        "title": "Purchase inbox",
+        "gridLabel": "Purchase documents received in real time",
+        "newRows": "New rows: {count}",
+        "keyboardHint": "J / K or arrows: browse; Enter: open; Mod+Enter: validate.",
+        "empty": "No document received yet.",
+        "open": "Open",
+        "openLabel": "Open document {name}",
+        "illegible": "Illegible amount",
+        "col": {
+          "source": "Document",
+          "supplier": "Supplier",
+          "date": "Date",
+          "total": "Total incl. VAT",
+          "status": "Extraction status",
+          "alert": "Alert",
+          "open": "Review"
+        },
+        "status": {
+          "queued": "Queued",
+          "extracted": "Fields extracted",
+          "proposed": "Entry proposed"
+        },
+        "alert": {
+          "cashSplit": "To review: cash payment split"
+        },
+        "connection": {
+          "connecting": "Connecting to the stream…",
+          "open": "Live stream connected",
+          "reconnecting": "Reconnecting, resuming from the last event…",
+          "closed": "Stream closed"
+        },
+        "drawer": {
+          "title": "Purchase document {name}",
+          "entryTitle": "Proposed accounting entry",
+          "account": "Account",
+          "description": "Description",
+          "debit": "Debit",
+          "credit": "Credit",
+          "totals": "Totals",
+          "noProposal": "No accounting proposal yet."
+        },
+        "stage": {
+          "running": "Sending…",
+          "submitted": "Entry submitted as a draft. The endorsement is still to be given.",
+          "visaed": "Entry endorsed by a human."
+        },
+        "visa": {
+          "action": "Endorse entry (human visa)",
+          "notice": "Cycle endorsement is a second, separate human action from approving the proposal."
+        }
+      },
+      "bank": {
+        "errors": {
+          "network": "The server cannot be reached. Check your connection and retry.",
+          "session": "Your session has expired. Sign in again.",
+          "forbidden": "Your role does not allow this action.",
+          "invalid": "The submitted data is invalid. Check and retry.",
+          "conflict": "The document state changed meanwhile. Refresh before continuing.",
+          "notFound": "Item not found on the server.",
+          "idempotency": "This request was already processed or is being processed.",
+          "unavailable": "Service temporarily unavailable. Try again shortly.",
+          "generic": "The operation failed. Try again or contact support.",
+          "alreadyReconciled": "This bank line has already been processed."
+        },
+        "title": "Bank reconciliation",
+        "statementTitle": "Bank statement",
+        "entriesTitle": "Open invoice entries",
+        "decisionTitle": "Reconciliation decision",
+        "selectPrompt": "Select a statement line to see the suggestion.",
+        "dueDate": "Due",
+        "candidate": "Candidate",
+        "score": "Suggestion score",
+        "notice": {
+          "humanValidation": "No reconciliation is recorded without your explicit validation."
+        },
+        "suggestion": {
+          "none": "No candidate entry for this line.",
+          "unique": "One candidate entry: for you to validate.",
+          "ambiguous": "Several candidate entries: the match is ambiguous and automatic matching is forbidden. Choose to put the line in suspense."
+        },
+        "method": {
+          "label": "Payment method",
+          "placeholder": "Choose a payment method",
+          "cash": "Cash",
+          "cheque": "Cheque",
+          "transfer": "Bank transfer",
+          "lcn": "Commercial paper (LCN)",
+          "card": "Bank card",
+          "offset": "Offset"
+        },
+        "actions": {
+          "validate": "Validate the match",
+          "suspend": "Put in suspense (3497 / 4497)"
+        },
+        "suspenseNotice": "The line is isolated in suspense accounts 3497 / 4497; no invoice is matched.",
+        "state": {
+          "unmatched": "To reconcile",
+          "matched": "Matched",
+          "partial": "Partially matched",
+          "suspense": "In suspense",
+          "noMatch": "Not matched"
+        },
+        "outcome": {
+          "matched": "Match recorded: a matching draft entry was created.",
+          "partial": "Partial match recorded: a draft was created for the settled amount.",
+          "suspense": "Line put in suspense (3497 / 4497): no invoice matched.",
+          "noMatch": "No match: nothing was written."
+        }
+      },
+      "radar": {
+        "errors": {
+          "network": "The server cannot be reached. Check your connection and retry.",
+          "session": "Your session has expired. Sign in again.",
+          "forbidden": "Your role does not allow this action.",
+          "invalid": "The submitted data is invalid. Check and retry.",
+          "conflict": "The document state changed meanwhile. Refresh before continuing.",
+          "notFound": "Item not found on the server.",
+          "idempotency": "This request was already processed or is being processed.",
+          "unavailable": "Service temporarily unavailable. Try again shortly.",
+          "generic": "The operation failed. Try again or contact support."
+        },
+        "density": {
+          "comfortable": "Comfort (44 px)",
+          "compact": "High density (28 px)"
+        },
+        "title": "Law 69-21 radar",
+        "gridLabel": "Customer invoices overdue for payment",
+        "asOf": "As of {date}",
+        "note": {
+          "serverComputed": "Days late, penalty and freeze are computed by the server: the interface shows them without recomputing."
+        },
+        "col": {
+          "invoice": "Invoice",
+          "customer": "Customer",
+          "due": "Due date",
+          "daysLate": "Days late",
+          "amountDue": "Amount due",
+          "penalty": "Penalty",
+          "penaltyState": "Penalty status",
+          "dispute": "Dispute",
+          "action": "Evidence"
+        },
+        "penalty": {
+          "frozen": "Penalty frozen (dispute)",
+          "active": "Penalty running"
+        },
+        "dispute": {
+          "none": "No dispute",
+          "documented": "Documented dispute"
+        },
+        "evidence": {
+          "open": "Upload evidence",
+          "openLabel": "Upload evidence for invoice {number}",
+          "title": "Dispute evidence — invoice {number}",
+          "frozenNotice": "Any freezing of the penalty is decided by the server from the dispute status; this screen never applies it itself.",
+          "policy": "Maximum size per file: {maxSize}; accepted types: {types}; at most {maxFiles} files.",
+          "pick": "Choose one or more files",
+          "hash": "SHA-256 fingerprint",
+          "hashing": "Computing fingerprint…",
+          "remove": "Remove",
+          "removeLabel": "Remove file {name}",
+          "submit": "Submit evidence",
+          "submitting": "Uploading…",
+          "sent": "Evidence uploaded. The server updates the dispute status and any freeze.",
+          "unit": {
+            "byte": "B",
+            "kb": "KB",
+            "mb": "MB"
+          },
+          "errors": {
+            "tooLarge": "File {name} is too large.",
+            "type": "File type not accepted: {name}.",
+            "empty": "Empty file: {name}.",
+            "tooMany": "Too many files: {name} was not kept.",
+            "hash": "Could not compute the fingerprint of {name}."
+          }
+        }
       }
     }
   }
