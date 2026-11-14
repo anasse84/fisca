@@ -42,7 +42,25 @@ export { LOCAL_MIGRATIONS, LocalMigrationError, runLocalMigrations } from './sto
 
 export { PAIRING_CODE_PATTERN, formatTicketNumber, loadTerminalIdentity, normalizePairingCode, pairTerminal } from './pairing/pairing-flow.ts';
 export type { PairingGateway, PairingGatewayResult, PairingOutcome, PairingRefusal, TerminalIdentity } from './pairing/pairing-flow.ts';
-export { consumeTicketNumber, reserveNextTicketNumber } from './pairing/ticket-sequencer.ts';
+export { assertCounterAt, buildConsumeStatements, consumeTicketNumber, reserveNextTicketNumber } from './pairing/ticket-sequencer.ts';
 export type { TicketReservation } from './pairing/ticket-sequencer.ts';
 export { listPairedPeripherals, pairPeripheral } from './pairing/peripherals.ts';
 export type { PeripheralConnection, PeripheralDescriptor, PeripheralKind, PeripheralTransport } from './pairing/peripherals.ts';
+
+export { POS_CHAIN_GENESIS, POS_TICKET_LABEL, buildTicketTuple, canonicalJsonTuple, computeTicketSha256, sha256HexOfText } from './ticketing/ticket-hash.ts';
+export type { CanonicalValue, TicketHashFields } from './ticketing/ticket-hash.ts';
+export { computeCashStampCents, resolveCashStampRule } from './ticketing/cash-stamp.ts';
+export type { CashStampRule, CashStampRulePort } from './ticketing/cash-stamp.ts';
+export {
+  createIndexedDbSigningKeyStore,
+  createMemorySigningKeyStore,
+  exportPublicKeySpkiB64,
+  generateSigningKeyPair,
+  importPublicKeySpkiB64,
+  loadOrCreateSigningKeyPair,
+  signTicketHash,
+  verifyTicketSignature,
+} from './ticketing/ticket-signing.ts';
+export type { SigningKeyStore } from './ticketing/ticket-signing.ts';
+export { TicketIssuanceError, issueSignedTicket, sequenceFromTicketNumber, verifyTicketChain } from './ticketing/ticket-issuer.ts';
+export type { ChainVerification, IssuedTicket, TicketInput, TicketIssuanceErrorCode, TicketIssuerDeps, TicketLinesInput, TicketPaymentsInput } from './ticketing/ticket-issuer.ts';

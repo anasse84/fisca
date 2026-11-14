@@ -179,6 +179,21 @@ describe('MercuryGrid : flux SSE sans décalage (CLS = 0)', () => {
     expect(screen.getByRole('grid').getAttribute('aria-rowcount')).toBe('306');
   });
 
+  it('ancrage de défilement SSE : aucune erreur console « flushSync » (le défilement programmé a lieu pendant un effet de mise en page)', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const { scroller, push } = setup();
+      scrollTo(scroller, 20 * 44 + 10);
+      push(entries(0, 5));
+      push(entries(5, 9));
+      expect(scroller.scrollTop).toBe(20 * 44 + 10 + 9 * 44);
+      const flushSyncErrors = errors.mock.calls.filter((call) => call.some((part) => String(part).includes('flushSync')));
+      expect(flushSyncErrors).toEqual([]);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
   it('lecteur en haut : lignes retenues, aucun rectangle ne bouge ; clic sur l’indicateur les révèle', () => {
     const { scroller, grid, push } = setup();
     const before = rowRects(scroller);

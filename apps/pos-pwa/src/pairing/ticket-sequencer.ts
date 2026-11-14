@@ -1,4 +1,4 @@
-import type { PosStorage } from '../storage/ports.ts';
+import type { PosStorage, SqlStatement } from '../storage/ports.ts';
 import { formatTicketNumber, loadTerminalIdentity } from './pairing-flow.ts';
 
 /**
@@ -53,13 +53,12 @@ export async function reserveNextTicketNumber(storage: PosStorage, options: Rese
   throw new Error('Réservation du numéro de ticket impossible après plusieurs tentatives.');
 }
 
-/** Consomme la réservation (le ticket est créé) : le compteur avance de 1, atomiquement. */
-export async function consumeTicketNumber(storage: PosStorage, reservation: TicketReservation, nowIso: string): Promise<void> {
-  const open = await findOpenReservation(storage, reservation.terminalId);
-  if (open === null || open.sequence !== reservation.sequence || open.ticketNumber !== reservation.ticketNumber) {
-    throw new Error(`Aucune réservation ouverte pour ${reservation.ticketNumber}.`);
-  }
-  await storage.batch([
+/**
+ * Instructions SQL de consommation (réservation → CONSUMED, compteur +1). Exposées pour que l'émission d'un ticket signé
+ * les joigne, dans le MÊME lot atomique, à l'insertion du ticket : pas de ticket sans numéro consommé, ni l'inverse.
+ */
+export function buildConsumeStatements(reservation: TicketReservation, nowIso: string): readonly SqlStatement[] {
+  return [
     {
       sql: "UPDATE pos_sequence_reservations SET status = 'CONSUMED', consumed_at = ? WHERE terminal_id = ? AND seq = ? AND status = 'RESERVED'",
       params: [nowIso, reservation.terminalId, reservation.sequence],
@@ -68,9 +67,23 @@ export async function consumeTicketNumber(storage: PosStorage, reservation: Tick
       sql: 'UPDATE pos_sequence_counters SET last_issued_seq = ? WHERE terminal_id = ? AND last_issued_seq = ?',
       params: [reservation.sequence, reservation.terminalId, reservation.sequence - 1],
     },
-  ]);
+  ];
+}
+
+/** Vérifie que le compteur du terminal est bien à la séquence consommée. */
+export async function assertCounterAt(storage: PosStorage, reservation: TicketReservation): Promise<void> {
   const check = await storage.all('SELECT last_issued_seq FROM pos_sequence_counters WHERE terminal_id = ?', [reservation.terminalId]);
   if (Number(check[0]?.['last_issued_seq']) !== reservation.sequence) {
     throw new Error(`Compteur de séquence incohérent après consommation de ${reservation.ticketNumber}.`);
   }
+}
+
+/** Consomme la réservation (le ticket est créé) : le compteur avance de 1, atomiquement. */
+export async function consumeTicketNumber(storage: PosStorage, reservation: TicketReservation, nowIso: string): Promise<void> {
+  const open = await findOpenReservation(storage, reservation.terminalId);
+  if (open === null || open.sequence !== reservation.sequence || open.ticketNumber !== reservation.ticketNumber) {
+    throw new Error(`Aucune réservation ouverte pour ${reservation.ticketNumber}.`);
+  }
+  await storage.batch([...buildConsumeStatements(reservation, nowIso)]);
+  await assertCounterAt(storage, reservation);
 }

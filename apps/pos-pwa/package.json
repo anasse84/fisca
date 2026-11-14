@@ -7,12 +7,15 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@fisca/shared-types": "workspace:*",
     "@sqlite.org/sqlite-wasm": "3.54.1-build1"
   },
   "devDependencies": {
-    "@fisca/db-schema": "workspace:*"
+    "@fisca/db-schema": "workspace:*",
+    "@playwright/test": "^1.65.1"
   }
 }
