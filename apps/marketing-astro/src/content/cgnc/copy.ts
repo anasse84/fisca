@@ -33,7 +33,7 @@ export function cgncLocaleOf(locale: MarketingLocale): CgncLocale {
   }
 }
 
-/** Langues dont les fiches sont indexables : 60 comptes x 3 = 180 URL. Les autres langues sont servies en noindex. */
+/** Langues dont les fiches sont indexables : 61 comptes x 3 = 183 URL. Les autres langues sont servies en noindex. */
 export const CGNC_INDEXED_LOCALES: readonly MarketingLocale[] = ['fr', 'ar', 'en'];
 
 export const CGNC_HUB_SLUG = 'dictionnaire-cgnc';
@@ -56,10 +56,20 @@ export const PROVENANCE: T3 = t(
 );
 
 export const COUNTER: T3 = t(
-  '60 comptes piliers, 190 sous-comptes sectoriels à enrichir après G4',
-  '60 core accounts, 190 sector sub-accounts to be enriched after G4',
-  '60 حسابا رئيسيا، و190 حسابا فرعيا قطاعيا سيتم إثراؤها بعد G4',
+  '61 comptes piliers, 190 sous-comptes sectoriels à enrichir après G4',
+  '61 core accounts, 190 sector sub-accounts to be enriched after G4',
+  '61 حسابا رئيسيا، و190 حسابا فرعيا قطاعيا سيتم إثراؤها بعد G4',
 );
+
+/** Mention des subdivisions analytiques Fisca (is_official_cgnc_base = false) : jamais présentées comme compte de la base CGNC. */
+export const ANALYTIC_NOTE: T3 = t(
+  'Subdivision analytique Fisca du compte {parent} (suivi de la TVA sur encaissement)',
+  'Fisca analytical subdivision of account {parent} (tracking of VAT on cash collection)',
+  'تقسيم تحليلي خاص بفيسكا للحساب {parent} (تتبع TVA عند التحصيل)',
+);
+
+/** Libellé historique conservé tel quel (« État, IGR » n'est pas traduit). */
+export const HISTORICAL_LABEL: T3 = t('libellé historique : {label}', 'historical label: {label}', 'التسمية التاريخية: {label}');
 
 export const DISCLAIMER: T3 = t(
   'Information générale, pas un conseil réservé aux experts-comptables (loi 15-89). Jeu de données fourni par l’éditeur, non recoupé avec le texte du CGNC. Fisca n’est pas validée par la DGI ni par xHub : l’état affiché reste « Validation simulée ».',
@@ -127,12 +137,20 @@ export const VAT_RULE_TEXT: Readonly<Record<VatEncaissementRule, VatRuleText>> =
       'لا شيء: لا تربط مجموعة البيانات أي قاعدة TVA عند التحصيل بهذا الحساب.',
     ),
   },
-  RECOVERABLE_CHARGES_34551: {
-    short: t('TVA récupérable sur charges (34551)', 'recoverable VAT on expenses (34551)', 'TVA قابلة للاسترجاع على التحملات (34551)'),
+  RECOVERABLE_IMMOB_34551: {
+    short: t('TVA récupérable sur immobilisations (34551)', 'recoverable VAT on fixed assets (34551)', 'TVA قابلة للاسترجاع على التثبيتات (34551)'),
     description: t(
-      'TVA récupérable sur charges : le jeu de données désigne le compte 34551.',
-      'Recoverable VAT on expenses: the dataset points to account 34551.',
-      'TVA قابلة للاسترجاع على التحملات: تشير مجموعة البيانات إلى الحساب 34551.',
+      'TVA récupérable sur immobilisations : le jeu de données désigne le compte 34551.',
+      'Recoverable VAT on fixed assets: the dataset points to account 34551.',
+      'TVA قابلة للاسترجاع على التثبيتات: تشير مجموعة البيانات إلى الحساب 34551.',
+    ),
+  },
+  RECOVERABLE_CHARGES_34552: {
+    short: t('TVA récupérable sur charges (34552)', 'recoverable VAT on expenses (34552)', 'TVA قابلة للاسترجاع على التحملات (34552)'),
+    description: t(
+      'TVA récupérable sur charges : le jeu de données désigne le compte 34552.',
+      'Recoverable VAT on expenses: the dataset points to account 34552.',
+      'TVA قابلة للاسترجاع على التحملات: تشير مجموعة البيانات إلى الحساب 34552.',
     ),
   },
   COLLECTED_DUE_44551: {
@@ -141,14 +159,6 @@ export const VAT_RULE_TEXT: Readonly<Record<VatEncaissementRule, VatRuleText>> =
       'TVA facturée exigible : le jeu de données désigne le compte 44551.',
       'Collected VAT due: the dataset points to account 44551.',
       'TVA المفوترة المستحقة: تشير مجموعة البيانات إلى الحساب 44551.',
-    ),
-  },
-  RECOVERABLE_IMMOB_34552: {
-    short: t('TVA récupérable sur immobilisations (34552)', 'recoverable VAT on fixed assets (34552)', 'TVA قابلة للاسترجاع على التثبيتات (34552)'),
-    description: t(
-      'TVA récupérable sur immobilisations : le jeu de données désigne le compte 34552.',
-      'Recoverable VAT on fixed assets: the dataset points to account 34552.',
-      'TVA قابلة للاسترجاع على التثبيتات: تشير مجموعة البيانات إلى الحساب 34552.',
     ),
   },
   RECOVERABLE_PENDING_34558: {
@@ -174,9 +184,9 @@ export const VAT_RULE_ACCOUNT: Readonly<Record<VatEncaissementRule, string | nul
   BASE_HT_SUBJECT_TO_ENCASHMENT: null,
   EXEMPT_OR_OUT_OF_SCOPE: null,
   NONE: null,
-  RECOVERABLE_CHARGES_34551: '34551',
+  RECOVERABLE_IMMOB_34551: '34551',
+  RECOVERABLE_CHARGES_34552: '34552',
   COLLECTED_DUE_44551: '44551',
-  RECOVERABLE_IMMOB_34552: '34552',
   RECOVERABLE_PENDING_34558: '34558',
   COLLECTED_PENDING_44558: '44558',
 };
@@ -218,6 +228,8 @@ export interface CgncUi {
   readonly rowBalance: T3;
   readonly rowVat: T3;
   readonly rowRubric: T3;
+  readonly rowNature: T3;
+  readonly rowHistorical: T3;
   readonly rowCodeEdi: T3;
   readonly rowEntry: T3;
   readonly refDataset: T3;
@@ -251,9 +263,11 @@ export const CGNC_UI: CgncUi = {
   rowBalance: t('Sens normal du solde', 'Normal balance', 'الرصيد الطبيعي'),
   rowVat: t('Règle de TVA sur encaissement', 'VAT cash-basis rule', 'قاعدة TVA عند التحصيل'),
   rowRubric: t('Rubrique de l’état de synthèse', 'Financial statement heading', 'بند القوائم التركيبية'),
+  rowNature: t('Nature du compte', 'Nature of the account', 'طبيعة الحساب'),
+  rowHistorical: t('Libellé', 'Label', 'التسمية'),
   rowCodeEdi: t('Correspondance SIMPL-IS', 'SIMPL-IS mapping', 'مطابقة SIMPL-IS'),
   rowEntry: t('Écriture d’exemple', 'Worked entry', 'قيد المثال'),
-  refDataset: t('Jeu de données FISCA_CGNC_CORE_60_V1', 'Dataset FISCA_CGNC_CORE_60_V1', 'مجموعة البيانات FISCA_CGNC_CORE_60_V1'),
+  refDataset: t('Jeu de données FISCA_CGNC_CORE_V2', 'Dataset FISCA_CGNC_CORE_V2', 'مجموعة البيانات FISCA_CGNC_CORE_V2'),
   refSimplIs: t('DGI, SIMPL-IS v2.0.3', 'DGI, SIMPL-IS v2.0.3', 'DGI، SIMPL-IS v2.0.3'),
   accountClassValue: t('{n}, classe {c}', '{n}, class {c}', '{n}، الصنف {c}'),
   entryValue: t('{total}, {k} lignes', '{total}, {k} lines', '{total}، {k} أسطر'),
@@ -273,7 +287,7 @@ export const CGNC_UI: CgncUi = {
     'This sheet is not indexed: it does not yet combine the account balance side, the VAT rule and a balanced entry.',
     'هذه البطاقة غير مفهرسة: لا تجمع بعد بين طبيعة رصيد الحساب وقاعدة TVA وقيدا متوازنا.',
   ),
-  hubPagesHeading: t('Les 60 comptes piliers, par classe', 'The 60 core accounts, by class', 'الحسابات الرئيسية الستون، حسب الصنف'),
+  hubPagesHeading: t('Les 61 comptes piliers, par classe', 'The 61 core accounts, by class', 'الحسابات الرئيسية الـ61، حسب الصنف'),
   home: t('Accueil', 'Home', 'الرئيسية'),
   sourceInternal: t('référence interne', 'internal reference', 'مرجع داخلي'),
   cta: t('Voir la grille tarifaire', 'See the price list', 'اطلع على لائحة الأسعار'),
@@ -329,9 +343,9 @@ export const CGNC_SOURCES: readonly CgncSource[] = [
     id: 'dataset',
     kind: 'internal',
     label: t(
-      'Jeu FISCA_CGNC_CORE_60_V1 fourni par l’éditeur, non recoupé avec le texte du CGNC (contrat PROVISIONAL)',
-      'Dataset FISCA_CGNC_CORE_60_V1 supplied by the publisher, not cross-checked against the text of the CGNC (PROVISIONAL contract)',
-      'مجموعة FISCA_CGNC_CORE_60_V1 مقدمة من الناشر ولم تُطابق مع نص CGNC (عقد PROVISIONAL)',
+      'Jeu FISCA_CGNC_CORE_V2 fourni par l’éditeur, non recoupé avec le texte du CGNC (contrat PROVISIONAL)',
+      'Dataset FISCA_CGNC_CORE_V2 supplied by the publisher, not cross-checked against the text of the CGNC (PROVISIONAL contract)',
+      'مجموعة FISCA_CGNC_CORE_V2 مقدمة من الناشر ولم تُطابق مع نص CGNC (عقد PROVISIONAL)',
     ),
     kindLabel: KIND_LABEL.internal,
   },

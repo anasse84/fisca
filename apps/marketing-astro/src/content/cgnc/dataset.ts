@@ -1,10 +1,10 @@
 /**
- * Jeu FISCA_CGNC_CORE_60_V1 : 60 comptes piliers du plan comptable marocain (CGNC), fourni par le propriétaire,
- * non recoupé avec le texte du CGNC. Le fichier JSON est une donnée : ce module le valide à l'exécution (aucun
+ * Jeu FISCA_CGNC_CORE_V2 (correctif du 2026-11-14, remplace la V1) : 61 comptes piliers du plan comptable marocain
+ * (CGNC), fournis par le propriétaire, non recoupés avec le texte du CGNC. Le fichier JSON est une donnée : ce module le valide à l'exécution (aucun
  * transtypage) et ne le modifie jamais. Les montants sont des centimes entiers ; `simpl_is_code_edi` reste `null`
  * tant que le référentiel XSD SIMPL-IS de la DGI n'est pas importé (aucun codeEdi inventé).
  */
-import rawDataset from '../cgnc-core-60-accounts.json';
+import rawDataset from '../cgnc-core-accounts-v2.json';
 
 export const NORMAL_BALANCES = ['DEBIT', 'CREDIT'] as const;
 export type NormalBalance = (typeof NORMAL_BALANCES)[number];
@@ -13,9 +13,9 @@ export const VAT_ENCAISSEMENT_RULES = [
   'BASE_HT_SUBJECT_TO_ENCASHMENT',
   'EXEMPT_OR_OUT_OF_SCOPE',
   'NONE',
-  'RECOVERABLE_CHARGES_34551',
+  'RECOVERABLE_IMMOB_34551',
+  'RECOVERABLE_CHARGES_34552',
   'COLLECTED_DUE_44551',
-  'RECOVERABLE_IMMOB_34552',
   'RECOVERABLE_PENDING_34558',
   'COLLECTED_PENDING_44558',
 ] as const;
@@ -76,6 +76,12 @@ export interface CgncAccountRecord {
   readonly simpl_is_code_edi: null;
   readonly simpl_is_code_edi_status: string;
   readonly sample_entry: SampleEntry;
+  /** `true` : compte de la base CGNC du jeu ; `false` : subdivision analytique propre à Fisca (voir `parent_cgnc_account`). */
+  readonly is_official_cgnc_base: boolean;
+  /** Compte parent du jeu (3455 ou 4455) : exigé quand `is_official_cgnc_base` vaut `false`. */
+  readonly parent_cgnc_account?: string;
+  /** Libellé historique en français, tel quel (par exemple « État, IGR » pour 44525). */
+  readonly official_historical_label_fr?: string;
 }
 
 export interface CgncDataset {
@@ -148,6 +154,13 @@ function readAccount(value: unknown, index: number): CgncAccountRecord {
   if (value['simpl_is_code_edi'] !== null) {
     return fail(`${path}.simpl_is_code_edi`, 'null exigé tant que le XSD SIMPL-IS de la DGI n’est pas importé (aucun codeEdi inventé)');
   }
+  const isBase = value['is_official_cgnc_base'];
+  if (typeof isBase !== 'boolean') return fail(`${path}.is_official_cgnc_base`, 'booléen obligatoire');
+  const parentRaw = value['parent_cgnc_account'];
+  if (parentRaw === undefined && !isBase) return fail(`${path}.parent_cgnc_account`, 'compte parent exigé quand is_official_cgnc_base vaut false');
+  const parent = parentRaw === undefined ? undefined : readString(value, 'parent_cgnc_account', path);
+  if (parent !== undefined && !/^\d{4,5}$/.test(parent)) return fail(`${path}.parent_cgnc_account`, '4 ou 5 chiffres');
+  const historical = value['official_historical_label_fr'] === undefined ? undefined : readString(value, 'official_historical_label_fr', path);
   return {
     account_number: number,
     cgnc_class: readClass(value, path),
@@ -160,6 +173,9 @@ function readAccount(value: unknown, index: number): CgncAccountRecord {
     simpl_is_code_edi: null,
     simpl_is_code_edi_status: readString(value, 'simpl_is_code_edi_status', path),
     sample_entry: readEntry(value['sample_entry'], `${path}.sample_entry`),
+    is_official_cgnc_base: isBase,
+    ...(parent === undefined ? {} : { parent_cgnc_account: parent }),
+    ...(historical === undefined ? {} : { official_historical_label_fr: historical }),
   };
 }
 

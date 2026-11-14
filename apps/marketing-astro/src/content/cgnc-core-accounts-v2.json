@@ -1,13 +1,13 @@
 {
-  "dataset_id": "FISCA_CGNC_CORE_60_V1",
+  "dataset_id": "FISCA_CGNC_CORE_V2",
   "legal_source": "Loi n° 9-88 relative aux obligations comptables des commerçants & Plan Comptable Général des Entreprises (CGNC Maroc)",
-  "accounts_count": 60,
+  "accounts_count": 61,
   "locales": [
     "fr",
     "ar",
     "en"
   ],
-  "indexed_urls_count": 180,
+  "indexed_urls_count": 183,
   "simpl_is_code_edi_note": "simpl_is_code_edi est volontairement null tant que l'annexe XSD officielle SIMPL-IS v2.0.3 de la DGI n'est pas importée dans le dépôt (zéro codeEdi inventé).",
   "accounts": [
     {
@@ -36,7 +36,8 @@
             "amount_cents": 10000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "1140",
@@ -64,10 +65,11 @@
             "amount_cents": 500000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
-      "account_number": "1181",
+      "account_number": "1161",
       "cgnc_class": 1,
       "label_fr": "Report à nouveau (solde créditeur)",
       "label_ar": "الترحيل من جديد (رصيد دائن)",
@@ -78,7 +80,36 @@
       "simpl_is_code_edi": null,
       "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
       "sample_entry": {
-        "description_fr": "Affectation du reliquat bénéficiaire en report à nouveau",
+        "description_fr": "Affectation par l'assemblée du résultat en instance au report à nouveau",
+        "total_cents": 2500000,
+        "lines": [
+          {
+            "account_number": "1181",
+            "side": "DEBIT",
+            "amount_cents": 2500000
+          },
+          {
+            "account_number": "1161",
+            "side": "CREDIT",
+            "amount_cents": 2500000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "1181",
+      "cgnc_class": 1,
+      "label_fr": "Résultats nets en instance d'affectation (solde créditeur)",
+      "label_ar": "النتائج الصافية في انتظار التخصيص (رصيد دائن)",
+      "label_en": "Net results pending appropriation (credit balance)",
+      "normal_balance": "CREDIT",
+      "vat_encaissement_rule": "NONE",
+      "cgnc_statement_rubric": "BILAN_PASSIF_A_CAPITAUX_PROPRES",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Constatation du résultat net de l'exercice en instance d'affectation, dans l'attente de la décision de l'assemblée",
         "total_cents": 2500000,
         "lines": [
           {
@@ -92,7 +123,8 @@
             "amount_cents": 2500000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "1191",
@@ -120,7 +152,8 @@
             "amount_cents": 3000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "1481",
@@ -148,7 +181,8 @@
             "amount_cents": 50000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "1511",
@@ -176,7 +210,8 @@
             "amount_cents": 1500000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2111",
@@ -204,7 +239,8 @@
             "amount_cents": 400000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2230",
@@ -232,7 +268,8 @@
             "amount_cents": 30000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2321",
@@ -265,7 +302,8 @@
             "amount_cents": 96000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2332",
@@ -298,7 +336,8 @@
             "amount_cents": 18000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2340",
@@ -331,7 +370,8 @@
             "amount_cents": 30000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2355",
@@ -364,7 +404,8 @@
             "amount_cents": 3600000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2486",
@@ -392,7 +433,8 @@
             "amount_cents": 2000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "2835",
@@ -420,7 +462,8 @@
             "amount_cents": 600000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3111",
@@ -448,7 +491,8 @@
             "amount_cents": 12000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3421",
@@ -481,7 +525,8 @@
             "amount_cents": 200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3424",
@@ -509,7 +554,8 @@
             "amount_cents": 1200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3425",
@@ -537,7 +583,8 @@
             "amount_cents": 1200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3453",
@@ -565,44 +612,17 @@
             "amount_cents": 750000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "34551",
-      "cgnc_class": 3,
-      "label_fr": "État - TVA récupérable sur charges",
-      "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد على التكاليف",
-      "label_en": "Recoverable VAT on operating expenses",
-      "normal_balance": "DEBIT",
-      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34551",
-      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
-      "simpl_is_code_edi": null,
-      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
-      "sample_entry": {
-        "description_fr": "Virement de la TVA sur charges devenue déductible au décaissement",
-        "total_cents": 200000,
-        "lines": [
-          {
-            "account_number": "34551",
-            "side": "DEBIT",
-            "amount_cents": 200000
-          },
-          {
-            "account_number": "34558",
-            "side": "CREDIT",
-            "amount_cents": 200000
-          }
-        ]
-      }
-    },
-    {
-      "account_number": "34552",
       "cgnc_class": 3,
       "label_fr": "État - TVA récupérable sur immobilisations",
       "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد على المستقرات",
       "label_en": "Recoverable VAT on fixed assets",
       "normal_balance": "DEBIT",
-      "vat_encaissement_rule": "RECOVERABLE_IMMOB_34552",
+      "vat_encaissement_rule": "RECOVERABLE_IMMOB_34551",
       "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
       "simpl_is_code_edi": null,
       "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
@@ -611,7 +631,7 @@
         "total_cents": 600000,
         "lines": [
           {
-            "account_number": "34552",
+            "account_number": "34551",
             "side": "DEBIT",
             "amount_cents": 600000
           },
@@ -621,7 +641,37 @@
             "amount_cents": 600000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
+    },
+    {
+      "account_number": "34552",
+      "cgnc_class": 3,
+      "label_fr": "État - TVA récupérable sur charges",
+      "label_ar": "الدولة - الضريبة على القيمة المضافة القابلة للاسترداد على التكاليف",
+      "label_en": "Recoverable VAT on operating expenses",
+      "normal_balance": "DEBIT",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
+      "cgnc_statement_rubric": "BILAN_ACTIF_G_CREANCES_CIRCULANT",
+      "simpl_is_code_edi": null,
+      "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
+      "sample_entry": {
+        "description_fr": "Virement de la TVA sur charges devenue déductible au décaissement",
+        "total_cents": 200000,
+        "lines": [
+          {
+            "account_number": "34552",
+            "side": "DEBIT",
+            "amount_cents": 200000
+          },
+          {
+            "account_number": "34558",
+            "side": "CREDIT",
+            "amount_cents": 200000
+          }
+        ]
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "34558",
@@ -654,7 +704,9 @@
             "amount_cents": 1200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "3455"
     },
     {
       "account_number": "3456",
@@ -682,12 +734,13 @@
             "amount_cents": 100000
           },
           {
-            "account_number": "34551",
+            "account_number": "34552",
             "side": "CREDIT",
             "amount_cents": 400000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3488",
@@ -715,7 +768,8 @@
             "amount_cents": 50000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "3497",
@@ -743,7 +797,8 @@
             "amount_cents": 450000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4411",
@@ -776,7 +831,8 @@
             "amount_cents": 2400000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4415",
@@ -804,7 +860,8 @@
             "amount_cents": 2400000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4421",
@@ -837,7 +894,8 @@
             "amount_cents": 100000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4432",
@@ -865,7 +923,8 @@
             "amount_cents": 3800000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4441",
@@ -893,7 +952,8 @@
             "amount_cents": 920000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "44525",
@@ -921,7 +981,9 @@
             "amount_cents": 410000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true,
+      "official_historical_label_fr": "État, IGR"
     },
     {
       "account_number": "4453",
@@ -949,7 +1011,8 @@
             "amount_cents": 900000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "44551",
@@ -977,7 +1040,9 @@
             "amount_cents": 200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "4455"
     },
     {
       "account_number": "44558",
@@ -1010,7 +1075,9 @@
             "amount_cents": 100000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": false,
+      "parent_cgnc_account": "4455"
     },
     {
       "account_number": "4456",
@@ -1033,7 +1100,7 @@
             "amount_cents": 500000
           },
           {
-            "account_number": "34551",
+            "account_number": "34552",
             "side": "CREDIT",
             "amount_cents": 320000
           },
@@ -1043,7 +1110,8 @@
             "amount_cents": 180000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4457",
@@ -1076,7 +1144,8 @@
             "amount_cents": 150000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "4497",
@@ -1104,7 +1173,8 @@
             "amount_cents": 450000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "5141",
@@ -1132,7 +1202,8 @@
             "amount_cents": 1200000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "5161",
@@ -1170,7 +1241,8 @@
             "amount_cents": 300
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "5541",
@@ -1198,7 +1270,8 @@
             "amount_cents": 3000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6111",
@@ -1231,7 +1304,8 @@
             "amount_cents": 3600000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6121",
@@ -1264,7 +1338,8 @@
             "amount_cents": 4800000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6125",
@@ -1287,7 +1362,7 @@
             "amount_cents": 200000
           },
           {
-            "account_number": "34551",
+            "account_number": "34552",
             "side": "DEBIT",
             "amount_cents": 40000
           },
@@ -1297,7 +1372,8 @@
             "amount_cents": 240000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6131",
@@ -1330,7 +1406,8 @@
             "amount_cents": 150000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6134",
@@ -1358,7 +1435,8 @@
             "amount_cents": 650000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6136",
@@ -1391,7 +1469,8 @@
             "amount_cents": 360000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6142",
@@ -1424,7 +1503,8 @@
             "amount_cents": 300000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6145",
@@ -1457,7 +1537,8 @@
             "amount_cents": 96000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "61473",
@@ -1466,7 +1547,7 @@
       "label_ar": "مصاريف وعمولات الخدمات البنكية",
       "label_en": "Bank service charges & card processing fees",
       "normal_balance": "DEBIT",
-      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34551",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
       "cgnc_statement_rubric": "CPC_EXPLOITATION_CHARGES_613_614",
       "simpl_is_code_edi": null,
       "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
@@ -1480,7 +1561,7 @@
             "amount_cents": 20000
           },
           {
-            "account_number": "34551",
+            "account_number": "34552",
             "side": "DEBIT",
             "amount_cents": 2000
           },
@@ -1490,7 +1571,8 @@
             "amount_cents": 22000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6171",
@@ -1528,7 +1610,8 @@
             "amount_cents": 3800000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6311",
@@ -1537,7 +1620,7 @@
       "label_ar": "فوائد الاقتراضات والديون",
       "label_en": "Interest expense on borrowings",
       "normal_balance": "DEBIT",
-      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34551",
+      "vat_encaissement_rule": "RECOVERABLE_CHARGES_34552",
       "cgnc_statement_rubric": "CPC_FINANCIER_CHARGES_631",
       "simpl_is_code_edi": null,
       "simpl_is_code_edi_status": "PENDING_OFFICIAL_DGI_SIMPL_IS_XSD",
@@ -1551,7 +1634,7 @@
             "amount_cents": 100000
           },
           {
-            "account_number": "34551",
+            "account_number": "34552",
             "side": "DEBIT",
             "amount_cents": 10000
           },
@@ -1561,7 +1644,8 @@
             "amount_cents": 110000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "6583",
@@ -1589,7 +1673,8 @@
             "amount_cents": 44500
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7111",
@@ -1622,7 +1707,8 @@
             "amount_cents": 400000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7119",
@@ -1655,7 +1741,8 @@
             "amount_cents": 240000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7121",
@@ -1688,7 +1775,8 @@
             "amount_cents": 1000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7124",
@@ -1721,7 +1809,8 @@
             "amount_cents": 300000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7127",
@@ -1754,7 +1843,8 @@
             "amount_cents": 10000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "7381",
@@ -1787,7 +1877,8 @@
             "amount_cents": 100000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "8100",
@@ -1820,7 +1911,8 @@
             "amount_cents": 6000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     },
     {
       "account_number": "8800",
@@ -1853,7 +1945,9 @@
             "amount_cents": 3000000
           }
         ]
-      }
+      },
+      "is_official_cgnc_base": true
     }
-  ]
+  ],
+  "revision_note": "V2 (2026-11-14, correctif du propriétaire) : 34551/34552 inversés (immobilisations/charges), 1181 relibellé, 1161 ajouté, indicateur is_official_cgnc_base et parent_cgnc_account. Source propriétaire, non recoupée avec le texte officiel."
 }

@@ -7,7 +7,7 @@ import { CGNC_ACCOUNTS } from '../src/content/cgnc/dataset.ts';
 import type { CgncAccountRecord } from '../src/content/cgnc/dataset.ts';
 import { buildCgncAccountView, buildCgncHubView, cgncMarkdownSections } from '../src/content/cgnc/build.ts';
 import type { CgncAccountView } from '../src/content/cgnc/build.ts';
-import { CGNC_HUB_SLUG, CODE_EDI_PENDING, COUNTER, PROVENANCE, accountSlug } from '../src/content/cgnc/copy.ts';
+import { ANALYTIC_NOTE, CGNC_HUB_SLUG, CODE_EDI_PENDING, COUNTER, HISTORICAL_LABEL, PROVENANCE, accountSlug } from '../src/content/cgnc/copy.ts';
 import { CGNC_ACCOUNT_SLUGS, CGNC_CONTRACT, CGNC_PAGES, buildCgncPages } from '../src/content/cgnc/registry.ts';
 import { buildCanonicalUrl } from '../src/i18n/hreflang.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES } from '../src/i18n/locales.ts';
@@ -56,27 +56,27 @@ function siteViews(locale: MarketingLocale): readonly CgncAccountView[] {
 }
 
 describe('Silo 3 : routes, slugs, comptes', () => {
-  it('hub /<locale>/dictionnaire-cgnc et 60 fiches /compte-<numéro> dans les 6 langues (366 pages)', () => {
+  it('hub /<locale>/dictionnaire-cgnc et 61 fiches /compte-<numéro> dans les 6 langues (372 pages)', () => {
     expect(CGNC_HUB_SLUG).toBe('dictionnaire-cgnc');
-    expect(CGNC_PAGES).toHaveLength(6 + 60 * 6);
-    expect(CGNC_ACCOUNT_SLUGS).toHaveLength(60);
+    expect(CGNC_PAGES).toHaveLength(6 + 61 * 6);
+    expect(CGNC_ACCOUNT_SLUGS).toHaveLength(61);
     expect(CGNC_ACCOUNT_SLUGS[0]).toBe('dictionnaire-cgnc/compte-1111');
     expect(accountSlug('44558')).toBe('compte-44558');
-    expect(new Set(CGNC_ACCOUNT_SLUGS).size).toBe(60);
+    expect(new Set(CGNC_ACCOUNT_SLUGS).size).toBe(61);
     for (const slug of [CGNC_HUB_SLUG, ...CGNC_ACCOUNT_SLUGS]) {
       expect(slug).toMatch(/^[a-z0-9-]+(?:\/[a-z0-9-]+)?$/);
       for (const locale of MARKETING_LOCALES) expect(findEditorialPage(locale, slug), `${locale}/${slug}`).toBeDefined();
     }
-    expect(ALL_EDITORIAL_PAGES).toHaveLength(18 + 24 + 468 + 42 + 366);
+    expect(ALL_EDITORIAL_PAGES).toHaveLength(18 + 24 + 468 + 42 + 372);
   });
 
-  it('180 fiches indexables (60 x fr, ar, en) ; ary, zgh et zgh-tfng servies en noindex ; hub indexable partout', () => {
+  it('183 fiches indexables (61 x fr, ar, en) ; ary, zgh et zgh-tfng servies en noindex ; hub indexable partout', () => {
     for (const slug of CGNC_ACCOUNT_SLUGS) {
       for (const locale of INDEXED) expect(findEditorialPage(locale, slug)?.noindex, `${locale}/${slug}`).toBe(false);
       for (const locale of OTHER) expect(findEditorialPage(locale, slug)?.noindex, `${locale}/${slug}`).toBe(true);
     }
     const indexable = CGNC_PAGES.filter((p) => p.slug !== CGNC_HUB_SLUG && p.noindex === false);
-    expect(indexable).toHaveLength(180);
+    expect(indexable).toHaveLength(183);
     for (const locale of MARKETING_LOCALES) expect(findEditorialPage(locale, CGNC_HUB_SLUG)?.noindex).toBe(false);
   });
 
@@ -89,7 +89,7 @@ describe('Silo 3 : routes, slugs, comptes', () => {
 });
 
 describe('gabarit Answer-First', () => {
-  it('verdict de 40 à 60 mots, tableau de moins de 5 colonnes, dans les 3 langues, pour les 60 comptes', () => {
+  it('verdict de 40 à 60 mots, tableau de moins de 5 colonnes, dans les 3 langues, pour les 61 comptes', () => {
     for (const locale of INDEXED) {
       for (const v of siteViews(locale)) {
         expect(v.verdictWords, `${locale}/${v.accountNumber}`).toBeGreaterThanOrEqual(40);
@@ -105,10 +105,10 @@ describe('gabarit Answer-First', () => {
   it('verdicts, titres et descriptions tous distincts (pas de pages dupliquées)', () => {
     for (const locale of INDEXED) {
       const views = siteViews(locale);
-      expect(new Set(views.map((v) => v.verdict)).size, locale).toBe(60);
-      expect(new Set(views.map((v) => v.title)).size, locale).toBe(60);
-      expect(new Set(views.map((v) => v.description)).size, locale).toBe(60);
-      expect(new Set(views.map((v) => v.faqs[0]?.answer)).size, locale).toBe(60);
+      expect(new Set(views.map((v) => v.verdict)).size, locale).toBe(61);
+      expect(new Set(views.map((v) => v.title)).size, locale).toBe(61);
+      expect(new Set(views.map((v) => v.description)).size, locale).toBe(61);
+      expect(new Set(views.map((v) => v.faqs[0]?.answer)).size, locale).toBe(61);
     }
   });
 
@@ -181,16 +181,21 @@ describe('codeEdi SIMPL-IS, provenance, mots interdits, « 250 »', () => {
     }
   });
 
-  it('« 250 » n’est jamais une promesse : ni pages, ni llms, ni contrat ; le compteur est 60 + 190 après G4', async () => {
+  it('« 250 » n’est jamais une promesse : ni pages, ni llms, ni contrat ; le compteur est 61 + 190 après G4', async () => {
     const all = [JSON.stringify(CGNC_PAGES), await handleLlmsTxt().text(), await handleLlmsFullTxt().text(), JSON.stringify(CGNC_CONTRACT)];
     for (const text of all) {
       expect(stripMoney(text)).not.toMatch(/(?<![\d,.])250(?![\d])/);
       expect(text).not.toMatch(/top\s*250/i);
+      expect(text).not.toMatch(/\b60\s+(comptes|core accounts|حساب)|57\s*\+\s*3|58\s*\+\s*3/i);
     }
-    expect(COUNTER.fr).toBe('60 comptes piliers, 190 sous-comptes sectoriels à enrichir après G4');
+    expect(COUNTER.fr).toBe('61 comptes piliers, 190 sous-comptes sectoriels à enrichir après G4');
+    expect(COUNTER.en).toBe('61 core accounts, 190 sector sub-accounts to be enriched after G4');
+    expect(COUNTER.ar).toContain('61');
     expect(CGNC_CONTRACT.status).toBe('PROVISIONAL');
-    expect(CGNC_CONTRACT.coreAccounts + CGNC_CONTRACT.sectorSubAccountsToEnrich).toBe(250);
-    expect(CGNC_CONTRACT.indexedUrls).toBe(180);
+    expect(CGNC_CONTRACT.coreAccounts + CGNC_CONTRACT.sectorSubAccountsToEnrich).toBe(251);
+    expect(CGNC_CONTRACT.coreAccounts).toBe(61);
+    expect(CGNC_CONTRACT.indexedUrls).toBe(183);
+    expect(CGNC_CONTRACT.dataset).toBe('FISCA_CGNC_CORE_V2');
   });
 
   it('le compteur s’affiche sur le hub (description, HTML, JSON-LD) et dans llms.txt, llms-full.txt, dans les 3 langues', async () => {
@@ -256,14 +261,14 @@ describe('comptes cités sans fiche : numéro seul, ni lien ni intitulé fabriqu
   });
 });
 
-describe('seuil de qualité Doc_18 S10 : les 60 fiches sont indexables, une fiche dégradée sort du sitemap et de llms', () => {
-  it('sitemap : hub + 60 fiches, fr/ar/en seulement pour les fiches, 7 hreflang ; llms : arbre fr des 60 fiches', async () => {
+describe('seuil de qualité Doc_18 S10 : les 61 fiches sont indexables, une fiche dégradée sort du sitemap et de llms', () => {
+  it('sitemap : hub + 61 fiches, fr/ar/en seulement pour les fiches, 7 hreflang ; llms : arbre fr des 61 fiches', async () => {
     const slugs = publishedSitemapSlugs(ALL_EDITORIAL_PAGES);
     expect(slugs).toContain(CGNC_HUB_SLUG);
     for (const s of CGNC_ACCOUNT_SLUGS) expect(slugs, s).toContain(s);
     const xml = await handleSitemapXml().text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1] ?? '');
-    expect(locs.filter((l) => l.includes('/compte-'))).toHaveLength(180);
+    expect(locs.filter((l) => l.includes('/compte-'))).toHaveLength(183);
     expect(locs.filter((l) => l.endsWith(`/${CGNC_HUB_SLUG}`))).toHaveLength(6);
     for (const p of ['ary', 'zgh', 'zgh-tfng']) expect(locs.some((l) => l.includes(`/${p}/${CGNC_HUB_SLUG}/compte-`))).toBe(false);
     const block = xml.split('<url>').find((b) => b.includes(`<loc>${buildCanonicalUrl('ar', CGNC_ACCOUNT_SLUGS[0] ?? '')}</loc>`)) ?? '';
@@ -295,12 +300,12 @@ describe('seuil de qualité Doc_18 S10 : les 60 fiches sont indexables, une fich
   ];
 
   for (const [name, edit] of CASES) {
-    it(`${name} : noindex dans les 6 langues, hors sitemap, hors llms.txt et llms-full.txt ; les 59 autres restent`, () => {
+    it(`${name} : noindex dans les 6 langues, hors sitemap, hors llms.txt et llms-full.txt ; les 60 autres restent`, () => {
       const { pages, all } = degraded(edit);
       for (const locale of MARKETING_LOCALES) expect(pages.find((p) => p.locale === locale && p.slug === target)?.noindex, locale).toBe(true);
       const slugs = publishedSitemapSlugs(all);
       expect(slugs).not.toContain(target);
-      expect(slugs.filter((s) => s.includes('/compte-'))).toHaveLength(59);
+      expect(slugs.filter((s) => s.includes('/compte-'))).toHaveLength(60);
       expect(buildSitemapXml(all)).not.toContain(`/${target}`);
       const index = buildLlmsTxt(PRICING_PLANS, selectLlmsIndex(all), PRICING_CATALOG_OFFERS);
       const full = buildLlmsFullTxt(PRICING_PLANS, selectPublished(all), PRICING_CATALOG_OFFERS);
@@ -381,16 +386,16 @@ describe('HTML rendu : hub et fiches en fr, ar, en, ary, zgh et zgh-tfng', () =>
     }
   });
 
-  it('hub : 60 liens de fiches groupés par les 8 classes ; fiche inconnue : 404', async () => {
+  it('hub : 61 liens de fiches groupés par les 8 classes ; fiche inconnue : 404', async () => {
     const { html } = await render('fr', CGNC_HUB_SLUG);
-    expect((html.match(/href="\/fr\/dictionnaire-cgnc\/compte-\d+"/g) ?? []).length).toBe(60);
+    expect((html.match(/href="\/fr\/dictionnaire-cgnc\/compte-\d+"/g) ?? []).length).toBe(61);
     expect((html.match(/<h3[^>]*>Classe \d/g) ?? []).length).toBe(8);
     expect((await render('fr', 'dictionnaire-cgnc/compte-4481')).status).toBe(404);
   });
 });
 
 describe('miroirs Markdown', () => {
-  it('366 miroirs .md servis, sans balise HTML, avec le verdict et la phrase codeEdi', async () => {
+  it('372 miroirs .md servis, sans balise HTML, avec le verdict et la phrase codeEdi', async () => {
     for (const page of CGNC_PAGES) {
       const res = handleMirrorRequest(new Request(`https://fisca.ma${mirrorPathOf(page)}`));
       expect(res?.status, mirrorPathOf(page)).toBe(200);
@@ -400,5 +405,181 @@ describe('miroirs Markdown', () => {
     expect(body).toContain(CODE_EDI_PENDING.en);
     expect(body).toContain('## Verdict');
     expect(cgncMarkdownSections(buildCgncAccountView('fr', FIRST)).length).toBeGreaterThanOrEqual(8);
+  });
+});
+
+const ALL_LOCALES: readonly MarketingLocale[] = MARKETING_LOCALES;
+const ANALYTIC = CGNC_ACCOUNTS.filter((a) => !a.is_official_cgnc_base);
+const SECTION_START = 'id="verdict"';
+const SECTION_END = 'id="liees"';
+
+/** Corps de la fiche sans la liste « Comptes liés » (qui cite légitimement le compte voisin). */
+function ownBody(html: string): string {
+  const start = html.indexOf(SECTION_START);
+  const end = html.indexOf(SECTION_END);
+  return start < 0 || end < 0 ? html : html.slice(start, end);
+}
+
+async function mirror(locale: MarketingLocale, slug: string): Promise<string> {
+  const page = findEditorialPage(locale, slug);
+  const res = handleMirrorRequest(new Request(`https://fisca.ma${page === undefined ? '' : mirrorPathOf(page)}`));
+  return (await res?.text()) ?? '';
+}
+
+function withoutRelated(md: string, locale: MarketingLocale): string {
+  const heading = CGNC_UI_RELATED[locale === 'ar' || locale === 'ary' ? 'ar' : locale === 'en' ? 'en' : 'fr'];
+  const at = md.indexOf(`## ${heading}`);
+  return at < 0 ? md : md.slice(0, at);
+}
+const CGNC_UI_RELATED = { fr: 'Comptes liés', en: 'Related accounts', ar: 'حسابات ذات صلة' } as const;
+
+describe('V2 : comptes à base CGNC et subdivisions analytiques Fisca (aucun « officiel » pour un compte is_official_cgnc_base = false)', () => {
+  it('le jeu compte exactement 3 subdivisions analytiques : 34558, 44551, 44558', () => {
+    expect(ANALYTIC.map((a) => a.account_number)).toEqual(['34558', '44551', '44558']);
+  });
+
+  it('HTML (6 langues) et miroirs .md : aucun « officiel », « official », « certifié », « authentique » ni équivalent arabe, hors phrase XSD imposée', async () => {
+    for (const a of ANALYTIC) {
+      const slug = `${CGNC_HUB_SLUG}/${accountSlug(a.account_number)}`;
+      for (const locale of ALL_LOCALES) {
+        const { html } = await render(locale, slug);
+        expect(stripXsdPhrase(mainOf(html)), `html ${locale}/${a.account_number}`).not.toMatch(FORBIDDEN);
+        expect(stripXsdPhrase(await mirror(locale, slug)), `md ${locale}/${a.account_number}`).not.toMatch(FORBIDDEN);
+        const page = findEditorialPage(locale, slug);
+        expect(stripXsdPhrase(JSON.stringify(page)), `page ${locale}/${a.account_number}`).not.toMatch(FORBIDDEN);
+      }
+    }
+  });
+
+  it('llms.txt et llms-full.txt : les lignes des 3 subdivisions n’affichent jamais « officiel » (hors phrase XSD)', async () => {
+    const llms = [await handleLlmsTxt().text(), await handleLlmsFullTxt().text()];
+    for (const text of llms) {
+      for (const a of ANALYTIC) {
+        const lines = text.split('\n').filter((l) => l.includes(`compte-${a.account_number}`));
+        expect(lines.length, a.account_number).toBeGreaterThan(0);
+        for (const line of lines) expect(stripXsdPhrase(line), a.account_number).not.toMatch(FORBIDDEN);
+      }
+    }
+  });
+
+  it('mention imposée : « Subdivision analytique Fisca du compte <parent> (suivi de la TVA sur encaissement) » en fr, en et ar, dans le HTML et le miroir', async () => {
+    expect(ANALYTIC_NOTE.fr).toBe('Subdivision analytique Fisca du compte {parent} (suivi de la TVA sur encaissement)');
+    for (const a of ANALYTIC) {
+      const parent = a.parent_cgnc_account ?? '';
+      expect(parent).toMatch(/^(3455|4455)$/);
+      const slug = `${CGNC_HUB_SLUG}/${accountSlug(a.account_number)}`;
+      for (const locale of ['fr', 'en', 'ar'] as const) {
+        const expected = ANALYTIC_NOTE[locale].replace('{parent}', parent);
+        const view = buildCgncAccountView(locale, a);
+        expect(view.analyticNote, `${locale}/${a.account_number}`).toBe(expected);
+        expect(view.table.rows.some((r) => r[1] === expected)).toBe(true);
+        expect((await render(locale, slug)).html, `${locale}/${a.account_number}`).toContain(expected);
+        expect(await mirror(locale, slug), `${locale}/${a.account_number}`).toContain(expected);
+        expect(view.title, `${locale}/${a.account_number}`).not.toMatch(/CGNC/);
+      }
+    }
+    expect(buildCgncAccountView('fr', ANALYTIC[0] ?? FIRST).analyticNote).toBe('Subdivision analytique Fisca du compte 3455 (suivi de la TVA sur encaissement)');
+    expect(ANALYTIC_NOTE.ar).toContain('{parent}');
+    expect(ANALYTIC_NOTE.en).toContain('Fisca');
+  });
+
+  it('les 58 autres comptes : fiche inchangée (provenance seule), sans mention analytique', async () => {
+    const base = CGNC_ACCOUNTS.filter((a) => a.is_official_cgnc_base);
+    expect(base).toHaveLength(58);
+    for (const a of base) {
+      for (const locale of INDEXED) {
+        const v = buildCgncAccountView(locale, a);
+        expect(v.analyticNote, `${locale}/${a.account_number}`).toBeNull();
+        expect(v.provenance).toBe(PROVENANCE[locale]);
+        expect(v.title).toMatch(/CGNC/);
+      }
+    }
+    const { html } = await render('fr', 'dictionnaire-cgnc/compte-2321');
+    expect(html).toContain(PROVENANCE.fr);
+    expect(html).not.toContain('Subdivision analytique');
+  });
+
+  it('44525 : « libellé historique : État, IGR » (fr), traduit en en et ar avec « État, IGR » tel quel ; aucun autre compte ne l’affiche', async () => {
+    const slug = `${CGNC_HUB_SLUG}/${accountSlug('44525')}`;
+    const record = CGNC_ACCOUNTS.find((a) => a.account_number === '44525') ?? FIRST;
+    expect(HISTORICAL_LABEL.fr).toBe('libellé historique : {label}');
+    for (const locale of ['fr', 'en', 'ar'] as const) {
+      const expected = HISTORICAL_LABEL[locale].replace('{label}', 'État, IGR');
+      expect(buildCgncAccountView(locale, record).historicalNote).toBe(expected);
+      expect((await render(locale, slug)).html, locale).toContain(expected);
+      expect(await mirror(locale, slug), locale).toContain(expected);
+      expect(expected).toContain('État, IGR');
+    }
+    expect(buildCgncAccountView('fr', record).historicalNote).toBe('libellé historique : État, IGR');
+    expect(buildCgncAccountView('fr', record).analyticNote).toBeNull();
+    for (const a of CGNC_ACCOUNTS.filter((x) => x.account_number !== '44525')) expect(buildCgncAccountView('fr', a).historicalNote).toBeNull();
+  });
+});
+
+describe('V2 : 34551 sur immobilisations, 34552 sur charges, dans les 3 langues (HTML et miroir)', () => {
+  const EXPECT = {
+    '34551': {
+      fr: { yes: ['sur immobilisations'], no: ['sur charges'] },
+      en: { yes: ['on fixed assets'], no: ['on expenses', 'on operating expenses'] },
+      ar: { yes: ['التثبيتات', 'المستقرات'], no: ['التحملات', 'التكاليف'] },
+    },
+    '34552': {
+      fr: { yes: ['sur charges'], no: ['sur immobilisations'] },
+      en: { yes: ['on expenses'], no: ['on fixed assets'] },
+      ar: { yes: ['التحملات', 'التكاليف'], no: ['التثبيتات', 'المستقرات'] },
+    },
+  } as const;
+
+  for (const number of ['34551', '34552'] as const) {
+    it(`compte ${number}`, async () => {
+      const slug = `${CGNC_HUB_SLUG}/${accountSlug(number)}`;
+      for (const locale of ['fr', 'en', 'ar'] as const) {
+        const { yes, no } = EXPECT[number][locale];
+        const html = ownBody((await render(locale, slug)).html);
+        const md = withoutRelated(await mirror(locale, slug), locale);
+        for (const [kind, text] of [['html', html], ['md', md]] as const) {
+          for (const y of yes) expect(text, `${kind} ${locale}/${number} contient ${y}`).toContain(y);
+          for (const n of no) expect(text, `${kind} ${locale}/${number} ne contient pas ${n}`).not.toContain(n);
+        }
+      }
+    });
+  }
+
+  it('les écritures citent le bon compte de TVA : 6125, 61473, 6311 → 34552 ; 3456, 4456 → 34552 en crédit ; 2321 reste en 34558', () => {
+    const lines = (n: string): readonly string[] => (CGNC_ACCOUNTS.find((a) => a.account_number === n)?.sample_entry.lines ?? []).map((l) => l.account_number);
+    for (const n of ['6125', '61473', '6311', '3456', '4456']) {
+      expect(lines(n), n).toContain('34552');
+      expect(lines(n), n).not.toContain('34551');
+    }
+    expect(lines('34551')).toEqual(['34551', '34558']);
+    expect(lines('34552')).toEqual(['34552', '34558']);
+  });
+
+  it('chaque écriture rendue (fr, ar, en) est équilibrée en centimes entiers et son total égale total_cents', () => {
+    for (const locale of INDEXED) {
+      for (const v of siteViews(locale)) {
+        const debit = v.entry.lines.reduce((sum, l) => sum + (l.debitCents ?? 0), 0);
+        const credit = v.entry.lines.reduce((sum, l) => sum + (l.creditCents ?? 0), 0);
+        const record = CGNC_ACCOUNTS.find((a) => a.account_number === v.accountNumber);
+        expect(Number.isSafeInteger(debit) && Number.isSafeInteger(credit)).toBe(true);
+        expect(debit, `${locale}/${v.accountNumber}`).toBe(credit);
+        expect(debit, `${locale}/${v.accountNumber}`).toBe(record?.sample_entry.total_cents);
+        expect(v.entry.lines.some((l) => l.account === v.accountNumber), `${locale}/${v.accountNumber} cite son compte`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('V2 : fiche 1161 et 1181', () => {
+  it('1161 existe, indexable en fr, ar et en ; 1181 est « en instance d’affectation » ; l’écriture 1181 → 1161 est liée', async () => {
+    for (const locale of INDEXED) {
+      expect(findEditorialPage(locale, 'dictionnaire-cgnc/compte-1161')?.noindex, locale).toBe(false);
+    }
+    const fr = buildCgncAccountView('fr', CGNC_ACCOUNTS.find((a) => a.account_number === '1161') ?? FIRST);
+    expect(fr.entry.lines.map((l) => l.account)).toEqual(['1181', '1161']);
+    expect(fr.entry.lines.every((l) => l.href !== null)).toBe(true);
+    const f1181 = buildCgncAccountView('fr', CGNC_ACCOUNTS.find((a) => a.account_number === '1181') ?? FIRST);
+    expect(f1181.title).toContain('Résultats nets en instance d’affectation'.replace('’', "'"));
+    expect((await render('ar', 'dictionnaire-cgnc/compte-1161')).status).toBe(200);
   });
 });

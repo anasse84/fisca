@@ -1,15 +1,16 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import rawDataset from '../src/content/cgnc-core-60-accounts.json';
+import rawDataset from '../src/content/cgnc-core-accounts-v2.json';
 import { CGNC_ACCOUNTS, CGNC_DATASET, STATEMENT_RUBRICS, VAT_ENCAISSEMENT_RULES, entryIntegrity, findCgncAccount, parseCgncDataset } from '../src/content/cgnc/dataset.ts';
 import { RUBRIC_TEXT, VAT_RULE_TEXT } from '../src/content/cgnc/copy.ts';
 import { ENTRY_DESCRIPTIONS } from '../src/content/cgnc/entry-descriptions.ts';
 
-const DATASET_PATH = join(import.meta.dirname, '..', 'src', 'content', 'cgnc-core-60-accounts.json');
-/** Empreinte du fichier fourni par le propriétaire : la donnée ne se modifie pas (un changement exige une décision du propriétaire). */
-const DATASET_SHA256 = '6ca92bcf1aa3f983a2b07d8df150144de363f89f25b787d9b05557c940749cb5';
+const DATASET_PATH = join(import.meta.dirname, '..', 'src', 'content', 'cgnc-core-accounts-v2.json');
+/** Empreinte SHA-256 de la V2 fournie par le propriétaire (2026-11-14, remplace la V1 dont l'empreinte n'est plus épinglée) : la donnée ne se modifie pas (un changement exige une décision du propriétaire). */
+const DATASET_SHA256 = '923f74f940bcb805e6aee186ba3a2c47641edaf7456c2980814613aa1409ba77';
 
 function mutate(edit: (root: Record<string, unknown>, first: Record<string, unknown>) => void): unknown {
   const clone: unknown = JSON.parse(JSON.stringify(rawDataset));
@@ -19,18 +20,19 @@ function mutate(edit: (root: Record<string, unknown>, first: Record<string, unkn
   return clone;
 }
 
-describe('jeu FISCA_CGNC_CORE_60_V1 : intégrité', () => {
+describe('jeu FISCA_CGNC_CORE_V2 : intégrité', () => {
   it('le fichier fourni est intact (empreinte SHA-256)', () => {
     expect(createHash('sha256').update(readFileSync(DATASET_PATH)).digest('hex')).toBe(DATASET_SHA256);
   });
 
-  it('60 comptes, classes 6/8/11/12/3/12/6/2, numéros uniques', () => {
-    expect(CGNC_DATASET.dataset_id).toBe('FISCA_CGNC_CORE_60_V1');
-    expect(CGNC_ACCOUNTS).toHaveLength(60);
-    expect(CGNC_DATASET.accounts_count).toBe(60);
-    expect(CGNC_DATASET.indexed_urls_count).toBe(180);
-    expect([1, 2, 3, 4, 5, 6, 7, 8].map((c) => CGNC_ACCOUNTS.filter((a) => a.cgnc_class === c).length)).toEqual([6, 8, 11, 12, 3, 12, 6, 2]);
-    expect(new Set(CGNC_ACCOUNTS.map((a) => a.account_number)).size).toBe(60);
+  it('61 comptes, classes 7/8/11/12/3/12/6/2, numéros uniques, 183 URL indexables', () => {
+    expect(CGNC_DATASET.dataset_id).toBe('FISCA_CGNC_CORE_V2');
+    expect(CGNC_ACCOUNTS).toHaveLength(61);
+    expect(CGNC_DATASET.accounts_count).toBe(61);
+    expect(CGNC_DATASET.indexed_urls_count).toBe(183);
+    expect(CGNC_DATASET.indexed_urls_count).toBe(CGNC_DATASET.accounts_count * CGNC_DATASET.locales.length);
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map((c) => CGNC_ACCOUNTS.filter((a) => a.cgnc_class === c).length)).toEqual([7, 8, 11, 12, 3, 12, 6, 2]);
+    expect(new Set(CGNC_ACCOUNTS.map((a) => a.account_number)).size).toBe(61);
     for (const a of CGNC_ACCOUNTS) expect(a.account_number.startsWith(String(a.cgnc_class)), a.account_number).toBe(true);
   });
 
@@ -59,6 +61,28 @@ describe('jeu FISCA_CGNC_CORE_60_V1 : intégrité', () => {
       expect(a.simpl_is_code_edi, a.account_number).toBeNull();
       expect(a.simpl_is_code_edi_status).toBe('PENDING_OFFICIAL_DGI_SIMPL_IS_XSD');
     }
+  });
+
+  it('base CGNC : 58 comptes true ; 34558, 44551 et 44558 sont des subdivisions analytiques Fisca (parents 3455 et 4455) ; 44525 porte son libellé historique', () => {
+    const analytic = CGNC_ACCOUNTS.filter((a) => !a.is_official_cgnc_base);
+    expect(analytic.map((a) => [a.account_number, a.parent_cgnc_account])).toEqual([
+      ['34558', '3455'],
+      ['44551', '4455'],
+      ['44558', '4455'],
+    ]);
+    expect(CGNC_ACCOUNTS.filter((a) => a.is_official_cgnc_base)).toHaveLength(58);
+    expect(CGNC_ACCOUNTS.filter((a) => a.official_historical_label_fr !== undefined).map((a) => [a.account_number, a.official_historical_label_fr])).toEqual([['44525', 'État, IGR']]);
+  });
+
+  it('34551 = immobilisations (règle RECOVERABLE_IMMOB_34551), 34552 = charges (règle RECOVERABLE_CHARGES_34552), 1181 en instance d’affectation, 1161 report à nouveau', () => {
+    const at = (n: string) => findCgncAccount(n);
+    expect(at('34551')?.vat_encaissement_rule).toBe('RECOVERABLE_IMMOB_34551');
+    expect(at('34551')?.label_fr).toBe('État - TVA récupérable sur immobilisations');
+    expect(at('34552')?.vat_encaissement_rule).toBe('RECOVERABLE_CHARGES_34552');
+    expect(at('34552')?.label_fr).toBe('État - TVA récupérable sur charges');
+    expect(at('1181')?.label_fr).toBe('Résultats nets en instance d\'affectation (solde créditeur)');
+    expect(at('1161')?.label_fr).toBe('Report à nouveau (solde créditeur)');
+    expect(VAT_ENCAISSEMENT_RULES).toHaveLength(8);
   });
 
   it('6 comptes cités par les écritures n’ont pas de fiche : 4481, 6114, 6193, 6195, 6701, 8600', () => {
@@ -92,7 +116,17 @@ describe('jeu FISCA_CGNC_CORE_60_V1 : intégrité', () => {
 
 describe('validateur d’exécution', () => {
   it('accepte le jeu fourni', () => {
-    expect(parseCgncDataset(rawDataset).accounts).toHaveLength(60);
+    expect(parseCgncDataset(rawDataset).accounts).toHaveLength(61);
+  });
+
+  it('is_official_cgnc_base est obligatoire et booléen ; parent_cgnc_account est requis s’il vaut false ; libellé historique non vide', () => {
+    expect(() => parseCgncDataset(mutate((_r, a) => { delete a['is_official_cgnc_base']; }))).toThrow(/is_official_cgnc_base/);
+    expect(() => parseCgncDataset(mutate((_r, a) => { a['is_official_cgnc_base'] = 'true'; }))).toThrow(/is_official_cgnc_base/);
+    expect(() => parseCgncDataset(mutate((_r, a) => { a['is_official_cgnc_base'] = false; }))).toThrow(/parent_cgnc_account/);
+    expect(() => parseCgncDataset(mutate((_r, a) => { a['is_official_cgnc_base'] = false; a['parent_cgnc_account'] = 'abc'; }))).toThrow(/parent_cgnc_account/);
+    expect(() => parseCgncDataset(mutate((_r, a) => { a['official_historical_label_fr'] = ''; }))).toThrow(/official_historical_label_fr/);
+    const ok = parseCgncDataset(mutate((_r, a) => { a['is_official_cgnc_base'] = false; a['parent_cgnc_account'] = '4455'; }));
+    expect(ok.accounts[0]?.parent_cgnc_account).toBe('4455');
   });
 
   it('refuse un codeEdi non null (aucun codeEdi inventé)', () => {
@@ -115,7 +149,7 @@ describe('validateur d’exécution', () => {
     expect(() => parseCgncDataset(mutate((_r, a) => { a['normal_balance'] = 'DEBITEUR'; }))).toThrow(/normal_balance/);
     expect(() => parseCgncDataset(mutate((_r, a) => { a['cgnc_class'] = 9; }))).toThrow(/cgnc_class/);
     expect(() => parseCgncDataset(mutate((_r, a) => { a['cgnc_statement_rubric'] = 'INCONNUE'; }))).toThrow(/rubric/);
-    expect(() => parseCgncDataset(mutate((r) => { r['accounts_count'] = 61; }))).toThrow(/accounts_count/);
+    expect(() => parseCgncDataset(mutate((r) => { r['accounts_count'] = 62; }))).toThrow(/accounts_count/);
     expect(() => parseCgncDataset(null)).toThrow(TypeError);
     expect(() => parseCgncDataset({ accounts: 'x' })).toThrow(TypeError);
   });
@@ -144,6 +178,45 @@ describe('hygiène du code du Silo 3', () => {
       expect(src, f).not.toMatch(new RegExp(`:\\s*${'an'}y\\b|\\bas ${'an'}y\\b|<${'an'}y>`));
       expect(src, f).not.toMatch(/\d\s?%/);
       expect(src, f).not.toMatch(/\d[\d  ]*,\d{2}\s?MAD/);
+    }
+  });
+});
+
+/** Anciens codes de règle et nom de la V1, assemblés pour que ce test ne se signale pas lui-même. */
+const OLD_TOKENS: readonly string[] = [['RECOVERABLE_CHARGES', '34551'].join('_'), ['RECOVERABLE_IMMOB', '34552'].join('_'), ['FISCA_CGNC_CORE', '60_V1'].join('_'), ['cgnc-core', '60-accounts'].join('-')];
+const ROOT = join(import.meta.dirname, '..');
+const TEXT_FILE = /\.(ts|astro|json|md|css|mjs)$/;
+
+function walk(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true }) as Dirent[]) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (TEXT_FILE.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+describe('plus aucune trace de l’ancien code de règle ni de l’inversion 34551/34552 (src et tests)', () => {
+  it('aucun ancien code de règle, ni ancien nom de jeu, ni fichier V1 dans src, tests et e2e', () => {
+    const files = [...walk(join(ROOT, 'src')), ...walk(join(ROOT, 'tests')), ...walk(join(ROOT, 'e2e'))];
+    expect(files.length).toBeGreaterThan(50);
+    for (const f of files) {
+      const text = readFileSync(f, 'utf8');
+      for (const token of OLD_TOKENS) expect(text, `${f} : ${token}`).not.toContain(token);
+    }
+    expect(readdirSync(join(ROOT, 'src', 'content'))).not.toContain(OLD_TOKENS[3] + '.json');
+  });
+
+  it('aucune ligne de src ne rapproche 34551 de « charges » ni 34552 d’« immobilisations » (inversion V1), en fr, en et ar', () => {
+    const inverted34551 = /34551[^\n]{0,90}(charges|expenses|التحملات)/i;
+    const inverted34552 = /34552[^\n]{0,90}(immobilisation|fixed asset|المستقرات|التثبيتات)/i;
+    // Le fichier JSON du propriétaire est une donnée intacte (son revision_note décrit l'inversion corrigée) : seuls les .ts et .astro sont lus.
+    for (const f of walk(join(ROOT, 'src')).filter((file) => !file.endsWith('.json'))) {
+      for (const line of readFileSync(f, 'utf8').split('\n')) {
+        expect(line, f).not.toMatch(inverted34551);
+        expect(line, f).not.toMatch(inverted34552);
+      }
     }
   });
 });

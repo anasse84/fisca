@@ -11,6 +11,7 @@ import { TABLE_MAX_COLUMNS, TABLE_MIN_ROWS, VERDICT_MAX_WORDS, VERDICT_MIN_WORDS
 import { CGNC_ACCOUNTS, NORMAL_BALANCES, VAT_ENCAISSEMENT_RULES, entryIntegrity, findCgncAccount } from './dataset.ts';
 import type { CgncAccountRecord, EntryLine } from './dataset.ts';
 import {
+  ANALYTIC_NOTE,
   BALANCE_ADJ,
   BALANCE_SIDE,
   CGNC_HUB_SLUG,
@@ -20,6 +21,7 @@ import {
   CODE_EDI_PENDING,
   COUNTER,
   DISCLAIMER,
+  HISTORICAL_LABEL,
   HUB_LEAD,
   HUB_TITLE,
   PROVENANCE,
@@ -99,6 +101,10 @@ export interface CgncAccountView {
   readonly title: string;
   readonly description: string;
   readonly provenance: string;
+  /** Mention des subdivisions analytiques Fisca (3455/4455) ; `null` pour un compte de la base du jeu. */
+  readonly analyticNote: string | null;
+  /** Libellé historique conservé tel quel (44525) ; `null` sinon. */
+  readonly historicalNote: string | null;
   readonly verdict: string;
   readonly verdictWords: number;
   readonly table: CgncTableView;
@@ -174,6 +180,16 @@ const TITLE: T3 = {
   fr: 'Compte {n} — {label} (CGNC)',
   en: 'Account {n} — {label} (Moroccan CGNC)',
   ar: 'الحساب {n} — {label} (CGNC)',
+};
+const TITLE_ANALYTIC: T3 = {
+  fr: 'Compte {n} — {label} (Fisca)',
+  en: 'Account {n} — {label} (Fisca)',
+  ar: 'الحساب {n} — {label} (Fisca)',
+};
+const DESCRIPTION_ANALYTIC: T3 = {
+  fr: 'Compte {n} « {label} » : {note}. Sens normal du solde, règle de TVA sur encaissement, rubrique de l’état de synthèse et écriture d’exemple équilibrée. Fiche pédagogique, à vérifier auprès de votre expert-comptable.',
+  en: 'Account {n} “{label}”: {note}. Normal balance, VAT cash-basis rule, financial statement heading and a balanced worked entry. Educational sheet, to be checked with your chartered accountant.',
+  ar: 'الحساب {n} «{label}»: {note}. الرصيد الطبيعي وقاعدة TVA عند التحصيل وبند القوائم التركيبية وقيد مثال متوازن. بطاقة تعليمية، يجب التحقق منها لدى خبيرك المحاسب.',
 };
 const DESCRIPTION: T3 = {
   fr: 'Compte {n} « {label} » : sens normal du solde, règle de TVA sur encaissement, rubrique de l’état de synthèse et écriture d’exemple équilibrée. Fiche pédagogique CGNC, à vérifier auprès de votre expert-comptable.',
@@ -302,9 +318,18 @@ export function buildCgncAccountView(locale: MarketingLocale, record: CgncAccoun
   const ownSide = ownLine === undefined ? '' : BALANCE_SIDE[ownLine.side][loc];
   const otherAccounts = entry.lines.filter((l) => l.account_number !== n).map((l) => l.account_number);
 
+  const analyticNote =
+    !record.is_official_cgnc_base && record.parent_cgnc_account !== undefined ? fill(ANALYTIC_NOTE[loc], { parent: record.parent_cgnc_account }) : null;
+  const historicalNote = record.official_historical_label_fr === undefined ? null : fill(HISTORICAL_LABEL[loc], { label: record.official_historical_label_fr });
+
   const ui = CGNC_UI;
+  const noteRows: readonly (readonly string[])[] = [
+    ...(analyticNote === null ? [] : [[ui.rowNature[loc], analyticNote, ui.refDataset[loc]]]),
+    ...(historicalNote === null ? [] : [[ui.rowHistorical[loc], historicalNote, ui.refDataset[loc]]]),
+  ];
   const rows: readonly (readonly string[])[] = [
     [ui.rowAccount[loc], fill(ui.accountClassValue[loc], { n, c: String(record.cgnc_class) }), ui.refDataset[loc]],
+    ...noteRows,
     [ui.rowBalance[loc], balanceAdj, ui.refDataset[loc]],
     [ui.rowVat[loc], vatText === undefined ? '' : vatText.description[loc], ui.refDataset[loc]],
     [ui.rowRubric[loc], rubric, ui.refDataset[loc]],
@@ -352,7 +377,7 @@ export function buildCgncAccountView(locale: MarketingLocale, record: CgncAccoun
     primary: s.kind !== 'internal',
   }));
 
-  const title = fill(TITLE[loc], { n, label });
+  const title = fill(analyticNote === null ? TITLE[loc] : TITLE_ANALYTIC[loc], { n, label });
   const quality = assessCgncQuality({ verdictWords: countWords(verdict), table, hasBalanceSide, hasVatRule, entryBalanced: integrity.balanced && integrity.totalMatches, sources, faqs });
   const law = CGNC_SOURCES[0];
   if (law === undefined) throw new RangeError('Source Loi 9-88 absente');
@@ -364,8 +389,10 @@ export function buildCgncAccountView(locale: MarketingLocale, record: CgncAccoun
     accountNumber: n,
     slug: `${CGNC_HUB_SLUG}/${accountSlug(n)}`,
     title,
-    description: fill(DESCRIPTION[loc], { n, label }),
+    description: analyticNote === null ? fill(DESCRIPTION[loc], { n, label }) : fill(DESCRIPTION_ANALYTIC[loc], { n, label, note: analyticNote }),
     provenance: PROVENANCE[loc],
+    analyticNote,
+    historicalNote,
     verdict,
     verdictWords: countWords(verdict),
     table,
@@ -412,7 +439,7 @@ export function cgncMarkdownSections(view: CgncAccountView): readonly { readonly
   });
   const notes = view.quality.indexable ? view.disclaimer : `${view.disclaimer}\n\n${view.labels.notIndexed}`;
   return [
-    { heading: view.labels.verdict, body: `${view.verdict}\n\n${view.provenance}` },
+    { heading: view.labels.verdict, body: [view.verdict, view.provenance, view.analyticNote, view.historicalNote].filter((x): x is string => x !== null).join('\n\n') },
     { heading: view.labels.tableHeading, body: [header, sep, ...body].join('\n') },
     {
       heading: view.labels.caseHeading,

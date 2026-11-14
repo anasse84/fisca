@@ -127,7 +127,7 @@ export const EDITORIAL_PAGES: readonly EditorialPage[] = [
  * T-P2C-07 : + 2 outils (simulateur auto-entrepreneur, estimateur Mowakaba), 6 langues (12 pages) : 546 pages.
  */
 /**
- * T-P2C-05 : + Silo 3, hub et 60 fiches de compte CGNC, 6 langues (366 pages : 546 + 366 = 912 pages).
+ * T-P2C-05 : + Silo 3, hub et 61 fiches de compte CGNC, 6 langues (372 pages : 546 + 372 = 918 pages ; V2 du jeu).
  */
 export const ALL_EDITORIAL_PAGES: readonly EditorialPage[] = [...EDITORIAL_PAGES, ...SILO_PAGES, ...CGNC_PAGES, ...TOOL_PAGES];
 

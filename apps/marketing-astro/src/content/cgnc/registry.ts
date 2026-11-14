@@ -1,6 +1,6 @@
 /**
- * Registre du Silo 3 : 60 fiches de compte + 1 hub, dans les 6 langues (366 pages). Les fiches fr, ar et en sont
- * indexables (60 x 3 = 180 URL) ; ary lit l'arabe, zgh-Latn et zgh-Tfng lisent le français, et ces trois langues
+ * Registre du Silo 3 : 61 fiches de compte + 1 hub, dans les 6 langues (372 pages). Les fiches fr, ar et en sont
+ * indexables (61 x 3 = 183 URL) ; ary lit l'arabe, zgh-Latn et zgh-Tfng lisent le français, et ces trois langues
  * sont servies en noindex hors sitemap et hors llms. Le hub est indexable dans les 6 langues.
  */
 import { MARKETING_LOCALES } from '../../i18n/locales.ts';
@@ -15,13 +15,13 @@ export { CGNC_HUB_SLUG, accountSlug };
 
 /** Contrat du Silo 3 (ERRATA B-13 : régime provisoire). Inscription au registre des contrats par l'orchestrateur. */
 export const CGNC_CONTRACT = {
-  dataset: 'FISCA_CGNC_CORE_60_V1',
+  dataset: 'FISCA_CGNC_CORE_V2',
   status: 'PROVISIONAL',
   doc_section_ref: 'Doc_18 S05 et S10 ; ERRATA B-13 ; conformité officielle non vérifiée',
-  coreAccounts: 60,
+  coreAccounts: 61,
   sectorSubAccountsToEnrich: 190,
   enrichAfterGate: 'G4',
-  indexedUrls: 180,
+  indexedUrls: 183,
   counter: COUNTER,
 } as const;
 

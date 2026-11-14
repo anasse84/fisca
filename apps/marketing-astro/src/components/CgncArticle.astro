@@ -19,6 +19,8 @@ const { view } = Astro.props;
 <article>
   <h1>{view.title}</h1>
   <p class="note cgnc-provenance">{view.provenance}</p>
+  {view.analyticNote !== null && <p class="note cgnc-analytic">{view.analyticNote}</p>}
+  {view.historicalNote !== null && <p class="note cgnc-historical">{view.historicalNote}</p>}
   <section class="verdict" aria-labelledby="verdict">
     <h2 id="verdict">{view.labels.verdict}</h2>
     <p><AmountText text={view.verdict} /></p>
