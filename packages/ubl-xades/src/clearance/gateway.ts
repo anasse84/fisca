@@ -56,9 +56,31 @@ export type ClearanceRemoteStatus =
   | { readonly state: 'REJECTED'; readonly xhubUuid: string; readonly code: string }
   | { readonly state: 'UNKNOWN' };
 
+/** Statuts CDV que Fisca émet vers xHub (Doc_07 § 02 ligne 40). */
+export const CDV_EMITTABLE_STATUSES = ['APPROUVEE', 'EN_LITIGE_SUSPENDUE', 'ENCAISSEE'] as const;
+export type CdvEmittableStatus = (typeof CDV_EMITTABLE_STATUSES)[number];
+
+/** Émission d'un statut CDV. HYPOTHÈSE : contrat de métadonnées inconnu (B-13) ; identifiants techniques et motif libre court seulement. */
+export interface CdvEmissionMetadata {
+  readonly invoiceId: string;
+  readonly xhubUuid: string;
+  readonly status: CdvEmittableStatus;
+  /** Motif libre (HYPOTHÈSE : transmis tel quel, 500 caractères au plus) ; jamais journalisé. */
+  readonly reason?: string;
+  /** Dédoublonnage : `cdv:{invoiceId}:{status}` (le pilote simulé le reconnaît ; xHub : inconnu). */
+  readonly idempotencyKey: string;
+}
+
+export interface CdvEmissionReceipt {
+  /** Instant ISO 8601 UTC de prise en compte. */
+  readonly emittedAt: string;
+}
+
 export interface ClearanceGateway {
   readonly mode: ClearanceGatewayMode;
   /** Soumet le XML signé. Lève `ClearanceGatewayError` (transitoire ou permanente). */
   submit(invoiceXmlSigned: string, metadata: ClearanceSubmitMetadata): Promise<ClearanceReceipt>;
   getStatus(xhubUuid: string): Promise<ClearanceRemoteStatus>;
+  /** Émet un statut CDV vers xHub (HYPOTHÈSE : aucune méthode xHub publiée). Lève `ClearanceGatewayError`. */
+  emitCdv(metadata: CdvEmissionMetadata): Promise<CdvEmissionReceipt>;
 }

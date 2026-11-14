@@ -20,6 +20,10 @@
     "./clearance": {
       "types": "./src/clearance/index.ts",
       "default": "./src/clearance/index.ts"
+    },
+    "./certify": {
+      "types": "./src/certify/index.ts",
+      "default": "./src/certify/index.ts"
     }
   },
   "dependencies": {

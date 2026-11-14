@@ -72,28 +72,56 @@ export const INVOICE_CLEARANCE_FSM: FsmDefinition<ClearanceState> = defineFsm<Cl
   ],
 });
 
+export interface CdvEdge {
+  readonly from: CdvStatus;
+  readonly to: CdvStatus;
+}
+
 /**
- * Transitions CDV. Diagramme de Doc_02 § 02 : DEPOSEE → {MISE_A_DISPOSITION, PRISE_EN_CHARGE, APPROUVEE, EN_LITIGE_SUSPENDUE},
- * MISE_A_DISPOSITION → PRISE_EN_CHARGE → APPROUVEE → ENCAISSEE. Hypothèse (texte « traverse … APPROUVEE_PARTIELLEMENT …,
- * EN_LITIGE_SUSPENDUE ou REFUSEE ») : les autres arêtes ci-dessous ; APPROUVEE_PARTIELLEMENT (prépare un avoir 381), REFUSEE et
- * ENCAISSEE sont terminaux ; APPROUVEE ne revient jamais en arrière (clearance_state est monotone).
+ * Arêtes du diagramme de Doc_02 § 02 (7 arêtes) : DEPOSEE → {MISE_A_DISPOSITION, PRISE_EN_CHARGE, APPROUVEE, EN_LITIGE_SUSPENDUE},
+ * MISE_A_DISPOSITION → PRISE_EN_CHARGE → APPROUVEE → ENCAISSEE.
  */
-export const CDV_LIFECYCLE_FSM: FsmDefinition<CdvStatus> = defineFsm<CdvStatus>({
-  name: 'invoice-cdv-lifecycle',
-  states: CDV_STATUSES,
-  initialStates: ['DEPOSEE_CERTIFIEE_DGI'],
-  terminalStates: ['APPROUVEE_PARTIELLEMENT', 'REFUSEE', 'ENCAISSEE'],
-  rules: [
-    rule(['DEPOSEE_CERTIFIEE_DGI'], 'MISE_A_DISPOSITION', SYSTEM_OR_WEBHOOK),
-    rule(['DEPOSEE_CERTIFIEE_DGI', 'MISE_A_DISPOSITION'], 'PRISE_EN_CHARGE', SYSTEM_OR_WEBHOOK),
-    rule(['DEPOSEE_CERTIFIEE_DGI', 'PRISE_EN_CHARGE', 'EN_LITIGE_SUSPENDUE'], 'APPROUVEE', SYSTEM_OR_WEBHOOK),
-    rule(['DEPOSEE_CERTIFIEE_DGI', 'MISE_A_DISPOSITION', 'PRISE_EN_CHARGE'], 'EN_LITIGE_SUSPENDUE', SYSTEM_OR_WEBHOOK),
-    rule(['DEPOSEE_CERTIFIEE_DGI', 'MISE_A_DISPOSITION', 'PRISE_EN_CHARGE', 'EN_LITIGE_SUSPENDUE'], 'REFUSEE', SYSTEM_OR_WEBHOOK),
-    rule(['PRISE_EN_CHARGE', 'EN_LITIGE_SUSPENDUE'], 'APPROUVEE_PARTIELLEMENT', SYSTEM_OR_WEBHOOK),
-    rule(['EN_LITIGE_SUSPENDUE'], 'PRISE_EN_CHARGE', SYSTEM_OR_WEBHOOK),
-    rule(['APPROUVEE'], 'ENCAISSEE', SYSTEM_OR_WEBHOOK),
-  ],
-});
+export const CDV_DIAGRAM_TRANSITIONS: readonly CdvEdge[] = [
+  { from: 'DEPOSEE_CERTIFIEE_DGI', to: 'MISE_A_DISPOSITION' },
+  { from: 'DEPOSEE_CERTIFIEE_DGI', to: 'PRISE_EN_CHARGE' },
+  { from: 'DEPOSEE_CERTIFIEE_DGI', to: 'APPROUVEE' },
+  { from: 'DEPOSEE_CERTIFIEE_DGI', to: 'EN_LITIGE_SUSPENDUE' },
+  { from: 'MISE_A_DISPOSITION', to: 'PRISE_EN_CHARGE' },
+  { from: 'PRISE_EN_CHARGE', to: 'APPROUVEE' },
+  { from: 'APPROUVEE', to: 'ENCAISSEE' },
+];
+
+/**
+ * HYPOTHÈSE À VALIDER (décision du pilote) : les 10 arêtes absentes du diagramme, déduites du texte de Doc_02 § 02 (« traverse
+ * … APPROUVEE_PARTIELLEMENT, EN_LITIGE_SUSPENDUE ou REFUSEE »). Source unique : le FSM est construit depuis
+ * `CDV_DIAGRAM_TRANSITIONS` + cette constante (`buildCdvLifecycleFsm`). APPROUVEE_PARTIELLEMENT, REFUSEE et ENCAISSEE restent
+ * terminaux ; APPROUVEE ne revient jamais en arrière. Retirer une arête ici la retire du FSM, rien d'autre.
+ */
+export const CDV_HYPOTHETICAL_TRANSITIONS: readonly CdvEdge[] = [
+  { from: 'EN_LITIGE_SUSPENDUE', to: 'APPROUVEE' },
+  { from: 'MISE_A_DISPOSITION', to: 'EN_LITIGE_SUSPENDUE' },
+  { from: 'PRISE_EN_CHARGE', to: 'EN_LITIGE_SUSPENDUE' },
+  { from: 'DEPOSEE_CERTIFIEE_DGI', to: 'REFUSEE' },
+  { from: 'MISE_A_DISPOSITION', to: 'REFUSEE' },
+  { from: 'PRISE_EN_CHARGE', to: 'REFUSEE' },
+  { from: 'EN_LITIGE_SUSPENDUE', to: 'REFUSEE' },
+  { from: 'PRISE_EN_CHARGE', to: 'APPROUVEE_PARTIELLEMENT' },
+  { from: 'EN_LITIGE_SUSPENDUE', to: 'APPROUVEE_PARTIELLEMENT' },
+  { from: 'EN_LITIGE_SUSPENDUE', to: 'PRISE_EN_CHARGE' },
+];
+
+/** FSM du cycle CDV : une règle par arête, sans doublon ; `hypothetical` permet de mesurer l'effet de la constante. */
+export function buildCdvLifecycleFsm(hypothetical: readonly CdvEdge[] = CDV_HYPOTHETICAL_TRANSITIONS): FsmDefinition<CdvStatus> {
+  return defineFsm<CdvStatus>({
+    name: 'invoice-cdv-lifecycle',
+    states: CDV_STATUSES,
+    initialStates: ['DEPOSEE_CERTIFIEE_DGI'],
+    terminalStates: ['APPROUVEE_PARTIELLEMENT', 'REFUSEE', 'ENCAISSEE'],
+    rules: [...CDV_DIAGRAM_TRANSITIONS, ...hypothetical].map((edge) => rule([edge.from], edge.to, SYSTEM_OR_WEBHOOK)),
+  });
+}
+
+export const CDV_LIFECYCLE_FSM: FsmDefinition<CdvStatus> = buildCdvLifecycleFsm();
 
 /** Statut CDV effectif d'une facture, relu depuis ses deux colonnes ; `null` hors du cycle CDV (avant le dépôt, rejet, annulation). */
 export function deriveCdvStatus(clearanceState: string, cdvColumn: string): CdvStatus | null {

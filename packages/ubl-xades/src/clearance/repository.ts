@@ -64,6 +64,13 @@ export interface InvoiceColumnUpdate {
   readonly clearanceState?: string;
   readonly cdvLifecycleStatus?: string;
   readonly xhubUuid?: string;
+  /** Certification uniquement (BROUILLON → NUMEROTEE_VERROUILLEE) : numéro du séquenceur, ICV et PIH précédent. */
+  readonly sequentialNumber?: string;
+  readonly icvCounter?: number;
+  readonly previousPiHash?: string;
+  /** Certification uniquement (NUMEROTEE_VERROUILLEE → SIGNEE_LOI_43_20) : PIH de la facture et identifiant d'archive AIP. */
+  readonly sha256Hash?: string;
+  readonly aipArchiveId?: string;
 }
 
 const AUDIT_INSERT = `INSERT INTO state_transition_audit (id, entity_table, entity_id, from_state, to_state, actor_kind, actor_id, idempotency_key, proof_ref, created_at)
@@ -103,6 +110,19 @@ function updateStatement(invoiceId: string, expected: InvoiceStateExpectation, u
   if (update.xhubUuid !== undefined) {
     sets.push('xhub_uuid = ?');
     params.push(update.xhubUuid);
+  }
+  const optionalColumns: ReadonlyArray<readonly [string, SqlParam | undefined]> = [
+    ['sequential_number', update.sequentialNumber],
+    ['icv_counter', update.icvCounter],
+    ['previous_pi_hash', update.previousPiHash],
+    ['sha256_hash', update.sha256Hash],
+    ['aip_archive_id', update.aipArchiveId],
+  ];
+  for (const [column, value] of optionalColumns) {
+    if (value !== undefined) {
+      sets.push(`${column} = ?`);
+      params.push(value);
+    }
   }
   if (sets.length === 0) throw new RangeError('CLEARANCE_UPDATE_EMPTY: aucune colonne à écrire.');
   params.push(invoiceId, expected.clearanceState, expected.cdvLifecycleStatus);

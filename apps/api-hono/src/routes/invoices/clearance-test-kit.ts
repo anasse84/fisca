@@ -9,7 +9,7 @@ import {
 import type { TenantSqlDriver } from '@fisca/shared-types';
 import { createFakeDoDatabase, createFakeDoState } from '../../core/fake-do-storage.ts';
 import { InvoiceSequencerDO } from '../../core/invoice-sequencer-do.ts';
-import { COMPANY_ID, openSqliteBackend } from '../../core/ledger-test-harness.ts';
+import { COMPANY_ID, openSqliteBackend, type LedgerBackend } from '../../core/ledger-test-harness.ts';
 import { createSqlIdempotencyStore } from '../../core/sql-idempotency-store.ts';
 import { createSubmissionIdempotencyPort } from './idempotency-adapter.ts';
 import type { WorkflowStepConfigLike, WorkflowStepLike } from './dgi-clearance-workflow.ts';
@@ -81,10 +81,12 @@ export interface FixtureOptions {
   readonly script?: readonly SimulatedStep[];
   readonly clearanceState?: string;
   readonly xml?: string;
+  /** Base de dossier : SQLite en mémoire par défaut ; PostgreSQL pour `clearance-backends.test.ts`. */
+  readonly backend?: LedgerBackend;
 }
 
 export async function createFixture(options: FixtureOptions = {}): Promise<Fixture> {
-  const backend = await openSqliteBackend();
+  const backend = options.backend ?? (await openSqliteBackend());
   const db = backend.driver;
   const step = new FakeStep();
   const xml = options.xml ?? SIGNED_XML;
@@ -128,8 +130,8 @@ export interface SeedInvoice {
 export async function seedInvoice(db: TenantSqlDriver, invoice: SeedInvoice): Promise<void> {
   await db.executeBatchAtomically([
     {
-      sql: `INSERT OR IGNORE INTO fiscal_partners (id, partner_role, tax_category, legal_name_enc, address_adc450_enc, pcge_auxiliary_account, created_at)
-            VALUES ('partner-1', 'CLIENT', 'COMPANY_IS', 'enc', 'enc', '34210001', '2026-11-13T09:00:00.000Z')`,
+      sql: `INSERT INTO fiscal_partners (id, partner_role, tax_category, legal_name_enc, address_adc450_enc, pcge_auxiliary_account, created_at)
+            SELECT 'partner-1', 'CLIENT', 'COMPANY_IS', 'enc', 'enc', '34210001', '2026-11-13T09:00:00.000Z' WHERE NOT EXISTS (SELECT 1 FROM fiscal_partners WHERE id = 'partner-1')`,
       params: [],
     },
     {

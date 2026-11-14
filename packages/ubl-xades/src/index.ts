@@ -64,3 +64,5 @@ export type {
 } from './facturx/client.ts';
 
 export * from './clearance/index.ts';
+export { createXadesSigningPort } from './certify/xades-port.ts';
+export type { XadesSigningPortOptions } from './certify/xades-port.ts';
