@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "اليومية",
+    "entry": "قيد محاسبي"
+  },
+  "ledger": {
+    "generalLedger": "دفتر الأستاذ العام",
+    "trialBalance": "ميزان المراجعة",
+    "balanceSheet": "الميزانية",
+    "incomeStatement": "حساب الأرباح والخسائر"
+  },
+  "account": {
+    "number": "رقم الحساب",
+    "label": "اسم الحساب"
+  },
+  "entry": {
+    "debit": "مدين",
+    "credit": "دائن",
+    "balance": "الرصيد",
+    "reversal": "قيد عكسي",
+    "posted": "مرحَّل",
+    "immutable": "القيد المرحَّل لا يُعدَّل بل يُعكَس."
+  },
+  "period": {
+    "fiscalYear": "السنة المحاسبية",
+    "close": "إقفال الفترة"
+  },
+  "bank": {
+    "reconcile": "التسوية البنكية",
+    "cash": "الصندوق"
+  }
+}

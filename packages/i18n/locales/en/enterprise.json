@@ -1,0 +1,33 @@
+{
+  "company": {
+    "switch": "Switch company",
+    "group": "Company group"
+  },
+  "consolidation": {
+    "title": "Consolidation"
+  },
+  "approvals": {
+    "title": "Approval workflow",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "audit": {
+    "trail": "Audit trail",
+    "export": "Export the audit trail"
+  },
+  "roles": {
+    "title": "Roles and permissions",
+    "segregation": "Segregation of duties"
+  },
+  "users": {
+    "title": "Users",
+    "invite": "Invite a user"
+  },
+  "reports": {
+    "title": "Reports",
+    "dossier": "Client file"
+  },
+  "portal": {
+    "languages": "This portal is available in French, Arabic and English."
+  }
+}

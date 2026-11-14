@@ -1,0 +1,28 @@
+{
+  "vat": {
+    "title": "VAT return",
+    "rate": "VAT rate",
+    "deductible": "Deductible VAT",
+    "collected": "Collected VAT"
+  },
+  "declaration": {
+    "period": "Filing period",
+    "deadline": "Filing deadline",
+    "draft": "Draft return",
+    "submit": "Prepare for e-filing"
+  },
+  "withholding": {
+    "title": "Withholding tax"
+  },
+  "invoice": {
+    "clearance": "Simulated validation",
+    "clearanceNotice": "The simulation pilot issues no official DGI approval."
+  },
+  "rules": {
+    "source": "Rates and ceilings come from dated tax tables"
+  },
+  "status": {
+    "accepted": "Accepted by the simulation",
+    "refused": "Refused by the simulation"
+  }
+}

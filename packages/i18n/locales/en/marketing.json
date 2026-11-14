@@ -1,0 +1,30 @@
+{
+  "hero": {
+    "title": "Invoicing and accounting for your business, made simple",
+    "subtitle": "Built in Morocco for small businesses, SMEs and shopkeepers."
+  },
+  "cta": {
+    "start": "Start for free",
+    "demo": "Request a demo"
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "login": "Log in"
+  },
+  "footer": {
+    "publisher": "Publisher: SYNAPTIC SYSTEMS SARL AU, Rabat",
+    "privacy": "Privacy",
+    "terms": "Terms of use"
+  },
+  "features": {
+    "invoicing": "Electronic invoicing",
+    "pos": "Touch POS, even offline",
+    "accounting": "CGNC accounting"
+  },
+  "pricing": {
+    "free": "Free",
+    "perMonth": "per month"
+  }
+}

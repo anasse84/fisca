@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "فاتورة",
+    "quote": "عرض أسعار",
+    "creditNote": "إشعار دائن",
+    "number": "رقم الفاتورة",
+    "customer": "الزبون",
+    "dueDate": "تاريخ الاستحقاق",
+    "new": "فاتورة جديدة"
+  },
+  "lines": {
+    "description": "البيان",
+    "quantity": "الكمية",
+    "unitPrice": "سعر الوحدة"
+  },
+  "totals": {
+    "excludingVat": "المجموع دون احتساب الضريبة",
+    "vat": "الضريبة على القيمة المضافة",
+    "includingVat": "المجموع شاملاً الضريبة"
+  },
+  "payment": {
+    "method": "طريقة الأداء",
+    "cash": "نقداً",
+    "card": "بطاقة بنكية",
+    "transfer": "تحويل بنكي"
+  },
+  "pos": {
+    "newSale": "عملية بيع جديدة",
+    "openRegister": "فتح الصندوق",
+    "closeRegister": "إقفال الصندوق",
+    "ticketZ": "تقرير Z",
+    "syncPending": "المزامنة قيد الانتظار",
+    "signedReceipt": "وصل موقّع"
+  }
+}

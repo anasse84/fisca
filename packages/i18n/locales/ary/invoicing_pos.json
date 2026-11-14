@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "فاتورة",
+    "quote": "ديفي",
+    "creditNote": "أفوار",
+    "number": "نمرة الفاتورة",
+    "customer": "الكليان",
+    "dueDate": "تاريخ الاستحقاق",
+    "new": "فاتورة جديدة"
+  },
+  "lines": {
+    "description": "التسمية",
+    "quantity": "الكمية",
+    "unitPrice": "ثمن الوحدة"
+  },
+  "totals": {
+    "excludingVat": "المجموع بلا TVA",
+    "vat": "TVA",
+    "includingVat": "المجموع مع TVA"
+  },
+  "payment": {
+    "method": "كيفاش خلّصتي",
+    "cash": "كاش",
+    "card": "كارط بنكية",
+    "transfer": "فيريمو"
+  },
+  "pos": {
+    "newSale": "بيع جديد",
+    "openRegister": "حلّ الكايس",
+    "closeRegister": "سدّ الكايس",
+    "ticketZ": "تيكي Z",
+    "syncPending": "المزامنة كاتسنا",
+    "signedReceipt": "تيكي موقّع"
+  }
+}

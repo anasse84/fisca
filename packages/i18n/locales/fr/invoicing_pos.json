@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "Facture",
+    "quote": "Devis",
+    "creditNote": "Avoir",
+    "number": "N° de facture",
+    "customer": "Client",
+    "dueDate": "Échéance",
+    "new": "Nouvelle facture"
+  },
+  "lines": {
+    "description": "Désignation",
+    "quantity": "Quantité",
+    "unitPrice": "Prix unitaire"
+  },
+  "totals": {
+    "excludingVat": "Total HT",
+    "vat": "TVA",
+    "includingVat": "Total TTC"
+  },
+  "payment": {
+    "method": "Mode de paiement",
+    "cash": "Espèces",
+    "card": "Carte bancaire",
+    "transfer": "Virement"
+  },
+  "pos": {
+    "newSale": "Nouvelle vente",
+    "openRegister": "Ouvrir la caisse",
+    "closeRegister": "Clôturer la caisse",
+    "ticketZ": "Ticket Z",
+    "syncPending": "Synchronisation en attente",
+    "signedReceipt": "Ticket signé"
+  }
+}

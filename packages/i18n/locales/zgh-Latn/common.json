@@ -1,0 +1,718 @@
+{
+  "actions": {
+    "save": "Ḥfeḍ",
+    "cancel": "Sefsex",
+    "confirm": "Sentem",
+    "delete": "Kkes",
+    "edit": "Ẓreg",
+    "create": "Snulfu",
+    "search": "Nadi",
+    "close": "Mdel",
+    "back": "Uɣal",
+    "next": "Wayyaḍ",
+    "previous": "Uzwir",
+    "export": "Suffeɣ",
+    "import": "Sekcem",
+    "print": "Siggez",
+    "send": "Azen",
+    "retry": "Ɛiwed"
+  },
+  "states": {
+    "loading": "Asali yettkemmil…",
+    "empty": "Ulac acu ara d-yettwaskan",
+    "error": "Yedra-d waḍru",
+    "success": "Temmed tamahilt",
+    "draft": "Arewwaq",
+    "pending": "Ittraju",
+    "cleared": "Asentem n usegzi",
+    "rejected": "Yettwagi",
+    "archived": "Yettwarḥel",
+    "offline": "Ur yettwaqqen ara"
+  },
+  "notice": {
+    "simulated": "Askar n usegzi: ulac asentem unṣib seg DGI."
+  },
+  "nav": {
+    "dashboard": "Tafelwit n usenqed",
+    "settings": "Iɣewwaren",
+    "language": "Tutlayt",
+    "logout": "Ffeɣ"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "Amḍan",
+    "date": "Azemz",
+    "currency": "Adrim",
+    "required": "Urti yettwasra"
+  },
+  "ui": {
+    "palette": {
+      "title": "Tafelwit n yiwellihen",
+      "placeholder": "Nadi ayen tebɣiḍ…",
+      "results": "Igmuḍen: {count}"
+    },
+    "review": {
+      "title": "Asenqed n ufaylu",
+      "sourcePane": "Afaylu aẓẓayan",
+      "entryPane": "Tira yettwasumeren",
+      "aiBadge": "AI",
+      "reviewBadge": "Ayen ara yettwasenqed",
+      "approve": "Sentem (asentem n yemdan)",
+      "reject": "Agi",
+      "humanApprovalNotice": "Ulac tira yettwasekles war usentem-ik amaṣmuḍ.",
+      "illegibleAmountNotice": "Amḍan ur yettwaɣer ara: tira n yemdan tettwasra."
+    },
+    "ai": {
+      "confidence": "Ticki n AI",
+      "illegibleAmountGroup": "Amḍan ur yettwaɣer ara",
+      "illegibleAmountText": "Amḍan ur yettwaɣer ara — ad t-yaru wemdan",
+      "validatedByHuman": "Yettwasentem sɣur wemdan",
+      "rejectedByHuman": "Yettwagi sɣur wemdan"
+    },
+    "auth": {
+      "title": {
+        "login": "Akcam",
+        "signup": "Snulfu amiḍan",
+        "mfa": "Asenqed s sin n yiswiren",
+        "forgot": "Yettwattu wawal uffir",
+        "forgotSent": "Senqed tabwaṭ-ik n imayl",
+        "reset": "Beddel awal uffir",
+        "resetDone": "Yettubeddel wawal uffir",
+        "verifyEmail": "Sentem tansa-inek n imayl",
+        "ice": "Tuddsa-inek deg 90 n tsinin",
+        "iceReview": "Senqed afaylu n tuddsa-inek",
+        "iceDone": "Afaylu yewjed"
+      },
+      "subtitle": {
+        "mfa": "Sekcem tangalt n usenqed wis sin akken ad tfakeḍ akcam.",
+        "forgot": "Sekcem tansa-inek n imayl: ma yella umiḍan, ad k-nazen aseɣwen.",
+        "ice": "Sekcem ICE n tuddsa-inek: ad d-nawi talɣut n ufaylu seg umuɣ."
+      },
+      "field": {
+        "email": "Tansa n imayl",
+        "password": "Awal uffir",
+        "newPassword": "Awal uffir amaynut",
+        "fullName": "Isem d yisem n twacult",
+        "code": "Tangalt",
+        "resetToken": "Tangalt n useɣwen",
+        "verifyCode": "Tangalt n usenqed",
+        "ice": "ICE"
+      },
+      "action": {
+        "login": "Kcem s imayl",
+        "signup": "Snulfu amiḍan-iw",
+        "google": "Kemmel s Google",
+        "passkey": "Kcem s tsarut",
+        "verifyEmail": "Sentem tansa",
+        "forgot": "Tettuḍ awal uffir?",
+        "sendLink": "Azen aseɣwen",
+        "reset": "Ḥfeḍ awal uffir",
+        "toSignup": "Ulac amiḍan? Snulfu yiwen",
+        "toLogin": "Tesɛiḍ amiḍan? Kcem",
+        "backToLogin": "Uɣal ɣer ukcam",
+        "showPassword": "Sken awal uffir",
+        "hidePassword": "Ffer awal uffir",
+        "submitCode": "Sentem tangalt",
+        "lookup": "Nadi deg umuɣ",
+        "confirmDossier": "Sentem afaylu-a",
+        "editIce": "Ẓreg ICE"
+      },
+      "divider": {
+        "or": "neɣ"
+      },
+      "method": {
+        "label": "Tarrayt n usenqed",
+        "TOTP": "Asnas n usentem",
+        "RECOVERY_CODE": "Tangalt n tallalt",
+        "INFOBIP_OTP": "Tangalt i d-yusan deg tebratt"
+      },
+      "hint": {
+        "TOTP": "Tangalt n 6 n yimḍanen i d-yettbin deg usnas-ik.",
+        "RECOVERY_CODE": "Tangalt n tallalt i yiwen n tikkelt kan.",
+        "INFOBIP_OTP": "Tangalt i d-yusan deg tebratt."
+      },
+      "strength": {
+        "label": "Taɣellist n wawal uffir",
+        "weak": "Ḍɛif",
+        "fair": "Alemmas",
+        "good": "Yelha",
+        "strong": "Iqwa",
+        "hint": "Ma drus 12 n yisekkilen; tafyirt ɣezzifen tezmer ugar."
+      },
+      "ice": {
+        "shapeNote": "Asenqed-a yettwali kan talɣa (15 n yimḍanen). Anadi deg umuɣ kan i d-yeqqaren ma yella ICE yettwassen.",
+        "counter": "{count} / 15 n yimḍanen",
+        "progress": "Aswir {current} seg {total}",
+        "elapsed": "Akud yezrin: {seconds} n tsinin",
+        "review": {
+          "legalName": "Isem n tuddsa",
+          "legalNameAr": "Isem n tuddsa (s taɛrabt)",
+          "if": "IF",
+          "rc": "RC",
+          "legalForm": "Talɣa n leqanun",
+          "capital": "Ras n lmal",
+          "address": "Tansa",
+          "notice": "Talɣut-a tekka-d seg umuɣ: senqed-itt send ad tkemmleḍ."
+        },
+        "done": {
+          "body": "Talɣut n tuddsa-inek tewjed. Tzemreḍ ad tkemmleḍ."
+        }
+      },
+      "body": {
+        "forgotSent": "Ma yella umiḍan i tansa-a, yettwazen-d useɣwen i yeṭṭafaren 15 n tesdatin.",
+        "resetDone": "Yettubeddel wawal uffir-ik. Tzemreḍ tura ad tkecmeḍ.",
+        "verifyEmail": "Yettwazen-d yiwen n tengalt n usenqed ɣer {email}. Sekcem-itt akken ad tsermedeḍ amiḍan-ik."
+      },
+      "status": {
+        "busy": "Tamahilt tetteddu…",
+        "locked": "Aṭas n tɛraḍin. Ɛiwed deg {seconds} n tsinin.",
+        "passkeyWaiting": "Asentem ɣef ibenk-ik…"
+      },
+      "errors": {
+        "generic": "Yedra-d waḍru. Ɛiwed.",
+        "network": "Ur nezmir ara ad neqqen. Senqed azeṭṭa syen ɛiwed.",
+        "invalidCredentials": "Tansa n imayl neɣ awal uffir ɣalaṭ.",
+        "accountLocked": "Amiḍan yettwamdel akud kan, aṭas n tɛraḍin ur nelhi ara. Ɛiwed ticki.",
+        "rateLimited": "Aṭas n yisuturen. Ṛju kra syen ɛiwed.",
+        "turnstile": "Asenqed ɣef uṛubut ur yeddi ara. Ales asali n usebter syen ɛiwed.",
+        "requestInvalid": "Kra n telɣut ur telhi ara. Senqed urtiyen.",
+        "registrationInvalid": "Ur yezmir ara ad yeddu: senqed tansa n imayl, isem d teɣzi n wawal uffir.",
+        "tokenInvalid": "Tangalt-a neɣ aseɣwen-a ur yelhi ara neɣ yettwaseqdec yakan.",
+        "tokenExpired": "Tangalt-a tfuk-itt. Suter-d yiwet tamaynut.",
+        "mfaCodeInvalid": "Tangalt-a ɣalaṭ. Senqed-itt syen ɛiwed.",
+        "challengeExpired": "Asenqed yfuk. Ales akcam seg tazwara.",
+        "attemptsExhausted": "Aṭas n tɛraḍin. Ales akcam seg tazwara.",
+        "methodUnavailable": "Tarrayt-a ulac-itt i umiḍan-ik.",
+        "enrollmentRequired": "Ilaq amiḍan-ik ad yesremded asenqed wis sin send ad tkecmeḍ.",
+        "passkeyFailed": "Tasarut ur tettwasentem ara. Seqdec awal uffir.",
+        "passkeyCancelled": "Asentem s tsarut yettwasefsex.",
+        "sessionRequired": "Tiɣimit-ik tfuk. Ales akcam.",
+        "iceNotFound": "ICE-a ur yettwaf ara deg umuɣ. Senqed ayen i tegreḍ.",
+        "iceRejected": "ICE-a yettwagi: senqed 15 n yimḍanen.",
+        "iceShape": "ICE ilaq ad yesɛu 15 n yimḍanen akken ilaq.",
+        "server": "Tameẓlit ulac-itt tura. Ɛiwed ticki.",
+        "googleFailed": "Akcam s Google ur yeddi ara. Ɛiwed.",
+        "field": {
+          "email": "Tansa n imayl ɣalaṭ.",
+          "password": "Awal uffir ɣalaṭ.",
+          "generic": "Azal ɣalaṭ."
+        }
+      }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "Idrimen d TVA"
+      },
+      "chart": {
+        "title": "Azrar n yidrimen d TVA deg 90 n wussan",
+        "summary": "Azrar seg {from} ar {to}. Tanqeṭt taddayt: {min} deg {minDate}. Tanqeṭt n ufella: {max} deg {maxDate}.",
+        "settledLegend": "Idrimen n ubanka yettwaqqnen",
+        "forecastLegend": "Tamuɣli n zdat n 90 n wussan",
+        "vatLegend": "TVA ara yettwaḥḍen",
+        "cursorLabel": "Azemz yettwaskan",
+        "cursorReadout": "{date} — yettwaḥṣel: {settled} ; tamuɣli: {forecast} ; TVA: {vat}",
+        "noValue": "Ulac azal",
+        "asOf": "Addad deg {date}",
+        "table": {
+          "summary": "Sken tafelwit n yisefka",
+          "caption": "Idrimen d TVA, ass s ass",
+          "date": "Azemz",
+          "settled": "Yettwaḥṣel (yettwaqqen)",
+          "forecast": "Tamuɣli n zdat",
+          "vat": "TVA yettwaḥḍen"
+        }
+      },
+      "vatDue": {
+        "title": "Izemzen n TVA i d-iteddun"
+      },
+      "severity": {
+        "info": "Talɣut",
+        "warning": "Ɣur-k",
+        "danger": "Ugur ameqqran"
+      },
+      "banner": {
+        "region": "Ilugan n CGI i yettwaseqdacen",
+        "rule": "Alugan",
+        "effective": "Yettwaseqdac seg",
+        "reference": "Aɣbalu"
+      },
+      "rule": {
+        "cashCeiling": "Asellek s idrimen n ufus: ma yeɛda {threshold}, ilaq ad yettwabḍu unaruz n uchat.",
+        "rasTvaExpired": "Tazmilt n RAS-TVA tekfa.",
+        "autoEntrepreneurThreshold": "Amatu n yidrimen-nnek yeqreb ɣer {threshold} n unagraw n umeskar-iman.",
+        "cashLowBalance": "Ujeddig n tqasa yeqreb ɣer ulac: {balance} i yellan."
+      },
+      "invoice": {
+        "title": "Tafaturt tamaynut",
+        "invoiceDate": "Azemz n tfaturt",
+        "customerSection": "Aklyan",
+        "customerNameFr": "Isem n uklyan (s tefransist)",
+        "customerNameAr": "Isem n uklyan (s taɛrabt)",
+        "customerIce": "ICE n uklyan",
+        "linesSection": "Izirigen n tfaturt",
+        "line": {
+          "title": "Izirig {n}",
+          "designationFr": "Aglam (s tefransist)",
+          "designationAr": "Aglam (s taɛrabt)",
+          "quantity": "Acḥal",
+          "unitPrice": "Azal n yiwen HT (MAD)",
+          "vatRate": "Azal n TVA",
+          "total": "Amatu HT n yizirig"
+        },
+        "ratePlaceholder": "Fren azal",
+        "ratesUnavailable": "Tabdart n yizulen n TVA ulac-itt: asekles yettwagdel.",
+        "addLine": "Rnu izirig",
+        "removeLine": "Kkes izirig {n}",
+        "totals": {
+          "title": "Imatuten",
+          "totalHt": "Amatu HT",
+          "totalVat": "Amatu n TVA",
+          "totalTtc": "Amatu TTC",
+          "byRate": "Aḍraf s yizulen",
+          "baseHt": "Aɣbalu HT"
+        },
+        "saveDraft": "Ḥfeḍ arewwaq",
+        "saved": "Arewwaq yettwaḥfeḍ (ur yettwasentem ara)",
+        "saveFailed": "Asekles n warewwaq ur yeddi ara. Ɛreḍ-it i tikelt-nniḍen.",
+        "errors": {
+          "designation": "Sekcem aglam s tefransist neɣ s taɛrabt.",
+          "quantity": "Acḥal ur yelhi ara: amḍan igar ulac, kraḍ n tecrad ar aktar.",
+          "unitPrice": "Azal ur yelhi ara: amḍan s idrimen, sin n tecrad ar aktar.",
+          "rate": "Fren azal n TVA seg tebdart.",
+          "ice": "ICE ilaq ad yesɛu 15 n yimḍanen kan.",
+          "noLines": "Rnu yiwen n yizirig ummid ar aqlal."
+        }
+      },
+      "preview": {
+        "title": "Taskant s snat n tutlayin (tafransist / taɛrabt)",
+        "invoice": "Tafaturt",
+        "number": "Uṭṭun n tfaturt",
+        "numberPending": "Uṭṭun ara yettwabder deg usentem",
+        "date": "Azemz",
+        "seller": "Ameskar",
+        "customer": "Aklyan",
+        "name": "Isem n tkebbanit",
+        "legalForm": "Talɣa tasertit",
+        "capital": "Ṛṛas n lmal",
+        "address": "Tansa",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "Aglam",
+        "quantity": "Acḥal",
+        "unitPrice": "Azal n yiwen HT",
+        "vatRate": "Azal TVA",
+        "lineTotal": "Amatu HT",
+        "baseHt": "Aɣbalu HT",
+        "vat": "Amur n TVA",
+        "totalHt": "Amatu HT",
+        "totalVat": "Amatu n TVA",
+        "totalTtc": "Amatu TTC",
+        "legalReason": "Ssebba tasertit",
+        "arrete": "Tafaturt-a tettwaḥbes ɣer umur n:"
+      },
+      "purchases": {
+        "errors": {
+          "network": "Aqeddac ur yettwaweḍ ara. Senqed aqqen, sakin ɛiwed.",
+          "session": "Tdemmed tɣimit-ik. Ɛiwed qqen.",
+          "forbidden": "Axeddim-ik ur yessireg ara tigawt-a.",
+          "invalid": "Isefka i yettwazen ur ttwasentamen ara. Senqed, sakin ɛiwed.",
+          "conflict": "Addad n ufaylu yettubeddel. Ɛiwed asali uqbel ad tkemmleḍ.",
+          "notFound": "Ur yettwaf ara wayen i d-yettuseqsa ɣer uqeddac.",
+          "idempotency": "Asuter-a yettwaxdem yakan neɣ yettxeddem.",
+          "unavailable": "Tamahilt ur tella ara tura. Ɛiwed mbeɛd kra.",
+          "generic": "Tamahilt ur teddi ara. Ɛiwed neɣ ɛawed ɣer tallalt."
+        },
+        "density": {
+          "comfortable": "Ṛṛaḥa (44 biksil)",
+          "compact": "Tadensit tameqqrant (28 biksil)"
+        },
+        "title": "Tabwaṭ n ccra",
+        "gridLabel": "Ifayluten n ccra i d-yusan deg wakud n tidet",
+        "newRows": "Izirigen imaynuten: {count}",
+        "keyboardHint": "J / K neɣ isihamen: inig; Enter: ldi; Mod+Enter: sentem.",
+        "empty": "Ulac afaylu i d-yusan ar tura.",
+        "open": "Ldi",
+        "openLabel": "Ldi afaylu {name}",
+        "illegible": "Amḍan ur yettwaɣer ara",
+        "col": {
+          "source": "Afaylu",
+          "supplier": "Afurnisur",
+          "date": "Azemz",
+          "total": "Amatu TTC",
+          "status": "Addad n usuffeɣ",
+          "alert": "Ɣur-k",
+          "open": "Asenqed"
+        },
+        "status": {
+          "queued": "Deg usraju",
+          "extracted": "Isefka ttwasuffɣen",
+          "proposed": "Tira yettwasumeren"
+        },
+        "alert": {
+          "cashSplit": "Ayen ara yettwasenqed: afres n uxelṣ s ukac"
+        },
+        "connection": {
+          "connecting": "Aqqen ɣer yisefka…",
+          "open": "Isefka usriden ttwaqqnen",
+          "reconnecting": "Aqqen yettuɣal, ad yettkemmil seg wayen yedran aneggaru…",
+          "closed": "Isefka ttwamdlen"
+        },
+        "drawer": {
+          "title": "Afaylu n ccra {name}",
+          "entryTitle": "Tira tamḍanit yettwasumeren",
+          "account": "Amiḍan",
+          "description": "Aglam",
+          "debit": "Dabit",
+          "credit": "Kridi",
+          "totals": "Imatuten",
+          "noProposal": "Ulac asumer n tira ar tura."
+        },
+        "stage": {
+          "running": "Azen yettkemmil…",
+          "submitted": "Tira tettwazen d arewwaq. Fiza ad tettwaskar.",
+          "visaed": "Tira tettwaskar-as Fiza sɣur wemdan."
+        },
+        "visa": {
+          "action": "Skar Fiza i tira (Fiza n yemdan)",
+          "notice": "Fiza n tezrigt d tigawt tis snat n yemdan, tebḍa ɣef usentem n usumer."
+        }
+      },
+      "bank": {
+        "errors": {
+          "network": "Aqeddac ur yettwaweḍ ara. Senqed aqqen, sakin ɛiwed.",
+          "session": "Tdemmed tɣimit-ik. Ɛiwed qqen.",
+          "forbidden": "Axeddim-ik ur yessireg ara tigawt-a.",
+          "invalid": "Isefka i yettwazen ur ttwasentamen ara. Senqed, sakin ɛiwed.",
+          "conflict": "Addad n ufaylu yettubeddel. Ɛiwed asali uqbel ad tkemmleḍ.",
+          "notFound": "Ur yettwaf ara wayen i d-yettuseqsa ɣer uqeddac.",
+          "idempotency": "Asuter-a yettwaxdem yakan neɣ yettxeddem.",
+          "unavailable": "Tamahilt ur tella ara tura. Ɛiwed mbeɛd kra.",
+          "generic": "Tamahilt ur teddi ara. Ɛiwed neɣ ɛawed ɣer tallalt.",
+          "alreadyReconciled": "Izrig-a n tabanka yettwaxdem yakan."
+        },
+        "title": "Aqqen n tabanka",
+        "statementTitle": "Tabdart n tabanka",
+        "entriesTitle": "Tira n tfaturin yeldin",
+        "decisionTitle": "Ayen ara yettwaxdem ɣef uqqen",
+        "selectPrompt": "Fren izrig seg tebdart i wakken ad twaliḍ asumer.",
+        "dueDate": "Azemz n uxelṣ",
+        "candidate": "Yettwasumer",
+        "score": "Amḍan n usumer",
+        "notice": {
+          "humanValidation": "Ulac aqqen yettwasekles war usentem-ik amaṣmuḍ."
+        },
+        "suggestion": {
+          "none": "Ulac tira yettwasumeren i yizrig-a.",
+          "unique": "Yiwet n tira yettwasumeren: ad tt-tsentmeḍ.",
+          "ambiguous": "Waṭas n tira yettwasumeren: aqqen ur yettwabin ara, aqqen awurman ur yettwasireg ara. Fren ad terreḍ izrig deg usraju."
+        },
+        "method": {
+          "label": "Anaw n uxelṣ",
+          "placeholder": "Fren anaw n uxelṣ",
+          "cash": "Ukac",
+          "cheque": "Ccik",
+          "transfer": "Asiweḍ",
+          "lcn": "Tawriqt n tjara (LCN)",
+          "card": "Takarṭa n tabanka",
+          "offset": "Tamqasa"
+        },
+        "actions": {
+          "validate": "Sentem aqqen",
+          "suspend": "Err-it deg usraju (3497 / 4497)"
+        },
+        "suspenseNotice": "Izrig ad yettwabḍu deg yimiḍanen n usraju 3497 / 4497; ulac tafaturt ara yettwaqqnen.",
+        "state": {
+          "unmatched": "Ad yettwaqqen",
+          "matched": "Yettwaqqen",
+          "partial": "Yettwaqqen s uḥric",
+          "suspense": "Deg usraju",
+          "noMatch": "Ur yettwaqqen ara"
+        },
+        "outcome": {
+          "matched": "Aqqen yettwasekles: arewwaq n tira n uqqen yettwasnulfu.",
+          "partial": "Aqqen s uḥric yettwasekles: arewwaq i umḍan i yettwaxelṣen.",
+          "suspense": "Izrig yuɣal deg usraju (3497 / 4497): ulac tafaturt yettwaqqnen.",
+          "noMatch": "Ulac aqqen: ulac ayen yettwaru."
+        }
+      },
+      "radar": {
+        "errors": {
+          "network": "Aqeddac ur yettwaweḍ ara. Senqed aqqen, sakin ɛiwed.",
+          "session": "Tdemmed tɣimit-ik. Ɛiwed qqen.",
+          "forbidden": "Axeddim-ik ur yessireg ara tigawt-a.",
+          "invalid": "Isefka i yettwazen ur ttwasentamen ara. Senqed, sakin ɛiwed.",
+          "conflict": "Addad n ufaylu yettubeddel. Ɛiwed asali uqbel ad tkemmleḍ.",
+          "notFound": "Ur yettwaf ara wayen i d-yettuseqsa ɣer uqeddac.",
+          "idempotency": "Asuter-a yettwaxdem yakan neɣ yettxeddem.",
+          "unavailable": "Tamahilt ur tella ara tura. Ɛiwed mbeɛd kra.",
+          "generic": "Tamahilt ur teddi ara. Ɛiwed neɣ ɛawed ɣer tallalt."
+        },
+        "density": {
+          "comfortable": "Ṛṛaḥa (44 biksil)",
+          "compact": "Tadensit tameqqrant (28 biksil)"
+        },
+        "title": "Radar n ulugan 69-21",
+        "gridLabel": "Tifaturin n yiklyanen ur yettwaxelṣen ara deg wakud",
+        "asOf": "Addad ɣef {date}",
+        "note": {
+          "serverComputed": "Aqeddac ad iḥseb ussan n uɣbel, taɣramt d usgunfu; ayen i d-yettwaskan deg usebter ur yettwaḥseb ara tikelt-nniḍen."
+        },
+        "col": {
+          "invoice": "Tafaturt",
+          "customer": "Aklyan",
+          "due": "Azemz n uxelṣ",
+          "daysLate": "Ussan n uɣbel",
+          "amountDue": "Wayen yeqqimen",
+          "penalty": "Taɣramt",
+          "penaltyState": "Addad n taɣramt",
+          "dispute": "Amennuɣ",
+          "action": "Ibeyyinen"
+        },
+        "penalty": {
+          "frozen": "Taɣramt tettwasgunfu (amennuɣ)",
+          "active": "Taɣramt tettkemmil"
+        },
+        "dispute": {
+          "none": "Ulac amennuɣ",
+          "documented": "Amennuɣ yettwabeyyen"
+        },
+        "evidence": {
+          "open": "Sali abeyyen",
+          "openLabel": "Sali abeyyen i tfaturt {number}",
+          "title": "Ibeyyinen n umennuɣ — tafaturt {number}",
+          "frozenNotice": "Aqeddac i d-yettwasenfaren asgunfu n taɣramt ɣef waddad n umennuɣ; asebter-a ur t-iseqdac ara s timmad-is.",
+          "policy": "Teɣzi tameqqrant n ufaylu: {maxSize}; inawen yettwaqeblen: {types}; {maxFiles} n ifayluten ar aṭas.",
+          "pick": "Fren afaylu neɣ ugar",
+          "hash": "Azmul SHA-256",
+          "hashing": "Aḥseb n uzmul…",
+          "remove": "Kkes",
+          "removeLabel": "Kkes afaylu {name}",
+          "submit": "Sali ibeyyinen",
+          "submitting": "Asali yettkemmil…",
+          "sent": "Ibeyyinen ttwasalin. Aqeddac ad isnfel addad n umennuɣ d usgunfu.",
+          "unit": {
+            "byte": "bayt",
+            "kb": "Kbayt",
+            "mb": "Mbayt"
+          },
+          "errors": {
+            "tooLarge": "Afaylu {name} ameqqran aṭas.",
+            "type": "Anaw n ufaylu ur yettwaqbel ara: {name}.",
+            "empty": "Afaylu ixwa: {name}.",
+            "tooMany": "Waṭas n ifayluten: {name} ur yettwaqbel ara.",
+            "hash": "Ur izmir ara uḥseb n uzmul i {name}."
+          }
+        }
+      }
+    },
+    "pos": {
+      "title": "Taqasa n tmesmunt",
+      "region": "Agrudem n tqasa",
+      "language": {
+        "label": "Tutlayt",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "Asentel",
+        "light": "Amleɣ",
+        "dark": "Aberkan"
+      },
+      "sale": {
+        "catalog": "Iferdisen",
+        "catalogEmpty": "Ulac aferdis deg ukatalug",
+        "addItem": "Rnu {name} ɣer tqeffet",
+        "cart": "Taqeffet",
+        "cartEmpty": "Taqeffet d tilemt",
+        "itemCount": "{count} n yiferdisen",
+        "quantity": "Acḥal",
+        "unitPrice": "Azal TTC",
+        "lineTotal": "Amatu n yizirig",
+        "increase": "Rnu acḥal n {name}",
+        "decrease": "Sefsex acḥal n {name}",
+        "remove": "Kkes {name} seg tqeffet",
+        "clear": "Ḥwi taqeffet",
+        "totalHt": "Amatu HT",
+        "newSale": "Azenzi amaynut",
+        "vatRate": "TVA {rate} %",
+        "totalTtc": "Amatu TTC",
+        "pay": "Xeṣṣ",
+        "blocked": "Azenzi yeḥbes: ilaq usemlil beɛd 72 n tsaɛtin war tuqqna."
+      },
+      "pay": {
+        "title": "Axelṣ",
+        "methods": "Anaw n uxelṣ",
+        "cash": "Ukac",
+        "card": "Takarṭa TPE",
+        "delivery": "Asnas n usiweḍ",
+        "totalDue": "Amatu n uxelṣ",
+        "cashShare": "Aferdis n ukac",
+        "stamp": "Azal n ttabeɛ",
+        "cashDue": "Ukac ara yettwakkes",
+        "tendered": "Amḍan i yettunefken",
+        "change": "Anegzum",
+        "remaining": "Wayen yeqqimen",
+        "short": "Amḍan ur yekfi ara",
+        "amountFor": "Amḍan n {method}",
+        "fillRemaining": "Aseklu",
+        "keypad": "Tafelwit n yimḍanen",
+        "key": "Tafekka {digit}",
+        "backspace": "Kkes uṭṭun aneggaru",
+        "clear": "Kkes akk",
+        "validate": "Sentem u suffeɣ tikt",
+        "backToCart": "Uɣal ɣer tqeffet",
+        "issuing": "Asuffeɣ n tikt yettwazeɛlen…"
+      },
+      "net": {
+        "online": "Yeqqen",
+        "offlineWithin": "Tamellalt war tuqqna",
+        "offlineExpired": "War tuqqna: yeɛda 72 n tsaɛtin",
+        "neverSynced": "Ur yessemlil ara akk",
+        "clockAnomaly": "Tamrilt ur tefri ara",
+        "pending": "{count} n tiktiyin ttrajunt asemlil",
+        "remaining": "{hours} h {minutes} min send ad yeḥbes uzenz",
+        "status": "Addad n uzeṭṭa"
+      },
+      "receipt": {
+        "title": "Tikt n tqasa",
+        "number": "Tikt uṭṭun",
+        "date": "Azemz",
+        "totalHt": "Amatu HT",
+        "vat": "TVA {rate} %",
+        "totalTtc": "Amatu TTC",
+        "stamp": "Azal n ttabeɛ",
+        "cash": "Ukac",
+        "card": "Takarṭa TPE",
+        "delivery": "Asnas n usiweḍ",
+        "change": "Anegzum",
+        "hash": "Aseklu n ufeṛṛen",
+        "qrCaption": "Tafaturt B2B: sken QR-a s ICE-ik",
+        "thanks": "Tanemmirt ɣef tmeẓẓi-ik"
+      },
+      "print": {
+        "preview": "Taskant n tikt yettwasigzen",
+        "action": "Siggez tikt",
+        "drawer": "Ldi tanaka n tqasa",
+        "width": "Tehri n tkaɣeḍt",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} n usiggez ttrajunt",
+        "printed": "Tikt yettwasigzen",
+        "error": {
+          "absent": "Tasiggezt ulac-itt neɣ ur teqqin ara",
+          "paper": "Tkaɣeḍt tfuk neɣ taɣaṭ teldi",
+          "timeout": "Tasiggezt ur d-tettargu ara (yekfa wakud)",
+          "unsupported": "Tuqqna n usiggez ur tettwasefrak ara deg yiminig-a",
+          "generic": "Asiggez ur yeddi ara"
+        }
+      },
+      "b2b": {
+        "title": "Tafaturt B2B s QR",
+        "instruction": "Aklyan ad isken QR-a ad d-yawi tafaturt s ICE-nnes.",
+        "qrAlt": "QR n usnifel ɣer tfaturt B2B",
+        "stateLabel": "Addad n usnifel",
+        "state": {
+          "NONE": "Ur yettwasnifel ara",
+          "CONVERTI_B2B_AVANT_Z": "Yettwasnifel ɣer tfaturt B2B send Tikt Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "Yettwasnifel beɛd Tikt Z: azenz B2C yettwabeṭṭel"
+        },
+        "noDoubleTax": "Yiwen n uzal kan: usnifel yettabeṭṭil azenz B2C.",
+        "alreadyConverted": "Tikt yettwasnifel yakan: ulac QR amaynut.",
+        "link": "Aseɣwen n usnifel"
+      },
+      "err": {
+        "sessionNotOpen": "Ulac tiɣimit n tqasa teldi",
+        "terminalNotPaired": "Aserdas ur yettwasnaɣ ara",
+        "stampRuleMissing": "Alugen n ttabeɛ ulac-it: azenz yettwagi",
+        "generic": "Asuffeɣ ur izmir ara"
+      },
+      "count": {
+        "title": "Amḍan n tqasa",
+        "instruction": "Amḍ ukac akk deg tanaka, sakin sekcem amḍan n yal taggayt.",
+        "blindNotice": "Amḍan aɛmaw: sekcem kan ayen i d-tamḍeḍ.",
+        "banknotes": "Tkaɣḍin",
+        "coins": "Idrimen",
+        "increase": "Rnu yiwen n {value}",
+        "decrease": "Kkes yiwen n {value}",
+        "quantity": "Acḥal n {value}",
+        "counted": "Amatu yettwamḍen",
+        "lock": "Sekker amḍan",
+        "locking": "Asekker…",
+        "locked": "Amḍan yettwasekker",
+        "lockedWait": "Efk tanaka i uɛessas i usenqed.",
+        "error": {
+          "invalid": "Amḍan ur ṣeḥḥi ara: senqed acḥal.",
+          "notActive": "Amḍan yettwasekker yakan.",
+          "generic": "Amḍan ur yettwasekles ara."
+        },
+        "emptyGrid": "Ulac taggayt i usemḍen"
+      },
+      "variance": {
+        "title": "Asenqed n uɛessas",
+        "counted": "Amḍan yettwamḍen",
+        "expected": "Amḍan yettwaṛjan",
+        "difference": "Amgirred",
+        "shortage": "Anqis",
+        "overage": "Ugar",
+        "balanced": "Tanaka tṣeḥḥa",
+        "loading": "Asiḍen n umgirred…",
+        "error": "Amgirred ulac-it i uzemmur-a"
+      },
+      "z": {
+        "title": "Tikt Z",
+        "preview": "Taskant n tikt Z",
+        "closureNumber": "Asekker uṭṭun {number}",
+        "businessDate": "Azemz amḥasab",
+        "ticketCount": "{count} n tiktiyin",
+        "ht": "Amatu HT {rate} %",
+        "vat": "Amatu TVA {rate} %",
+        "stamp": "Azal n ttabeɛ",
+        "tpeGross": "Amatu TPE",
+        "hash": "Aseklu Z",
+        "prevHash": "Aseklu n zik",
+        "thanks": "Tagara n uxeddim",
+        "seal": "Ssekyed asekker Z",
+        "sealing": "Assekyed…",
+        "sealed": "Asekker Z yettwasekyed",
+        "print": "Siggez tikt Z",
+        "printed": "Tikt Z tettwasigzen",
+        "noSale": "Tiɣimit tesekker: ulac azenzi.",
+        "error": {
+          "notReady": "Sekker amḍan n tqasa uqbel.",
+          "generic": "Asekker ur yettwasekyed ara."
+        },
+        "loading": "Aheyyi n tikt Z…"
+      },
+      "sync": {
+        "status": "Asemlil",
+        "state": {
+          "pending": "Yettraju",
+          "syncing": "Asemlil teddu",
+          "error": "Tuccḍa deg usemlil",
+          "synced": "Yettwasemlil"
+        },
+        "pendingTickets": "{count} n tiktiyin ttrajunt asemlil",
+        "pendingClosures": "{count} n yisekkren ttrajunt asemlil",
+        "blocked": "Azenzi yeḥbes: ugar n {hours} n tsaɛtin war usemlil",
+        "retry": "Ɛiwed tura",
+        "retryIn": "Tarazzunt tamaynut deg {seconds} n tsinin",
+        "cause": {
+          "NETWORK": "Tiẓeṭṭa ulac-itt",
+          "SERVER": "Aqeddac ulac-it",
+          "REJECTED": "Aqeddac yugi aduddu"
+        }
+      },
+      "closing": {
+        "open": "Tagara n uxeddim",
+        "back": "Uɣal ɣer uzenzi"
+      }
+    }
+  }
+}
