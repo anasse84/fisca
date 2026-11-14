@@ -186,11 +186,32 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  packages/ubl-xades: {}
+  packages/ubl-xades:
+    dependencies:
+      '@fisca/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/ui-mercury: {}
 
-  packages/vault-merkle: {}
+  packages/vault-merkle:
+    dependencies:
+      '@fisca/crypto-e2ee':
+        specifier: workspace:*
+        version: link:../crypto-e2ee
+      '@fisca/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@fisca/ubl-xades':
+        specifier: workspace:*
+        version: link:../ubl-xades
+    devDependencies:
+      '@fisca/db-schema':
+        specifier: workspace:*
+        version: link:../db-schema
 
 packages:
 

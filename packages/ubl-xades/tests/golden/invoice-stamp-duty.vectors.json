@@ -1,0 +1,85 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-03",
+  "description": "Droit de timbre sur règlement en espèces : 25 bps du TTC réglé en espèces, charge hors TVA (AllowanceCharge). Taux = paramètre fourni par l'appelant.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "vectors": [
+    {
+      "id": "TIM-01",
+      "title": "Timbre 25 bps sur 12 600,00 espèces : 31,5 → 32",
+      "legalArticle": "Droit de timbre sur espèces : référence à confirmer par l'expert-comptable (Doc_07 Section 07 : 0,25 %)",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "HT 10500 c ; TVA 2100 c ; TTC avant timbre 12600 c ; timbre = 12600 × 25 / 10000 = 31,5 → 32 c (demi supérieur) ; TTC = 12600 + 32 = 12632 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 10500,
+            "vatRateBps": 2000
+          }
+        ],
+        "stampDuty": {
+          "cashSettledCents": 12600,
+          "rateBps": 25,
+          "allowedRatesBps": [
+            25
+          ],
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 10500,
+        "vatBaseCents": 10500,
+        "disbursementsCents": 0,
+        "taxTotalCents": 2100,
+        "stampDutyCents": 32,
+        "taxExclusiveCents": 10532,
+        "taxInclusiveCents": 12632,
+        "retentionCents": 0,
+        "payableCents": 12632
+      }
+    },
+    {
+      "id": "TIM-02",
+      "title": "Timbre 25 bps sur 10 000,00 espèces : 25 c exacts",
+      "legalArticle": "Droit de timbre sur espèces : référence à confirmer par l'expert-comptable (Doc_07 Section 07 : 0,25 %)",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "HT 10000 c ; TVA 2000 c ; TTC avant timbre 12000 c ; espèces 10000 c ; timbre = 10000 × 25 / 10000 = 25 c ; TTC = 12025 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 10000,
+            "vatRateBps": 2000
+          }
+        ],
+        "stampDuty": {
+          "cashSettledCents": 10000,
+          "rateBps": 25,
+          "allowedRatesBps": [
+            25
+          ],
+          "ruleDate": "2026-11-13",
+          "legalReference": "Règle de test résolue par l'appelant"
+        }
+      },
+      "expected": {
+        "lineExtensionCents": 10000,
+        "vatBaseCents": 10000,
+        "disbursementsCents": 0,
+        "taxTotalCents": 2000,
+        "stampDutyCents": 25,
+        "taxExclusiveCents": 10025,
+        "taxInclusiveCents": 12025,
+        "retentionCents": 0,
+        "payableCents": 12025
+      }
+    }
+  ]
+}

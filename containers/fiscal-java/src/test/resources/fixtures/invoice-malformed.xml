@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture de test écrite pour T-P2A-01 : XML volontairement mal formé (balise non fermée). -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><cbc:ID>
