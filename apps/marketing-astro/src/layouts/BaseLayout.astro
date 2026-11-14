@@ -64,6 +64,7 @@ const navItems = [
     <meta name="description" content={head.description} />
     <meta name="color-scheme" content="light dark" />
     {noindex === true && <meta name="robots" content="noindex, follow" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href={head.canonical} />
     {head.alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
     <meta property="og:type" content="website" />

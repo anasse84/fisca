@@ -14,10 +14,10 @@ export const COMMON = {
   breadcrumbLabel: t('Fil d’Ariane', 'Breadcrumb', 'مسار التنقل', 'مسار التنقل'),
   hubTitle: t('Outils fiscaux gratuits, sans compte', 'Free tax tools, no account', 'أدوات جبائية مجانية دون حساب', 'أدوات جبائية بلا فلوس وبلا حساب'),
   hubDescription: t(
-    'Cinq outils qui s’exécutent dans votre navigateur : audit et réparation des ICE d’un fichier Excel, simulateur de la loi 69-21, calculateur de RAS-TVA et de plafond d’espèces, simulateur auto-entrepreneur et estimateur de subvention Mowakaba.',
-    'Five tools that run in your browser: audit and repair of the ICE numbers in an Excel file, law 69-21 simulator, VAT withholding and cash-cap calculator, auto-entrepreneur simulator and Mowakaba subsidy estimator.',
-    'خمس أدوات تعمل داخل متصفحك: تدقيق وإصلاح أرقام ICE في ملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الأداء نقدا، ومحاكي المقاول الذاتي، ومقدّر دعم مواكبة.',
-    'خمس د الأدوات كتخدم فالمتصفح ديالك: تدقيق وإصلاح ICE فملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الكاش، ومحاكي المقاول الذاتي، ومقدر دعم مواكبة.',
+    'Six outils qui s’exécutent dans votre navigateur : audit et réparation des ICE d’un fichier Excel, simulateur de la loi 69-21, calculateur de RAS-TVA et de plafond d’espèces, simulateur auto-entrepreneur, estimateur de subvention Mowakaba et validateur local UBL / FEC-MA (contrôle de structure indicatif).',
+    'Six tools that run in your browser: audit and repair of the ICE numbers in an Excel file, law 69-21 simulator, VAT withholding and cash-cap calculator, auto-entrepreneur simulator, Mowakaba subsidy estimator and a local UBL / FEC-MA checker (indicative structure check).',
+    'ست أدوات تعمل داخل متصفحك: تدقيق وإصلاح أرقام ICE في ملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الأداء نقدا، ومحاكي المقاول الذاتي، ومقدّر دعم مواكبة، ومدقق UBL / FEC-MA المحلي (فحص إرشادي للبنية).',
+    'ست د الأدوات كتخدم فالمتصفح ديالك: تدقيق وإصلاح ICE فملف Excel، ومحاكي القانون 69-21، وحاسبة اقتطاع TVA وسقف الكاش، ومحاكي المقاول الذاتي، ومقدر دعم مواكبة، ومدقق UBL / FEC-MA المحلي (تحقق إرشادي د البنية).',
   ),
   hubLead: t(
     'Aucun compte, aucun cookie, aucun script tiers : vos fichiers et vos montants ne quittent pas votre navigateur. Chaque résultat affiche la règle utilisée, sa date et son état de recoupement.',

@@ -4,8 +4,8 @@ import SiloArticle from '../../components/SiloArticle.astro';
 import { SILOS, buildHubView, buildSiloViewBySlug } from '../../content/silos/registry.ts';
 import { localeFromPrefix } from '../../i18n/locales.ts';
 
-const locale = localeFromPrefix(Astro.params.locale);
-const slug = (Astro.params.slug ?? '').replace(/^\/+|\/+$/g, '');
+const locale = localeFromPrefix(Astro.params['locale']);
+const slug = (Astro.params['slug'] ?? '').replace(/^\/+|\/+$/g, '');
 if (locale === null) {
   return new Response(null, { status: 404 });
 }

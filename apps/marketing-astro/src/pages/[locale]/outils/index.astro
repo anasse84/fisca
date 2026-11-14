@@ -3,7 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { localeFromPrefix } from '../../../i18n/locales.ts';
 import { buildToolsHubView } from '../../../tools/registry.ts';
 
-const locale = localeFromPrefix(Astro.params.locale);
+const locale = localeFromPrefix(Astro.params['locale']);
 if (locale === null) {
   return new Response(null, { status: 404 });
 }

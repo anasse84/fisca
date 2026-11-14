@@ -1,5 +1,5 @@
 /**
- * Contrôle navigateur des outils publics (T-P2C-06 et T-P2C-07) : Chromium réel, vrai dépôt de fichier CSV et .xlsx, fr et ar,
+ * Contrôle navigateur des outils publics (T-P2C-06 et T-P2C-07) : Chromium réel, vrai dépôt de fichier CSV, .xlsx, FEC (.txt) et XML UBL, fr et ar,
  * 375 et 1440 px, clair et sombre. Usage : `node e2e/tools-check.ts http://localhost:4321` (serveur déjà lancé).
  * Sortie 0 si tout passe. Aucun envoi réseau n'est attendu : toute requête hors origine fait échouer le contrôle.
  */
@@ -21,6 +21,26 @@ const checks: Check[] = [];
 function check(name: string, ok: boolean, detail = ''): void {
   checks.push({ name, ok, detail });
   if (!ok) failures.push(`${name} ${detail}`);
+}
+
+interface GoldFec {
+  readonly id: string;
+  readonly input: { readonly lines: readonly string[] };
+}
+interface GoldUbl {
+  readonly id: string;
+  readonly input: { readonly xml: string };
+}
+const GOLD = JSON.parse(readFileSync(new URL('../tests/golden/validateur-ubl-fec.vectors.json', import.meta.url), 'utf8')) as { readonly fec_vectors: readonly GoldFec[]; readonly ubl_vectors: readonly GoldUbl[] };
+function goldFec(id: string): string {
+  const v = GOLD.fec_vectors.find((x) => x.id === id);
+  if (v === undefined) throw new Error(`vecteur FEC absent : ${id}`);
+  return `${v.input.lines.join('\r\n')}\r\n`;
+}
+function goldUbl(id: string): string {
+  const v = GOLD.ubl_vectors.find((x) => x.id === id);
+  if (v === undefined) throw new Error(`vecteur UBL absent : ${id}`);
+  return v.input.xml;
 }
 
 const CSV = 'Raison sociale;ICE;Ville\r\nAcme;1534290000057;Rabat\r\nBeta;003042032000080;Fès\r\nGamma;001534290000075;Salé\r\nDelta;;Agadir\r\n';
@@ -192,6 +212,45 @@ try {
         const mowOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         check(`${tag} mowakaba pas de défilement horizontal`, mowOverflow <= 1, String(mowOverflow));
         await page.screenshot({ path: `${outDir}/${tag}-mowakaba.png`, fullPage: true });
+
+        // ---- Validateur local UBL / FEC-MA : vrais fichiers FEC et XML ----
+        await page.goto(`${base}/${locale}/outils/validateur-ubl-fec`, { waitUntil: 'networkidle' });
+        await page.locator('#fec-file').setInputFiles({ name: '12345678FEC20261231.txt', mimeType: 'text/plain', buffer: Buffer.from(goldFec('FEC-OK'), 'utf8') });
+        await page.locator('[data-role="fec-results"]').waitFor({ state: 'visible', timeout: 5000 });
+        const fecOk = (await page.locator('[data-role="fec-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} fec valide : totaux 11 200,50 MAD`, fecOk.includes('11 200,50 MAD'), fecOk.slice(0, 300));
+        check(`${tag} fec empreintes dites non vérifiées`, /SHA-256/.test(fecOk) && /(NON|ما|غير)/.test(fecOk), fecOk.slice(0, 400));
+        check(`${tag} fec aucune anomalie listée`, (await page.locator('[data-role="fec-results"] ul li').count()) === 0);
+        await page.locator('#fec-file').setInputFiles({ name: '12345678FEC20261231.txt', mimeType: 'text/plain', buffer: Buffer.from(goldFec('FEC-ENTRY-UNBALANCED'), 'utf8') });
+        await page.waitForFunction(() => document.querySelectorAll('[data-role="fec-results"] ul li').length > 0, null, { timeout: 5000 });
+        const fecKo = (await page.locator('[data-role="fec-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} fec déséquilibre d’un centime annoncé`, fecKo.includes('1 200,50 MAD') && fecKo.includes('1 200,49 MAD'), fecKo.slice(0, 400));
+        check(`${tag} fec alerte annoncée`, (await page.locator('[data-role="fec-results"] [role="alert"]').count()) === 1);
+        await page.locator('#fec-file').setInputFiles({ name: 'mauvais.txt', mimeType: 'text/plain', buffer: Buffer.from(goldFec('FEC-OK').replace(/\r\n/g, '\n'), 'utf8') });
+        await page.waitForFunction(() => document.querySelectorAll('[data-role="fec-results"] ul li').length > 1, null, { timeout: 5000 });
+        const fecLf = (await page.locator('[data-role="fec-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} fec LF et nom de fichier invalide détectés`, fecLf.includes('6') && /LF/.test(fecLf) && /mauvais\.txt/.test(fecLf), fecLf.slice(0, 500));
+        await page.locator('#ubl-file').setInputFiles({ name: 'facture.xml', mimeType: 'application/xml', buffer: Buffer.from(goldUbl('UBL-OK-380'), 'utf8') });
+        await page.locator('[data-role="ubl-results"]').waitFor({ state: 'visible', timeout: 5000 });
+        const ublOk = (await page.locator('[data-role="ubl-results"]').innerText()).replace(/\s+/g, ' ');
+        check(`${tag} ubl profil provisoire et pas de XSD annoncés`, ublOk.includes('cius-ma-provisional') && /(XSD|Schematron)/.test(ublOk), ublOk.slice(0, 300));
+        check(`${tag} ubl aucune anomalie`, (await page.locator('[data-role="ubl-results"] .chip-danger').count()) === 0);
+        const ublRows = await page.locator('[data-role="ubl-results"] tbody tr').count();
+        check(`${tag} ubl 15 contrôles`, ublRows === 15, String(ublRows));
+        await page.locator('#ubl-text').fill(goldUbl('UBL-381-NO-BILLING'));
+        await page.locator('[data-role="ubl-form"] button[type="submit"]').click();
+        await page.waitForFunction(() => document.querySelectorAll('[data-role="ubl-results"] .chip-danger').length === 1, null, { timeout: 5000 });
+        check(`${tag} ubl 381 sans BillingReference signalé`, (await page.locator('[data-role="ubl-results"] [role="alert"]').count()) === 1);
+        await page.locator('#ubl-text').fill(goldUbl('UBL-DOCTYPE'));
+        await page.locator('[data-role="ubl-form"] button[type="submit"]').click();
+        await page.waitForFunction(() => document.querySelectorAll('[data-role="ubl-results"] tbody tr').length === 2, null, { timeout: 5000 });
+        check(`${tag} ubl DOCTYPE rejeté`, (await page.locator('[data-role="ubl-results"] .chip-danger').count()) === 1);
+        await page.locator('#ubl-file').setInputFiles({ name: 'facture.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7') });
+        await page.locator('[data-role="ubl-error"]').waitFor({ state: 'visible', timeout: 3000 });
+        check(`${tag} ubl PDF refusé avec message`, (await page.locator('[data-role="ubl-error"]').innerText()).includes('PDF'));
+        const valOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        check(`${tag} validateur pas de défilement horizontal`, valOverflow <= 1, String(valOverflow));
+        await page.screenshot({ path: `${outDir}/${tag}-validateur.png`, fullPage: true });
 
         check(`${tag} aucune requête hors origine`, foreign.length === 0, foreign.join(', '));
         check(`${tag} aucune erreur console`, errors.length === 0, errors.join(' | '));

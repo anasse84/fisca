@@ -6,11 +6,12 @@ import LoiTool from '../../../components/tools/LoiTool.astro';
 import RasTool from '../../../components/tools/RasTool.astro';
 import AeTool from '../../../components/tools/AeTool.astro';
 import MowakabaTool from '../../../components/tools/MowakabaTool.astro';
+import UblFecTool from '../../../components/tools/UblFecTool.astro';
 import { localeFromPrefix } from '../../../i18n/locales.ts';
 import { buildToolView, toolIdFromSlug } from '../../../tools/registry.ts';
 
-const locale = localeFromPrefix(Astro.params.locale);
-const id = toolIdFromSlug(Astro.params.tool ?? '');
+const locale = localeFromPrefix(Astro.params['locale']);
+const id = toolIdFromSlug(Astro.params['tool'] ?? '');
 if (locale === null || id === null) {
   return new Response(null, { status: 404 });
 }
@@ -31,5 +32,6 @@ const view = buildToolView(locale, id);
     {id === 'ras' && <RasTool locale={view.copyLocale} />}
     {id === 'ae' && <AeTool locale={view.copyLocale} />}
     {id === 'mowakaba' && <MowakabaTool locale={view.copyLocale} />}
+    {id === 'ubl-fec' && <UblFecTool locale={view.copyLocale} />}
   </ToolFrame>
 </BaseLayout>

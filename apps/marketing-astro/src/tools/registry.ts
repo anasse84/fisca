@@ -1,5 +1,5 @@
 /**
- * Registre des outils publics (T-P2C-06 et T-P2C-07) : 5 outils + un hub, chacun en 6 langues = 36 pages éditoriales, source unique du
+ * Registre des outils publics (T-P2C-06 et T-P2C-07) : 6 outils + un hub, chacun en 6 langues = 42 pages éditoriales, source unique du
  * HTML, du miroir Markdown, de llms.txt, du sitemap, des hreflang et du JSON-LD (HowTo, FAQPage).
  */
 import { datedValue } from '../content/dated-values.ts';
@@ -18,12 +18,17 @@ import { LOI_PAGE } from './copy/loi.ts';
 import { MOWAKABA_PAGE } from './copy/mowakaba.ts';
 import type { ToolFaq, ToolPageCopy, ToolSection, ToolStep } from './copy/page-types.ts';
 import { RAS_PAGE } from './copy/ras.ts';
+import { UBL_FEC_PAGE } from './copy/ubl-fec.ts';
 import type { RulesPayload } from './ui/dom.ts';
 import { computeAeClientThreshold } from './auto-entrepreneur.ts';
+import { conventionSection } from './conventions.ts';
+import type { ConventionTool } from './conventions.ts';
+import { FEC_MA_PROVISIONAL_PROFILE } from './fec-profile.ts';
 import { scenarioFor } from './mowakaba.ts';
+import { UBL_PROFILE_AS_OF, UBL_PROFILE_ID, UBL_PROFILE_STATE, UBL_TYPE_CODES } from './ubl-check.ts';
 import { AE_PARAM_KEYS, CASH_PARAM_KEYS, LATE_PARAM_KEYS, MOWAKABA_PARAM_KEYS, RAS_PARAM_KEYS } from './rule-params.ts';
 
-export type ToolId = 'ice' | 'loi' | 'ras' | 'ae' | 'mowakaba';
+export type ToolId = 'ice' | 'loi' | 'ras' | 'ae' | 'mowakaba' | 'ubl-fec';
 
 /** Exemple affiché dans la FAQ de l'auto-entrepreneur : entrées de VEC-CGI-04 (le résultat est recalculé, jamais recopié). */
 export const AE_EXAMPLE = { priorCumulCents: 7500000, invoiceCents: 1200000 } as const;
@@ -42,6 +47,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   { id: 'ras', slug: `${TOOLS_HUB_SLUG}/ras-tva-especes`, copy: RAS_PAGE, paramKeys: [...new Set([...RAS_PARAM_KEYS, ...CASH_PARAM_KEYS])] },
   { id: 'ae', slug: `${TOOLS_HUB_SLUG}/simulateur-auto-entrepreneur`, copy: AE_PAGE, paramKeys: AE_PARAM_KEYS },
   { id: 'mowakaba', slug: `${TOOLS_HUB_SLUG}/subvention-mowakaba`, copy: MOWAKABA_PAGE, paramKeys: MOWAKABA_PARAM_KEYS },
+  { id: 'ubl-fec', slug: `${TOOLS_HUB_SLUG}/validateur-ubl-fec`, copy: UBL_FEC_PAGE, paramKeys: [] },
 ];
 
 export function toolDefinition(id: ToolId): ToolDefinition {
@@ -157,6 +163,33 @@ const ICE_KEY_LABEL = {
   ary: 'القاسم فتحقق التناسق د ICE (modulo)',
 } as const;
 
+const PROFILE_LABELS = {
+  fec: {
+    fr: 'Profil FEC-MA : colonnes (18 standard + 6 extensions marocaines)',
+    en: 'FEC-MA profile: columns (18 standard + 6 Moroccan extensions)',
+    ar: 'ملف FEC-MA: الأعمدة (18 قياسيا + 6 امتدادات مغربية)',
+    ary: 'ملف FEC-MA: الأعمدة (18 قياسي + 6 امتدادات مغربية)',
+  },
+  ubl: {
+    fr: 'Profil UBL provisoire : types de document admis (380, 381, 383, 386, 389)',
+    en: 'Provisional UBL profile: accepted document types (380, 381, 383, 386, 389)',
+    ar: 'ملف UBL المؤقت: أنواع الوثائق المقبولة (380 و381 و383 و386 و389)',
+    ary: 'ملف UBL المؤقت: أنواع الوثائق المقبولة (380 و381 و383 و386 و389)',
+  },
+} as const;
+
+/** Profils provisoires du validateur : même forme que les valeurs datées, état PROVISOIRE (ERRATA E et B-13). */
+function profileViews(loc: CopyLocale): readonly ParamView[] {
+  const fec = FEC_MA_PROVISIONAL_PROFILE;
+  const state = 'PROVISOIRE' as const;
+  return [
+    { key: fec.id, label: PROFILE_LABELS.fec[loc], display: `${String(fec.columns.length)} (${String(fec.standardColumnCount)} + ${String(fec.extensionColumnCount)})`, value: fec.columns.length, as_of: fec.asOf, state, stateLabel: COMMON.states[state][loc] },
+    { key: UBL_PROFILE_ID, label: PROFILE_LABELS.ubl[loc], display: UBL_PROFILE_ID, value: UBL_TYPE_CODES.length, as_of: UBL_PROFILE_AS_OF, state: UBL_PROFILE_STATE, stateLabel: COMMON.states[UBL_PROFILE_STATE][loc] },
+  ];
+}
+
+const CONVENTION_TOOLS: Readonly<Record<string, ConventionTool>> = { loi: 'loi', ras: 'ras', ae: 'ae', mowakaba: 'mowakaba' };
+
 /** Données de règles transmises à l'îlot : affichées avec chaque résultat (valeur, date, état de recoupement). */
 export function rulesPayload(keys: readonly string[], loc: CopyLocale): RulesPayload {
   return { asOf: COMMON.asOf[loc], stateWord: STATE_WORD[loc], userValue: COMMON.userValue[loc], items: keys.map((k) => paramView(k, loc)) };
@@ -225,8 +258,14 @@ const HOWTO_NAME = {
   loi: { fr: 'Calculer la pénalité de retard de la loi 69-21', en: 'Compute the law 69-21 late-payment penalty', ar: 'حساب غرامة التأخر وفق القانون 69-21', ary: 'حساب غرامة التأخير بالقانون 69-21' },
   ras: { fr: 'Calculer la RAS-TVA et contrôler le plafond d’espèces', en: 'Compute VAT withholding and check the cash cap', ar: 'حساب اقتطاع TVA ومراقبة سقف النقد', ary: 'حساب اقتطاع TVA ومراقبة سقف الكاش' },
   ae: { fr: 'Simuler l’IR trimestriel et le seuil par client d’un auto-entrepreneur', en: 'Simulate an auto-entrepreneur’s quarterly income tax and per-client threshold', ar: 'محاكاة الضريبة الفصلية والعتبة لكل زبون للمقاول الذاتي', ary: 'محاكاة ضريبة الفصل والعتبة على كل كليان د المقاول الذاتي' },
+  'ubl-fec': { fr: 'Contrôler la structure d’un fichier FEC ou d’une facture UBL', en: 'Check the structure of an FEC file or a UBL invoice', ar: 'فحص بنية ملف FEC أو فاتورة UBL', ary: 'التحقق من بنية ملف FEC ولا فاتورة UBL' },
   mowakaba: { fr: 'Estimer l’éligibilité Mowakaba et le reste à charge d’un pack', en: 'Estimate Mowakaba eligibility and the remaining cost of a pack', ar: 'تقدير الأهلية لمواكبة والمبلغ المتبقي لباقة', ary: 'تقدير الأهلية لمواكبة والمبلغ اللي كيبقى د باقة' },
 } as const;
+
+function conventionSectionsOf(id: ToolId, loc: CopyLocale): readonly ToolSection[] {
+  const tool = CONVENTION_TOOLS[id];
+  return tool === undefined ? [] : [conventionSection(tool, loc)];
+}
 
 export function buildToolView(locale: MarketingLocale, id: ToolId): ToolView {
   const def = toolDefinition(id);
@@ -247,8 +286,8 @@ export function buildToolView(locale: MarketingLocale, id: ToolId): ToolView {
     summary: f(c.summary[loc]),
     steps: c.steps[loc].map((s) => ({ name: f(s.name), text: f(s.text) })),
     faqs: c.faqs[loc].map((q) => ({ question: f(q.question), answer: f(q.answer) })),
-    sections: c.sections[loc].map((s) => fillSection(s, slots)),
-    params: def.paramKeys.map((k) => paramView(k, loc)),
+    sections: [...c.sections[loc].map((s) => fillSection(s, slots)), ...conventionSectionsOf(id, loc)],
+    params: id === 'ubl-fec' ? profileViews(loc) : def.paramKeys.map((k) => paramView(k, loc)),
     disclaimer: COMMON.disclaimer[loc],
     localProcessing: COMMON.localProcessing[loc],
     existenceNotice: id === 'ice' ? ICE_EXISTENCE_NOTICE[loc] : null,
@@ -359,7 +398,7 @@ function editorialOfHub(view: ToolsHubView): EditorialPage {
   };
 }
 
-/** 5 outils + 1 hub, 6 langues : 36 pages. */
+/** 6 outils + 1 hub, 6 langues : 42 pages. */
 export const TOOL_PAGES: readonly EditorialPage[] = [
   ...MARKETING_LOCALES.map((l) => editorialOfHub(buildToolsHubView(l))),
   ...TOOL_DEFINITIONS.flatMap((d) => MARKETING_LOCALES.map((l) => editorialOfTool(buildToolView(l, d.id)))),

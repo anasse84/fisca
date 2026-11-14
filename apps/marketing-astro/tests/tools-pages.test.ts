@@ -22,6 +22,7 @@ const TOOL_ROUTES: readonly { readonly id: ToolId; readonly segment: string }[] 
   { id: 'ras', segment: 'ras-tva-especes' },
   { id: 'ae', segment: 'simulateur-auto-entrepreneur' },
   { id: 'mowakaba', segment: 'subvention-mowakaba' },
+  { id: 'ubl-fec', segment: 'validateur-ubl-fec' },
 ];
 
 async function render(locale: MarketingLocale, segment: string | null): Promise<{ html: string; response: Response }> {
@@ -47,9 +48,9 @@ async function cached(locale: MarketingLocale, segment: string | null) {
 
 const FIRST_PARTY_HOST = /^https:\/\/([a-z0-9-]+\.)?fisca\.ma(\/|$)/;
 
-describe('registre : 36 pages d’outils dans les 6 langues', () => {
-  it('5 outils + hub x 6 langues, chemins exacts, enregistrés dans le registre global', () => {
-    expect(TOOL_PAGES).toHaveLength(36);
+describe('registre : 42 pages d’outils dans les 6 langues', () => {
+  it('6 outils + hub x 6 langues, chemins exacts, enregistrés dans le registre global', () => {
+    expect(TOOL_PAGES).toHaveLength(42);
     for (const locale of MARKETING_LOCALES) {
       const prefix = LOCALE_URL_PREFIX[locale];
       for (const route of TOOL_ROUTES) {
@@ -60,13 +61,14 @@ describe('registre : 36 pages d’outils dans les 6 langues', () => {
       }
       expect(findEditorialPage(locale, TOOLS_HUB_SLUG)).toBeDefined();
     }
-    expect(ALL_EDITORIAL_PAGES.filter((p) => p.slug.startsWith('outils'))).toHaveLength(36);
+    expect(ALL_EDITORIAL_PAGES.filter((p) => p.slug.startsWith('outils'))).toHaveLength(42);
     expect(TOOL_DEFINITIONS.map((d) => d.slug)).toEqual([
       'outils/audit-ice-excel',
       'outils/simulateur-loi-69-21',
       'outils/ras-tva-especes',
       'outils/simulateur-auto-entrepreneur',
       'outils/subvention-mowakaba',
+      'outils/validateur-ubl-fec',
     ]);
   });
 
@@ -110,7 +112,7 @@ describe('registre : 36 pages d’outils dans les 6 langues', () => {
     }
   });
 
-  it('sitemap : les 6 slugs d’outils, 6 langues, alternates réciproques et x-default', async () => {
+  it('sitemap : les 7 slugs d’outils, 6 langues, alternates réciproques et x-default', async () => {
     const slugs = publishedSitemapSlugs(ALL_EDITORIAL_PAGES);
     for (const s of ['outils', ...TOOL_ROUTES.map((r) => `outils/${r.segment}`)]) expect(slugs).toContain(s);
     const xml = await handleSitemapXml().text();
@@ -145,7 +147,7 @@ describe('registre : 36 pages d’outils dans les 6 langues', () => {
   });
 });
 
-describe('HTML rendu : hub et 5 outils x 6 langues', () => {
+describe('HTML rendu : hub et 6 outils x 6 langues', () => {
   const targets: readonly (string | null)[] = [null, ...TOOL_ROUTES.map((r) => r.segment)];
 
   it('statut 200, lang et dir, 7 hreflang, h1, canonique', async () => {
@@ -304,7 +306,7 @@ describe('HTML rendu : hub et 5 outils x 6 langues', () => {
     }
   });
 
-  it('hub : 5 liens vers les outils, fil d’Ariane', async () => {
+  it('hub : 6 liens vers les outils, fil d’Ariane', async () => {
     for (const locale of MARKETING_LOCALES) {
       const { html } = await cached(locale, null);
       const hub = buildToolsHubView(locale);

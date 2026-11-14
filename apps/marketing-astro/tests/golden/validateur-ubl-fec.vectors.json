@@ -1,0 +1,743 @@
+{
+ "ticket": "T-P2C-07 (reprise), Outil 4",
+ "note": "Vecteurs d'or du validateur local UBL / FEC-MA. Valeurs attendues posées A LA MAIN d'après Doc_07 S07 et S10, Doc_14 S05 et ERRATA B-13, jamais ajustées pour passer au vert (AGENTS.md loi 10, B-09). Le profil FEC (noms des 18 colonnes standard) et le profil UBL sont PROVISOIRES : aucun recoupement externe.",
+ "rule_date": "2026-11-13",
+ "state": "PROVISOIRE",
+ "columns": [
+  "JournalCode",
+  "JournalLib",
+  "EcritureNum",
+  "EcritureDate",
+  "CompteNum",
+  "CompteLib",
+  "CompAuxNum",
+  "CompAuxLib",
+  "PieceRef",
+  "PieceDate",
+  "EcritureLib",
+  "Debit",
+  "Credit",
+  "EcritureLet",
+  "DateLet",
+  "ValidDate",
+  "Montantdevise",
+  "Idevise",
+  "TiersIF",
+  "TiersICE",
+  "ClearanceUUID",
+  "ModePaiementDGI",
+  "EntryHashSHA256",
+  "PrevHashSHA256"
+ ],
+ "fec_vectors": [
+  {
+   "id": "FEC-OK",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Fichier valide : AN en tête et équilibré, écriture VT avec virgule et point, 1 200,50 = 1 000,00 + 200,50",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF",
+    "file_name": "12345678FEC20261231.txt"
+   },
+   "expected": {
+    "ok": true,
+    "codes": [],
+    "total_debit_cents": 1120050,
+    "total_credit_cents": 1120050,
+    "entry_count": 2,
+    "line_count": 6
+   }
+  },
+  {
+   "id": "FEC-AN-ABSENT",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Aucun journal AN",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "AN_ABSENT"
+    ]
+   }
+  },
+  {
+   "id": "FEC-AN-NOT-FIRST",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "AN placé après VT : en-tête ligne 1, VT lignes 2 à 4, premier AN ligne 5",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "AN_NOT_FIRST"
+    ],
+    "first_line": 5
+   }
+  },
+  {
+   "id": "FEC-23-COLUMNS",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Une ligne à 23 colonnes (ligne 4)",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101|||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "COLUMN_COUNT"
+    ],
+    "first_line": 4,
+    "found": 23
+   }
+  },
+  {
+   "id": "FEC-25-COLUMNS",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Une ligne à 25 colonnes (ligne 4)",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101|||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "COLUMN_COUNT"
+    ],
+    "first_line": 4,
+    "found": 25
+   }
+  },
+  {
+   "id": "FEC-SEMICOLON",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Séparateur point-virgule au lieu du pipe",
+   "input": {
+    "lines": [
+     "JournalCode;JournalLib;EcritureNum;EcritureDate;CompteNum;CompteLib;CompAuxNum;CompAuxLib;PieceRef;PieceDate;EcritureLib;Debit;Credit;EcritureLet;DateLet;ValidDate;Montantdevise;Idevise;TiersIF;TiersICE;ClearanceUUID;ModePaiementDGI;EntryHashSHA256;PrevHashSHA256",
+     "AN;AN lib;1;20260101;5141;Compte 5141;;;P1;20260101;Ecriture;10000,00;0,00;;;20260101;;;;;;;;",
+     "AN;AN lib;1;20260101;1111;Compte 1111;;;P1;20260101;Ecriture;0,00;10000,00;;;20260101;;;;;;;;",
+     "VT;VT lib;2;20260101;3421;Compte 3421;;;P2;20260101;Ecriture;1200,50;0,00;;;20260101;;;;;;;;",
+     "VT;VT lib;2;20260101;7111;Compte 7111;;;P2;20260101;Ecriture;0,00;1000.00;;;20260101;;;;;;;;",
+     "VT;VT lib;2;20260101;4455;Compte 4455;;;P2;20260101;Ecriture;0,00;200,50;;;20260101;;;;;;;;"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "WRONG_SEPARATOR"
+    ],
+    "first_line": 1
+   }
+  },
+  {
+   "id": "FEC-LF-ONLY",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Fins de ligne LF au lieu de CRLF (6 lignes terminées)",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "LF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "LINE_ENDING_LF"
+    ],
+    "found": 6
+   }
+  },
+  {
+   "id": "FEC-ENTRY-UNBALANCED",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Écriture 2 : débit 120050, crédit 120049 (1 centime d’écart), fichier déséquilibré aussi",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,49|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "ENTRY_UNBALANCED",
+     "FILE_UNBALANCED"
+    ],
+    "entry_debit_cents": 120050,
+    "entry_credit_cents": 120049
+   }
+  },
+  {
+   "id": "FEC-ENTRY-UNBALANCED-FILE-BALANCED",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Deux écritures déséquilibrées de +1 et -1 centime : équilibre du fichier OK mais équilibre par écriture KO",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,51|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||",
+     "VT|VT lib|3|20260101|3421|Compte 3421|||P3|20260101|Ecriture|0,00|0,01|||20260101||||||||",
+     "VT|VT lib|3|20260101|7111|Compte 7111|||P3|20260101|Ecriture|0,00|0,00|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "ENTRY_UNBALANCED",
+     "ENTRY_UNBALANCED"
+    ],
+    "total_debit_cents": 1120051,
+    "total_credit_cents": 1120051
+   }
+  },
+  {
+   "id": "FEC-CENTS-EXACT",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "0,1 et 0.10 valent 10 centimes ; 0.2 et 0,20 valent 20 centimes ; total 30 centimes",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|0,1|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|0.10|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|0.2|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|0,20|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": true,
+    "codes": [],
+    "total_debit_cents": 30,
+    "total_credit_cents": 30,
+    "entry_count": 2
+   }
+  },
+  {
+   "id": "FEC-AMOUNT-3-DECIMALS",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "12,345 refusé : 2 décimales au plus",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|12,345|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|12,34|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes_include": [
+     "AMOUNT_INVALID"
+    ],
+    "column": "Debit"
+   }
+  },
+  {
+   "id": "FEC-AN-UNBALANCED",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "AN : 1000000 centimes au débit, 999999 au crédit",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|9999,99|||20260101||||||||"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "AN_UNBALANCED",
+     "ENTRY_UNBALANCED",
+     "FILE_UNBALANCED"
+    ]
+   }
+  },
+  {
+   "id": "FEC-NAME-OK",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Nom conforme au format",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF",
+    "file_name": "12345678FEC20261231.txt"
+   },
+   "expected": {
+    "ok": true,
+    "codes": []
+   }
+  },
+  {
+   "id": "FEC-NAME-BAD-DATE",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Mois 13 : date de calendrier invalide",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF",
+    "file_name": "12345678FEC20261331.txt"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "FILE_NAME"
+    ]
+   }
+  },
+  {
+   "id": "FEC-NAME-NO-IF",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Identifiant fiscal absent du nom",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF",
+    "file_name": "FEC20261231.txt"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "FILE_NAME"
+    ]
+   }
+  },
+  {
+   "id": "FEC-NAME-WRONG-EXT",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Extension .csv au lieu de .txt",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10000,00|0,00|||20260101||||||||",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10000,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|3421|Compte 3421|||P2|20260101|Ecriture|1200,50|0,00|||20260101||||||||",
+     "VT|VT lib|2|20260101|7111|Compte 7111|||P2|20260101|Ecriture|0,00|1000.00|||20260101||||||||",
+     "VT|VT lib|2|20260101|4455|Compte 4455|||P2|20260101|Ecriture|0,00|200,50|||20260101||||||||"
+    ],
+    "line_ending": "CRLF",
+    "file_name": "12345678FEC20261231.csv"
+   },
+   "expected": {
+    "ok": false,
+    "codes": [
+     "FILE_NAME"
+    ]
+   }
+  },
+  {
+   "id": "FEC-HASH-NOT-VERIFIED",
+   "source": "Doc_07 S10 ; Doc_14 S05",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Empreintes renseignées, formule non documentée : continuité NON vérifiée (jamais un échec ni un succès)",
+   "input": {
+    "lines": [
+     "JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise|TiersIF|TiersICE|ClearanceUUID|ModePaiementDGI|EntryHashSHA256|PrevHashSHA256",
+     "AN|AN lib|1|20260101|5141|Compte 5141|||P1|20260101|Ecriture|10,00|0,00|||20260101|||||||aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|",
+     "AN|AN lib|1|20260101|1111|Compte 1111|||P1|20260101|Ecriture|0,00|10,00|||20260101|||||||bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "line_ending": "CRLF"
+   },
+   "expected": {
+    "ok": true,
+    "codes": [],
+    "hash_verified": false,
+    "hash_filled_lines": 2
+   }
+  }
+ ],
+ "ubl_vectors": [
+  {
+   "id": "UBL-OK-380",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Facture 380 avec ICE et IF du vendeur et de l’acheteur",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": []
+   }
+  },
+  {
+   "id": "UBL-OK-381",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Type 381",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>381</cbc:InvoiceTypeCode><cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>F-2026-000</cbc:ID></cac:InvoiceDocumentReference></cac:BillingReference><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": []
+   }
+  },
+  {
+   "id": "UBL-OK-383",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Type 383",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>383</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": []
+   }
+  },
+  {
+   "id": "UBL-OK-386",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Type 386",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>386</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": []
+   }
+  },
+  {
+   "id": "UBL-OK-389",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Type 389",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>389</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": []
+   }
+  },
+  {
+   "id": "UBL-381-NO-BILLING",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Avoir 381 sans BillingReference",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>381</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "BILLING_REFERENCE"
+    ]
+   }
+  },
+  {
+   "id": "UBL-TYPE-OUT-OF-LIST",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Code 384 hors liste",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>384</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "TYPE_CODE"
+    ],
+    "found": "384"
+   }
+  },
+  {
+   "id": "UBL-TYPE-MISSING",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Code de type absent",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "TYPE_CODE"
+    ]
+   }
+  },
+  {
+   "id": "UBL-ICE-NO-SCHEME",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "ICE vendeur sans schemeID",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cbc:CompanyID>001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "ICE_SUPPLIER"
+    ],
+    "detail": "SCHEME_ID_MISSING"
+   }
+  },
+  {
+   "id": "UBL-IF-NO-SCHEME",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "IF vendeur sans schemeID",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID>12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "IF_SUPPLIER"
+    ],
+    "detail": "SCHEME_ID_MISSING"
+   }
+  },
+  {
+   "id": "UBL-ICE-WRONG-SCHEME",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "schemeID MA:IF posé sur l’ICE",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:IF\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "ICE_SUPPLIER"
+    ],
+    "detail": "SCHEME_ID_WRONG"
+   }
+  },
+  {
+   "id": "UBL-ICE-14-DIGITS",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "ICE à 14 chiffres",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">01534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "ICE_SUPPLIER"
+    ],
+    "detail": "ICE_FORMAT"
+   }
+  },
+  {
+   "id": "UBL-CUSTOMER-NO-IDS",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Acheteur sans ICE ni IF : avertissement seulement, résultat OK",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party/></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": true,
+    "failed": [],
+    "warnings": [
+     "ICE_CUSTOMER",
+     "IF_CUSTOMER"
+    ]
+   }
+  },
+  {
+   "id": "UBL-NO-LEGAL-TOTAL",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "LegalMonetaryTotal absent (élément de base UBL 2.1)",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "BASE_MONETARY_TOTAL"
+    ]
+   }
+  },
+  {
+   "id": "UBL-BAD-ROOT",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Racine Order",
+   "input": {
+    "xml": "<Order xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Order-2\"/>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "ROOT"
+    ]
+   }
+  },
+  {
+   "id": "UBL-WRONG-NAMESPACE",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Racine Invoice dans un autre espace de noms",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:example:invoice\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "ROOT"
+    ]
+   }
+  },
+  {
+   "id": "UBL-NOT-WELL-FORMED",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "Balise non fermée",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "WELL_FORMED"
+    ]
+   }
+  },
+  {
+   "id": "UBL-DOCTYPE",
+   "source": "Doc_07 S07 (éléments nommés) ; norme OASIS UBL 2.1 (éléments de base) ; ERRATA B-13",
+   "state": "PROVISOIRE",
+   "rule_date": "2026-11-13",
+   "description": "DOCTYPE avec entité externe : rejeté sans traitement",
+   "input": {
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE Invoice [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><Invoice xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\" xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\" xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\"><cbc:ID>F-2026-001</cbc:ID><cbc:IssueDate>2026-11-13</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID schemeID=\"MA:IF\">12345678</cbc:CompanyID></cac:PartyTaxScheme><cac:PartyLegalEntity><cac:RegistrationName>X</cac:RegistrationName><cbc:CompanyID schemeID=\"MA:ICE\">001534290000057</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:PayableAmount currencyID=\"MAD\">120.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID></cac:InvoiceLine></Invoice>"
+   },
+   "expected": {
+    "ok": false,
+    "failed": [
+     "NO_DOCTYPE"
+    ]
+   }
+  }
+ ]
+}

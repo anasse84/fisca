@@ -7,7 +7,7 @@ import { getHomeCopy } from '../../i18n/home-copy.ts';
 import { LOCALE_URL_PREFIX, localeFromPrefix } from '../../i18n/locales.ts';
 import { getPricingCopy } from '../../i18n/pricing-copy.ts';
 
-const locale = localeFromPrefix(Astro.params.locale);
+const locale = localeFromPrefix(Astro.params['locale']);
 if (locale === null) {
   return new Response(null, { status: 404 });
 }

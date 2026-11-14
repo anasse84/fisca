@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { buildPrivacyView } from '../../content/privacy-view.ts';
 import { localeFromPrefix } from '../../i18n/locales.ts';
 
-const locale = localeFromPrefix(Astro.params.locale);
+const locale = localeFromPrefix(Astro.params['locale']);
 if (locale === null) {
   return new Response(null, { status: 404 });
 }
