@@ -16,6 +16,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./clearance": {
+      "types": "./src/clearance/index.ts",
+      "default": "./src/clearance/index.ts"
     }
   },
   "dependencies": {

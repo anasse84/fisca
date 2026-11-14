@@ -5,11 +5,13 @@
 - Date de téléchargement : 2026-11-13
 - SHA-256 de UBL-2.1.zip : 60b80d76394a8a2add90723ecb8e0e2e9d826775de9749df37a72d60703f86ed
 - Fichiers copiés sans aucune modification (octet pour octet) depuis `xsd/maindoc/` et `xsd/common/` de l'archive.
+- `UBL-ApplicationResponse-2.1.xsd` ajouté le 2026-11-13 (ticket T-P2A-08, CDV) depuis la même archive (SHA-256 de l'archive inchangé ci-dessus), `xsd/maindoc/`, octet pour octet.
 - Ce sont les XSD OFFICIELS OASIS. Aucun XSD marocain (DGI/xHub) n'existe (ERRATA B-13) : le profil marocain est provisoire (`../profiles/cius-ma-provisional/`).
 
 | Fichier | SHA-256 |
 |---|---|
 | `xsd/maindoc/UBL-CreditNote-2.1.xsd` | a54651b1225052f811bf2ba01346f13f2454e7cc3e0be290c91dd680dc7b7b1a |
+| `xsd/maindoc/UBL-ApplicationResponse-2.1.xsd` | b9adc27c538c937a54479e678d1e19b0a91bb7ce36ac0b558961173508466125 |
 | `xsd/maindoc/UBL-DebitNote-2.1.xsd` | 295d142102a2a0cd8b223a79b8314c0fe1b55055478221dd2f0ed7603fecf920 |
 | `xsd/maindoc/UBL-Invoice-2.1.xsd` | 40fae8cb436f3a9506d7acce65ba162caef3b0bed4d5cbc0992b2153ded4edf4 |
 | `xsd/common/CCTS_CCT_SchemaModule-2.1.xsd` | dd546e4809df86b6445589f69f0d6c9df162840ae386574ddfc1da7638103e15 |

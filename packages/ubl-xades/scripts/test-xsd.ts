@@ -1,4 +1,6 @@
 import { buildFacturXRequest, generateUblInvoiceXml, resolveSchema, schemaKindOfTypeCode, signUblXades, verifyUblXades, type UblDocumentKind } from '../src/index.ts';
+import { applicationResponseSchemaPath, PROVISIONAL_CDV_RESPONSE_CODE_PROFILE } from '../src/clearance/index.ts';
+import { buildCdvXml } from '../tests/support/cdv-fixtures.ts';
 import { buildFullInput, buildInput, TYPE_CODES } from '../tests/support/fixtures.ts';
 import { fromBase64 } from '../src/signature/bytes.ts';
 import { createTestIdentity, createTestTimestampProvider, type KeyKind } from '../tests/support/test-pki.ts';
@@ -85,9 +87,22 @@ for (const kind of ['ecdsa-p256', 'rsa-2048'] as const satisfies readonly KeyKin
     }
   }
 }
+// CDV (UBL 2.1 ApplicationResponse, profil de codes provisoire) : une fixture par code, validée contre le XSD OASIS vendorisé.
+process.stdout.write('CDV ApplicationResponse (XSD OASIS UBL 2.1 ApplicationResponse ; table de codes provisoire, hypothèse B-13) :\n');
+let cdvCount = 0;
+for (const code of Object.keys(PROVISIONAL_CDV_RESPONSE_CODE_PROFILE)) {
+  const result = validateWithXmllint(buildCdvXml({ responseCode: code }), applicationResponseSchemaPath());
+  if (result.valid) {
+    cdvCount += 1;
+    process.stdout.write(`  CDV code ${code} : valide\n`);
+  } else {
+    failures += 1;
+    process.stdout.write(`  CDV code ${code} : INVALIDE\n${result.output}\n`);
+  }
+}
 if (failures > 0) {
   process.stdout.write(`${failures} document(s) invalide(s)\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`${10 + embeddedCount + signedCount} documents valides (5 simples, 5 complets, ${embeddedCount} embarqués, ${signedCount} signés)\n`);
+  process.stdout.write(`${10 + embeddedCount + signedCount + cdvCount} documents valides (5 simples, 5 complets, ${embeddedCount} embarqués, ${signedCount} signés, ${cdvCount} CDV)\n`);
 }

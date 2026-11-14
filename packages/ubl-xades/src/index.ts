@@ -62,3 +62,5 @@ export type {
   FiscalJavaRequestInit,
   FiscalJavaValidationReport,
 } from './facturx/client.ts';
+
+export * from './clearance/index.ts';
