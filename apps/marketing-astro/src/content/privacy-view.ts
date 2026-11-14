@@ -47,8 +47,7 @@ export function buildPrivacyView(locale: MarketingLocale): PrivacyView {
       id: p.id,
       purpose: copy.purposes.byProcessing[p.id],
       data: p.dataCategories.map((c) => copy.purposes.categories[c]).join(' ; '),
-      retention:
-        p.retention.kind === 'FISCAL_DECENNIAL' ? copy.retention.fiscal : copy.retention.ownerPending,
+      retention: copy.retention.render(p.retention),
     })),
     references: CNDP_REFERENCES.map((r) => ({
       form: r.form,
@@ -73,7 +72,6 @@ export interface PrivacyMarkdownSection {
 /** Sections Markdown du miroir /<langue>/confidentialite.md. */
 export function privacyMarkdownSections(view: PrivacyView): PrivacyMarkdownSection[] {
   const { copy } = view;
-  const pending = copy.cndp.pending;
   return [
     {
       heading: copy.controller.heading,
@@ -99,7 +97,7 @@ export function privacyMarkdownSections(view: PrivacyView): PrivacyMarkdownSecti
     },
     {
       heading: copy.retention.heading,
-      body: [`- ${copy.retention.fiscal}`, `- ${copy.retention.nonAccounting}`, `- ${copy.retention.toBeSet}`].join('\n'),
+      body: [`- ${copy.retention.fiscal}`, `- ${copy.retention.nonAccounting}`].join('\n'),
     },
     {
       heading: copy.rights.heading,
@@ -120,7 +118,9 @@ export function privacyMarkdownSections(view: PrivacyView): PrivacyMarkdownSecti
       body: [
         copy.cndp.intro,
         '',
-        ...view.references.map((r) => `- ${r.label} — ${copy.cndp.numberLabel} : ${r.number ?? pending}`),
+        copy.cndp.registering,
+        '',
+        ...view.references.map((r) => (r.number === null ? `- ${r.label}` : `- ${r.label} — ${copy.cndp.numberLabel} : ${r.number}`)),
       ].join('\n'),
     },
     {

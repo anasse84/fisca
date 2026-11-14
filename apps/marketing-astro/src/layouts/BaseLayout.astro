@@ -33,6 +33,7 @@ interface Props {
 }
 
 const { locale, slug, title, description, legislation, howTo, faqs, catalogOffers, noindex } = Astro.props;
+const dateModifiedIso = Astro.locals.dateModifiedIso;
 const head = buildPageHead(locale, slug, { title, description });
 const site = getSiteCopy(locale);
 const prefix = LOCALE_URL_PREFIX[locale];
@@ -46,6 +47,7 @@ const jsonLd = buildFiscaJsonLdGraph({
   ...(howTo === undefined ? {} : { howTo }),
   ...(faqs === undefined ? {} : { faqs }),
   ...(catalogOffers === undefined ? {} : { catalogOffers }),
+  ...(dateModifiedIso === undefined ? {} : { dateModifiedIso }),
 });
 const cndpNumbers = CNDP_REFERENCES.filter(hasCndpNumber);
 const copyLocale = copyLocaleOf(locale);
@@ -113,7 +115,7 @@ const navItems = [
         <p>
           {site.cndpReferenceLabel} :
           {cndpNumbers.length === 0
-            ? <span class="pending">{site.cndpPending}</span>
+            ? <span class="cndp-status">{site.cndpRegistering}</span>
             : cndpNumbers.map((ref) => <span class="fisca-tabular-num" dir="ltr"> {ref.form} {ref.number} </span>)}
         </p>
         <p>{site.footerNoTracking}</p>

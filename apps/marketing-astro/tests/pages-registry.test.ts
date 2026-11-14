@@ -11,6 +11,9 @@ import {
 import { PRICING_CATALOG_OFFERS, PRICING_PLANS } from '../src/content/pricing.ts';
 import { buildPricingView, cellToPlainText } from '../src/content/pricing-view.ts';
 import { buildPrivacyView } from '../src/content/privacy-view.ts';
+import { CONTROLLER_PROCESSINGS } from '../src/content/cndp.ts';
+import { cndpRegistrationNotice } from '../src/i18n/cndp-notice.ts';
+import { copyLocaleOf } from '../src/i18n/copy-locale.ts';
 import { LOCALE_URL_PREFIX, MARKETING_LOCALES } from '../src/i18n/locales.ts';
 import { buildFiscaJsonLdObject } from '../src/seo/jsonld.ts';
 import type { JsonLdNode } from '../src/seo/jsonld.ts';
@@ -237,16 +240,53 @@ describe('mentions Loi 09-08 (contenu)', () => {
     }
   });
 
-  it('aucun numéro CNDP inventé : les références restent « à renseigner par le propriétaire »', () => {
+  it('aucun numéro CNDP inventé : mention exacte « en cours d’enregistrement » (décision 2026-11-14)', () => {
     const view = buildPrivacyView('fr');
     expect(view.references.map((r) => r.number)).toEqual([null, null, null, null]);
     const md = renderPageMarkdown(pageOrThrow('fr', 'confidentialite'));
-    expect(md).toContain('à renseigner par le propriétaire');
+    expect(md).toContain("Dossiers F115, F211, F112 et F118 en cours d'enregistrement auprès de la CNDP par SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma)");
+    expect(md).not.toContain('à renseigner par le propriétaire');
     expect(md).not.toMatch(/(récépissé|autorisation)[^\n]*\b\d{3,}\b/i);
   });
 
-  it('les durées non fournies par Doc_11 ne sont pas inventées', () => {
-    const view = buildPrivacyView('fr');
-    for (const p of view.processings) expect(p.retention).toBe('à renseigner par le propriétaire');
+  it('mention CNDP traduite : en, ar, ary ; zgh = français', () => {
+    expect(cndpRegistrationNotice('en')).toBe('Files F115, F211, F112 and F118 are being registered with the CNDP by SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma)');
+    for (const l of ['ar', 'ary'] as const) {
+      expect(cndpRegistrationNotice(l)).toContain('SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma)');
+      expect(cndpRegistrationNotice(l)).toMatch(/[\u0600-\u06FF]/);
+    }
+    expect(cndpRegistrationNotice(copyLocaleOf('zgh-Latn'))).toBe(cndpRegistrationNotice('fr'));
+    expect(cndpRegistrationNotice(copyLocaleOf('zgh-Tfng'))).toBe(cndpRegistrationNotice('fr'));
+  });
+
+  it('mesure d’audience décrite telle qu’implémentée dans les 4 langues, sans « un jour » ni promesse de plus', () => {
+    const expected: Readonly<Record<'fr' | 'en' | 'ar' | 'ary', RegExp>> = {
+      fr: /compteurs quotidiens agrégés.*ni adresse IP, ni identifiant individuel, ni cookie.*robots et les chemins techniques ne sont pas comptés/,
+      en: /aggregated daily counters.*no IP address, no individual identifier and no cookie.*robots and technical paths are not counted/,
+      ar: /عدادات يومية مجمعة.*عنوان IP.*معرف فردي.*ملف تعريف ارتباط.*الروبوتات/,
+      ary: /عدادات يومية مجمعة.*عنوان IP.*معرف فردي.*كوكي.*الروبوتات/,
+    };
+    for (const loc of ['fr', 'en', 'ar', 'ary'] as const) {
+      const items = buildPrivacyView(loc).copy.cookies.items.join('\n');
+      expect(items, loc).toMatch(expected[loc]);
+      expect(items, loc).not.toMatch(/un jour|ever enabled|يوما ما|شي نهار/);
+    }
+  });
+
+  it('durées de conservation fixées par le propriétaire (2026-11-14)', () => {
+    const rules = Object.fromEntries(CONTROLLER_PROCESSINGS.map((p) => [p.id, p.retention]));
+    expect(rules['T-01']).toEqual({ kind: 'CONTRACT_PLUS_MONTHS', monthsAfterClosure: 12, securityLogsRollingMonths: 12, otpChallengeMinutes: 10 });
+    expect(rules['T-02']).toEqual({ kind: 'CONTRACT_PLUS_YEARS_AFTER_LAST_FISCAL_YEAR', years: 10 });
+    expect(rules['T-03']).toEqual({ kind: 'INVOICES_YEARS_PLUS_TOKEN_PURGE', invoiceYears: 10 });
+    expect(rules['T-04']).toEqual({ kind: 'CACHE_DAYS_PLUS_AUDIT_ARCHIVE', cacheDays: 30, auditArchiveMonths: 12 });
+    const byId = Object.fromEntries(buildPrivacyView('fr').processings.map((p) => [p.id, p.retention]));
+    expect(byId['T-01']).toBe('Contrat actif, puis 12 mois après clôture ; journaux de sécurité : 12 mois glissants ; défis OTP/MFA : 10 minutes.');
+    expect(byId['T-02']).toContain('10 ans après la clôture du dernier exercice concerné (article 211 du CGI, loi n° 9-88)');
+    expect(byId['T-03']).toBe('Factures : 10 ans après clôture ; jeton monétique Payzone : purgé dès la résiliation soldée.');
+    expect(byId['T-04']).toBe('Cache actif : 30 jours, puis archive restreinte d’audit et de contestation : 12 mois.');
+    for (const loc of ['fr', 'en', 'ar', 'ary'] as const) {
+      for (const p of buildPrivacyView(loc).processings) expect(p.retention, `${loc}/${p.id}`).not.toMatch(/renseigner|filled in|يملؤ|يعمر/);
+    }
+    expect(buildPrivacyView('en').processings[3]?.retention).toBe('Active cache: 30 days, then a restricted audit and dispute archive: 12 months.');
   });
 });

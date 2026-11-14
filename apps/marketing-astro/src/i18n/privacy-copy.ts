@@ -1,5 +1,6 @@
 import { ACCESS_REQUEST_TARGET_DAYS, FISCAL_RECORD_RETENTION_YEARS } from '../content/cndp.ts';
-import type { CndpFormId, DataCategoryId, HostingRegion, ProcessingId, SubProcessorId } from '../content/cndp.ts';
+import type { CndpFormId, DataCategoryId, HostingRegion, ProcessingId, RetentionRule, SubProcessorId } from '../content/cndp.ts';
+import { cndpRegistrationNotice } from './cndp-notice.ts';
 import { copyLocaleOf } from './copy-locale.ts';
 import type { CopyLocale } from './copy-locale.ts';
 import type { MarketingLocale } from './locales.ts';
@@ -23,8 +24,8 @@ export interface PrivacyCopy {
     readonly heading: string;
     readonly fiscal: string;
     readonly nonAccounting: string;
-    readonly toBeSet: string;
-    readonly ownerPending: string;
+    /** Phrase de durée d'un traitement, construite depuis la règle du registre (`cndp.ts`). */
+    readonly render: (rule: RetentionRule) => string;
   };
   readonly rights: {
     readonly heading: string;
@@ -39,7 +40,8 @@ export interface PrivacyCopy {
     readonly intro: string;
     readonly forms: Readonly<Record<CndpFormId, string>>;
     readonly numberLabel: string;
-    readonly pending: string;
+    /** Mention du propriétaire (2026-11-14) affichée tant qu'aucun numéro n'est attribué. */
+    readonly registering: string;
   };
   readonly hosting: {
     readonly heading: string;
@@ -54,6 +56,58 @@ export interface PrivacyCopy {
 
 const DELAY = String(ACCESS_REQUEST_TARGET_DAYS);
 const YEARS = String(FISCAL_RECORD_RETENTION_YEARS);
+
+function retentionFr(r: RetentionRule): string {
+  switch (r.kind) {
+    case 'CONTRACT_PLUS_MONTHS':
+      return `Contrat actif, puis ${String(r.monthsAfterClosure)} mois après clôture ; journaux de sécurité : ${String(r.securityLogsRollingMonths)} mois glissants ; défis OTP/MFA : ${String(r.otpChallengeMinutes)} minutes.`;
+    case 'CONTRACT_PLUS_YEARS_AFTER_LAST_FISCAL_YEAR':
+      return `Durée du contrat, puis ${String(r.years)} ans après la clôture du dernier exercice concerné (article 211 du CGI, loi n° 9-88).`;
+    case 'INVOICES_YEARS_PLUS_TOKEN_PURGE':
+      return `Factures : ${String(r.invoiceYears)} ans après clôture ; jeton monétique Payzone : purgé dès la résiliation soldée.`;
+    case 'CACHE_DAYS_PLUS_AUDIT_ARCHIVE':
+      return `Cache actif : ${String(r.cacheDays)} jours, puis archive restreinte d’audit et de contestation : ${String(r.auditArchiveMonths)} mois.`;
+  }
+}
+
+function retentionEn(r: RetentionRule): string {
+  switch (r.kind) {
+    case 'CONTRACT_PLUS_MONTHS':
+      return `Active contract, then ${String(r.monthsAfterClosure)} months after closure; security logs: ${String(r.securityLogsRollingMonths)} rolling months; OTP/MFA challenges: ${String(r.otpChallengeMinutes)} minutes.`;
+    case 'CONTRACT_PLUS_YEARS_AFTER_LAST_FISCAL_YEAR':
+      return `Contract term, then ${String(r.years)} years after the close of the last financial year concerned (article 211 of the General Tax Code, law no. 9-88).`;
+    case 'INVOICES_YEARS_PLUS_TOKEN_PURGE':
+      return `Invoices: ${String(r.invoiceYears)} years after closure; Payzone payment token: purged as soon as termination is settled.`;
+    case 'CACHE_DAYS_PLUS_AUDIT_ARCHIVE':
+      return `Active cache: ${String(r.cacheDays)} days, then a restricted audit and dispute archive: ${String(r.auditArchiveMonths)} months.`;
+  }
+}
+
+function retentionAr(r: RetentionRule): string {
+  switch (r.kind) {
+    case 'CONTRACT_PLUS_MONTHS':
+      return `طوال العقد النشط، ثم ${String(r.monthsAfterClosure)} شهرا بعد الإنهاء؛ سجلات الأمان: ${String(r.securityLogsRollingMonths)} شهرا متحركة؛ تحديات OTP/MFA: ${String(r.otpChallengeMinutes)} دقائق.`;
+    case 'CONTRACT_PLUS_YEARS_AFTER_LAST_FISCAL_YEAR':
+      return `مدة العقد، ثم ${String(r.years)} سنوات بعد إقفال آخر سنة محاسبية معنية (المادة 211 من المدونة العامة للضرائب، القانون رقم 9-88).`;
+    case 'INVOICES_YEARS_PLUS_TOKEN_PURGE':
+      return `الفواتير: ${String(r.invoiceYears)} سنوات بعد الإقفال؛ رمز الأداء Payzone: يُمحى بمجرد تسوية الإنهاء.`;
+    case 'CACHE_DAYS_PLUS_AUDIT_ARCHIVE':
+      return `الذاكرة المؤقتة النشطة: ${String(r.cacheDays)} يوما، ثم أرشيف مقيّد للتدقيق والمنازعة: ${String(r.auditArchiveMonths)} شهرا.`;
+  }
+}
+
+function retentionAry(r: RetentionRule): string {
+  switch (r.kind) {
+    case 'CONTRACT_PLUS_MONTHS':
+      return `ما دام العقد نشيط، ومن بعد ${String(r.monthsAfterClosure)} شهر من بعد الإنهاء؛ سجلات الأمان: ${String(r.securityLogsRollingMonths)} شهر متحركة؛ تحديات OTP/MFA: ${String(r.otpChallengeMinutes)} دقايق.`;
+    case 'CONTRACT_PLUS_YEARS_AFTER_LAST_FISCAL_YEAR':
+      return `مدة العقد، ومن بعد ${String(r.years)} سنين من بعد إقفال آخر سنة محاسبية معنية (المادة 211 من المدونة العامة للضرائب، القانون 9-88).`;
+    case 'INVOICES_YEARS_PLUS_TOKEN_PURGE':
+      return `الفواتير: ${String(r.invoiceYears)} سنين من بعد الإقفال؛ رمز الأداء ديال Payzone: كيتمحى ملي كتخلص تسوية الإنهاء.`;
+    case 'CACHE_DAYS_PLUS_AUDIT_ARCHIVE':
+      return `الكاش النشيط: ${String(r.cacheDays)} يوم، ومن بعد أرشيف مقيد ديال التدقيق والاعتراض: ${String(r.auditArchiveMonths)} شهر.`;
+  }
+}
 
 const FR: PrivacyCopy = {
   title: 'Confidentialité et Loi 09-08 — Fisca',
@@ -98,8 +152,7 @@ const FR: PrivacyCopy = {
     heading: 'Durées de conservation',
     fiscal: `Pièces comptables et fiscales : ${YEARS} ans après la clôture de l’exercice (article 211 du CGI), puis effacement cryptographique.`,
     nonAccounting: 'Données non comptables (préférences marketing, historiques de conversation sans lien avec une pièce, brouillons non numérotés) : purgées sur demande d’opposition.',
-    toBeSet: 'Durées propres à chaque traitement ci-dessus : à renseigner par le propriétaire.',
-    ownerPending: 'à renseigner par le propriétaire',
+    render: retentionFr,
   },
   rights: {
     heading: 'Vos droits',
@@ -124,7 +177,7 @@ const FR: PrivacyCopy = {
       F118: 'Transferts internationaux (F118)',
     },
     numberLabel: 'Numéro de récépissé ou d’autorisation',
-    pending: 'à renseigner par le propriétaire',
+    registering: cndpRegistrationNotice('fr'),
   },
   hosting: {
     heading: 'Hébergement et sous-traitants ultérieurs',
@@ -147,7 +200,8 @@ const FR: PrivacyCopy = {
       'Ce site ne dépose aucun cookie.',
       'Aucun pixel publicitaire, aucun script et aucune police de caractères de tiers ne sont chargés.',
       'La langue se choisit par l’adresse de la page : rien n’est mémorisé.',
-      'Si une mesure d’audience est activée un jour, elle se limitera à des compteurs quotidiens agrégés (page, langue, type de provenance), sans adresse IP ni identifiant individuel.',
+      'Ce site mesure son audience par des compteurs quotidiens agrégés : un simple nombre par jour, par page, par langue, par outil et par type de provenance (moteur d’IA générative, recherche Google ou Bing, accès direct, autre). Il n’enregistre ni adresse IP, ni identifiant individuel, ni cookie, et n’utilise aucun traceur tiers ; les robots et les chemins techniques ne sont pas comptés.',
+      'Si vous cliquez sur « Démarrer l’essai gratuit 14 jours » depuis l’outil ICE ou l’outil loi 69-21, l’ICE saisi est joint à l’adresse de l’application dans un paramètre signé à durée de vie courte, pour pré-remplir votre dossier ; ce site ne le conserve pas.',
       'L’application métier app.fisca.ma, distincte de ce site, n’utilise que des cookies techniques strictement nécessaires (session authentifiée, langue, protection anti-robot).',
     ],
   },
@@ -196,8 +250,7 @@ const AR: PrivacyCopy = {
     heading: 'مدد الحفظ',
     fiscal: `المستندات المحاسبية والجبائية: ${YEARS} سنوات بعد إقفال السنة المحاسبية (المادة 211 من المدونة العامة للضرائب)، ثم المحو التشفيري.`,
     nonAccounting: 'المعطيات غير المحاسبية (تفضيلات التسويق وسجلات المحادثة غير المرتبطة بمستند والمسودات غير المرقمة): تُمحى عند طلب التعرض.',
-    toBeSet: 'المدد الخاصة بكل معالجة أعلاه: يملؤها مالك المشروع.',
-    ownerPending: 'يملؤه مالك المشروع',
+    render: retentionAr,
   },
   rights: {
     heading: 'حقوقكم',
@@ -222,7 +275,7 @@ const AR: PrivacyCopy = {
       F118: 'التحويلات الدولية (F118)',
     },
     numberLabel: 'رقم الوصل أو الإذن',
-    pending: 'يملؤه مالك المشروع',
+    registering: cndpRegistrationNotice('ar'),
   },
   hosting: {
     heading: 'الاستضافة والمناولون اللاحقون',
@@ -245,7 +298,8 @@ const AR: PrivacyCopy = {
       'لا يضع هذا الموقع أي ملف تعريف ارتباط.',
       'لا يتم تحميل أي بكسل إعلاني ولا سكريبت ولا خط كتابة تابع لطرف ثالث.',
       'تُختار اللغة من عنوان الصفحة: ولا يُحفظ أي شيء.',
-      'إذا فُعّل قياس الجمهور يوما ما، فسيقتصر على عدادات يومية مجمعة (الصفحة واللغة ونوع المصدر)، دون عنوان IP ودون معرف فردي.',
+      'يقيس هذا الموقع جمهوره بعدادات يومية مجمعة: رقم بسيط لكل يوم ولكل صفحة ولكل لغة ولكل أداة ولكل نوع مصدر (محرك ذكاء اصطناعي توليدي، بحث Google أو Bing، دخول مباشر، غير ذلك). ولا يسجل أي عنوان IP ولا أي معرف فردي ولا أي ملف تعريف ارتباط، ولا يستعمل أي متتبع تابع لطرف ثالث؛ ولا تُحتسب الروبوتات ولا المسارات التقنية.',
+      'إذا نقرت على «ابدأ التجربة المجانية 14 يوما» من أداة ICE أو أداة القانون 69-21، يُرفق رقم ICE المدخل بعنوان التطبيق ضمن معامل موقّع قصير العمر لملء ملفك مسبقا؛ ولا يحتفظ هذا الموقع به.',
       'التطبيق المهني app.fisca.ma، المنفصل عن هذا الموقع، لا يستعمل إلا ملفات تعريف ارتباط تقنية ضرورية (جلسة موثقة، اللغة، الحماية من الروبوتات).',
     ],
   },
@@ -294,8 +348,7 @@ const ARY: PrivacyCopy = {
     heading: 'مدد الحفظ',
     fiscal: `الوثائق المحاسبية والجبائية: ${YEARS} سنين من بعد إقفال السنة المحاسبية (المادة 211 من المدونة العامة للضرائب)، من بعد كيتمحاو بالتشفير.`,
     nonAccounting: 'المعطيات اللي ماشي محاسبية (تفضيلات التسويق، سجلات المحادثة اللي ما مرتبطاش بوثيقة، المسودات اللي بلا ترقيم): كتتمحى إيلا طلبتي التعرض.',
-    toBeSet: 'المدد الخاصة بكل معالجة فوق: خاص المالك يعمرها.',
-    ownerPending: 'خاص المالك يعمرو',
+    render: retentionAry,
   },
   rights: {
     heading: 'الحقوق ديالك',
@@ -320,7 +373,7 @@ const ARY: PrivacyCopy = {
       F118: 'التحويلات الدولية (F118)',
     },
     numberLabel: 'رقم الوصل ولا الإذن',
-    pending: 'خاص المالك يعمرو',
+    registering: cndpRegistrationNotice('ary'),
   },
   hosting: {
     heading: 'الاستضافة والمناولين اللاحقين',
@@ -343,7 +396,8 @@ const ARY: PrivacyCopy = {
       'هاد الموقع ما كيحط حتى كوكي.',
       'ما كاين حتى بيكسل إشهاري ولا سكريبت ولا خط ديال طرف تالت كيتحمل.',
       'اللغة كتختارها من عنوان الصفحة: ما كيتحفظ والو.',
-      'إيلا تفعّل قياس الجمهور شي نهار، غادي يبقى غير عدادات يومية مجمعة (الصفحة، اللغة، نوع المصدر)، بلا عنوان IP وبلا معرف فردي.',
+      'هاد الموقع كيقيس الجمهور بعدادات يومية مجمعة: رقم بسيط فكل نهار وكل صفحة وكل لغة وكل أداة وكل نوع ديال المصدر (محرك ذكاء اصطناعي توليدي، بحث Google ولا Bing، دخول مباشر، شي حاجة أخرى). ما كيسجل لا عنوان IP ولا معرف فردي ولا كوكي، وما كيستعمل حتى متتبع ديال طرف تالت؛ والروبوتات والمسارات التقنية ما كيتحسبوش.',
+      'إيلا ضغطتي على «ابدا التجربة المجانية 14 يوم» من أداة ICE ولا أداة القانون 69-21، ICE اللي دخلتي كيتزاد لعنوان التطبيق فمعامل موقّع عمرو قصير باش يتعمر الدوسي ديالك مسبقا؛ وهاد الموقع ما كيحتافظش بيه.',
       'التطبيق app.fisca.ma، اللي بوحدو على هاد الموقع، كيستعمل غير كوكيز تقنية ضرورية (جلسة موثقة، اللغة، الحماية من الروبوتات).',
     ],
   },
@@ -392,8 +446,7 @@ const EN: PrivacyCopy = {
     heading: 'Retention periods',
     fiscal: `Accounting and tax records: ${YEARS} years after the close of the financial year (article 211 of the General Tax Code), then cryptographic erasure.`,
     nonAccounting: 'Non-accounting data (marketing preferences, conversation histories not tied to a document, unnumbered drafts): purged on request when you object.',
-    toBeSet: 'Retention periods specific to each processing above: to be filled in by the owner.',
-    ownerPending: 'to be filled in by the owner',
+    render: retentionEn,
   },
   rights: {
     heading: 'Your rights',
@@ -418,7 +471,7 @@ const EN: PrivacyCopy = {
       F118: 'International transfers (F118)',
     },
     numberLabel: 'Receipt or authorisation number',
-    pending: 'to be filled in by the owner',
+    registering: cndpRegistrationNotice('en'),
   },
   hosting: {
     heading: 'Hosting and sub-processors',
@@ -441,7 +494,8 @@ const EN: PrivacyCopy = {
       'This site sets no cookie.',
       'No advertising pixel, script or font from a third party is loaded.',
       'The language is chosen through the page address: nothing is remembered.',
-      'If audience measurement is ever enabled, it will be limited to aggregated daily counters (page, language, type of referrer), with no IP address and no individual identifier.',
+      'This site measures its audience with aggregated daily counters: a plain number per day, per page, per language, per tool and per type of referrer (generative AI engine, Google or Bing search, direct visit, other). It records no IP address, no individual identifier and no cookie, and uses no third-party tracker; robots and technical paths are not counted.',
+      'If you click “Start the 14-day free trial” from the ICE tool or the law 69-21 tool, the ICE you entered is attached to the application address in a short-lived signed parameter, to pre-fill your file; this site does not keep it.',
       'The business application app.fisca.ma, separate from this site, uses only strictly necessary technical cookies (authenticated session, language, anti-bot protection).',
     ],
   },

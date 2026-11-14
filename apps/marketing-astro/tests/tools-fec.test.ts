@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { parseFecAmountToCents } from '../src/tools/fec-amount.ts';
 import { checkFecBytes, checkFecText, isValidFecFileName } from '../src/tools/fec-check.ts';
 import type { FecCheckResult, FecIssueCode } from '../src/tools/fec-check.ts';
-import { FEC_MA_PROVISIONAL_PROFILE, fecColumnIndex } from '../src/tools/fec-profile.ts';
+import { FEC_MA_PROVISIONAL_PROFILE, FEC_PROFILE_STATUS_NOTE, fecColumnIndex } from '../src/tools/fec-profile.ts';
+import { validatorUiCopy } from '../src/tools/copy/ubl-fec-ui.ts';
+import { UBL_FEC_PAGE } from '../src/tools/copy/ubl-fec.ts';
 
 interface FecVector {
   readonly id: string;
@@ -75,7 +77,7 @@ describe('profil FEC-MA provisoire : constante unique', () => {
 
   it('le commentaire exact de provisoire précède la constante, une seule constante porte les noms', () => {
     const source = readFileSync(new URL('../src/tools/fec-profile.ts', import.meta.url), 'utf8');
-    expect(source).toContain('// profil provisoire, noms des 18 colonnes standard NON RECOUPÉS avec le texte marocain, à confirmer par le propriétaire\nexport const FEC_MA_PROVISIONAL_PROFILE');
+    expect(source).toContain("// Profil Fisca Art. 211 CGI en attente d'arrêté technique DGI\nexport const FEC_MA_PROVISIONAL_PROFILE");
     for (const file of ['fec-check.ts', 'fec-amount.ts', 'copy/ubl-fec-ui.ts', 'ui/ubl-fec-ui.ts']) {
       const other = readFileSync(new URL(`../src/tools/${file}`, import.meta.url), 'utf8');
       expect(other, file).not.toContain("'JournalLib'");
@@ -306,5 +308,19 @@ describe('codes d’anomalie : exhaustivité', () => {
       'AMOUNT_INVALID', 'AMOUNT_TOO_LARGE', 'EMPTY_ENTRY_NUM', 'AN_ABSENT', 'AN_NOT_FIRST', 'AN_UNBALANCED', 'ENTRY_UNBALANCED', 'FILE_UNBALANCED', 'FILE_NAME',
     ];
     for (const v of GOLD.fec_vectors) for (const c of codes(run(v))) expect(known).toContain(c);
+  });
+
+  it('décision du propriétaire 2026-11-14 : mention « en attente d’arrêté technique DGI » dans les 4 copies, plus de « non recoupés »', () => {
+    expect(FEC_PROFILE_STATUS_NOTE).toBe("Profil Fisca Art. 211 CGI en attente d'arrêté technique DGI");
+    expect(FEC_MA_PROVISIONAL_PROFILE.statusNote).toBe(FEC_PROFILE_STATUS_NOTE);
+    expect(validatorUiCopy('fr').profileLine).toContain(FEC_PROFILE_STATUS_NOTE);
+    expect(validatorUiCopy('en').profileLine).toContain('pending the DGI technical order');
+    for (const loc of ['fr', 'en', 'ar', 'ary'] as const) {
+      expect(validatorUiCopy(loc).profileLine, loc).not.toMatch(/recoup|cross-check|تُطابَق|تقارنوش/);
+      expect(validatorUiCopy(loc).profileLine, loc).toContain('PROVISOIRE');
+    }
+    const page = JSON.stringify(UBL_FEC_PAGE);
+    expect(page).not.toMatch(/NON RECOUPÉS|n’ont pas été recoupés|have not been cross-checked/);
+    expect(page).toContain('Profil Fisca Art. 211 CGI en attente d’arrêté technique DGI');
   });
 });

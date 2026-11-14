@@ -103,7 +103,7 @@ describe('HTML rendu : 3 pages x 6 langues', () => {
     }
   });
 
-  it('pied de page : éditeur, Loi 09-08, absence de traceurs, mention CNDP à renseigner', async () => {
+  it('pied de page : éditeur, Loi 09-08, absence de traceurs, mention CNDP « en cours d’enregistrement »', async () => {
     for (const locale of MARKETING_LOCALES) {
       const { html } = await cached(locale, '', HomePage);
       const footer = html.slice(html.indexOf('<footer'));
@@ -111,7 +111,9 @@ describe('HTML rendu : 3 pages x 6 langues', () => {
       expect(footer).toContain('Rabat');
       expect(footer).toContain('dpo@fisca.ma');
       expect(footer).toMatch(/09-08/);
-      expect(footer).toContain('class="pending"');
+      expect(footer).toContain('class="cndp-status"');
+      expect(footer).not.toContain('à renseigner par le propriétaire');
+      expect(footer).toMatch(/F115[^<]*F211[^<]*F112[^<]*F118[^<]*SYNAPTIC SYSTEMS SARL AU \(dpo@fisca\.ma\)/);
       expect(footer).toContain(`/${LOCALE_URL_PREFIX[locale]}/confidentialite`);
     }
   });
@@ -201,7 +203,7 @@ describe('page tarifs : HTML rendu', () => {
 });
 
 describe('page confidentialité : mentions CNDP', () => {
-  it('affiche le responsable, les droits, les références à renseigner et l’absence de cookies', async () => {
+  it('affiche le responsable, les droits, la mention CNDP en cours d’enregistrement, la mesure réelle et l’absence de cookies', async () => {
     const { html } = await cached('fr', 'confidentialite', PrivacyPage);
     expect(html).toContain('SYNAPTIC SYSTEMS SARL AU');
     expect(html).toContain('Rabat, Maroc');
@@ -210,8 +212,11 @@ describe('page confidentialité : mentions CNDP', () => {
     expect(html).toContain('Rectification (article 8)');
     expect(html).toContain('Opposition (article 9)');
     expect(html).toContain('Ce site ne dépose aucun cookie.');
-    expect(html).toContain('à renseigner par le propriétaire');
-    expect((html.match(/class="pending"/g) ?? []).length).toBeGreaterThanOrEqual(8);
+    expect(html).toContain("Dossiers F115, F211, F112 et F118 en cours d&#39;enregistrement auprès de la CNDP par SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma)");
+    expect(html).not.toContain('à renseigner par le propriétaire');
+    expect(html).not.toContain('class="pending"');
+    expect(html).toContain('compteurs quotidiens agrégés');
+    expect(html).not.toContain('Si une mesure d’audience est activée un jour');
     expect((html.match(/<table\b/g) ?? []).length).toBe(2);
   });
 });

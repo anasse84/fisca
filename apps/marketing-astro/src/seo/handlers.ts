@@ -62,22 +62,22 @@ function isReadMethod(method: string): boolean {
 }
 
 /** Jumeau `/<locale>/<slug>.md` : Response, ou undefined si l'URL n'est pas un miroir du registre. */
-export function handleMirrorRequest(request: Request): Response | undefined {
+export function handleMirrorRequest(request: Request, dateModifiedIso?: string): Response | undefined {
   const page = findEditorialPageByMirrorPath(new URL(request.url).pathname);
   if (page === undefined) return undefined;
   if (!isReadMethod(request.method)) {
     return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
   }
-  return markdownResponse(page, request.method);
+  return markdownResponse(page, request.method, dateModifiedIso);
 }
 
 /** `Accept: text/markdown` sur l'URL HTML : Response Markdown, ou undefined pour laisser passer vers le HTML. */
-export function negotiateMarkdown(request: Request): Response | undefined {
+export function negotiateMarkdown(request: Request, dateModifiedIso?: string): Response | undefined {
   if (!isReadMethod(request.method)) return undefined;
   if (!prefersMarkdown(request.headers.get('accept'))) return undefined;
   const page = findEditorialPageByPath(new URL(request.url).pathname);
   if (page === undefined) return undefined;
-  return markdownResponse(page, request.method);
+  return markdownResponse(page, request.method, dateModifiedIso);
 }
 
 /** Vrai si l'URL est une page éditoriale HTML (pour y poser `Vary: Accept`). */

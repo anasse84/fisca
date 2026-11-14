@@ -4,7 +4,7 @@
  * calculs entiers sur ces montants, arrondis par `divRoundHalfUpBigInt`. Les taux viennent de `dated-values.ts`.
  */
 import { datedValue } from '../dated-values.ts';
-import { BILLING_POLICY } from '../billing-policy.ts';
+import { BILLING_POLICY, computeDailyProrataCents } from '../billing-policy.ts';
 import type { BillingPolicy } from '../billing-policy.ts';
 import { ANNUAL_BILLED_MONTHS, FIDUCIARY_METER, PACK_MOWAKABA_CABINET, getPosModule, getPricingPlan } from '../pricing.ts';
 import { divRoundHalfUpBigInt, mulBps } from '../../lib/money.ts';
@@ -307,8 +307,8 @@ function prorataCase(policy: BillingPolicy): CaseView {
   const tpe = tierCents('DOSSIER_TPE');
   const pme = tierCents('DOSSIER_PME_COMPLET');
   const daysInMonth = 30;
-  const activeDays = 15;
-  const daily = (tier: number): number => Number(divRoundHalfUpBigInt(BigInt(tier) * BigInt(activeDays), BigInt(daysInMonth)));
+  const activatedOnDay = 16;
+  const daily = (tier: number): number => computeDailyProrataCents(tier, activatedOnDay, daysInMonth);
   const daily_mode = policy.fiduciaryProrata === 'DAILY';
   return {
     id: 'prorata',

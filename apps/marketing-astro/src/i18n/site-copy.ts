@@ -1,3 +1,4 @@
+import { cndpRegistrationNotice } from './cndp-notice.ts';
 import { copyLocaleOf } from './copy-locale.ts';
 import type { CopyLocale } from './copy-locale.ts';
 import type { MarketingLocale } from './locales.ts';
@@ -17,7 +18,8 @@ export interface SiteCopy {
   readonly footerNoTracking: string;
   readonly footerPriceNote: string;
   readonly cndpReferenceLabel: string;
-  readonly cndpPending: string;
+  /** Mention du propriétaire (2026-11-14) affichée tant qu'aucun numéro CNDP n'est attribué. */
+  readonly cndpRegistering: string;
   /** Texte alternatif de la marque. */
   readonly brandLabel: string;
 }
@@ -36,7 +38,7 @@ const FR: SiteCopy = {
   footerNoTracking: 'Aucun cookie, aucun pixel ni script tiers sur ce site.',
   footerPriceNote: 'Prix en dirhams (MAD), hors taxes.',
   cndpReferenceLabel: 'Référence CNDP',
-  cndpPending: 'à renseigner par le propriétaire',
+  cndpRegistering: cndpRegistrationNotice('fr'),
   brandLabel: 'Fisca, accueil',
 };
 
@@ -54,7 +56,7 @@ const AR: SiteCopy = {
   footerNoTracking: 'لا ملفات تعريف ارتباط ولا بكسلات ولا سكريبتات تابعة لأطراف ثالثة في هذا الموقع.',
   footerPriceNote: 'الأسعار بالدرهم (MAD) دون احتساب الضريبة.',
   cndpReferenceLabel: 'مرجع اللجنة الوطنية CNDP',
-  cndpPending: 'يملؤه مالك المشروع',
+  cndpRegistering: cndpRegistrationNotice('ar'),
   brandLabel: 'فيسكا، الصفحة الرئيسية',
 };
 
@@ -72,7 +74,7 @@ const ARY: SiteCopy = {
   footerNoTracking: 'ما كاين حتى كوكي ولا بيكسل ولا سكريبت ديال طرف تالت فهاد الموقع.',
   footerPriceNote: 'الأثمنة بالدرهم (MAD) وبلا TVA.',
   cndpReferenceLabel: 'مرجع CNDP',
-  cndpPending: 'خاص المالك يعمرو',
+  cndpRegistering: cndpRegistrationNotice('ary'),
   brandLabel: 'فيسكا، الصفحة الرئيسية',
 };
 
@@ -90,7 +92,7 @@ const EN: SiteCopy = {
   footerNoTracking: 'No cookies, no third-party pixels or scripts on this site.',
   footerPriceNote: 'Prices in Moroccan dirhams (MAD), excluding tax.',
   cndpReferenceLabel: 'CNDP reference',
-  cndpPending: 'to be filled in by the owner',
+  cndpRegistering: cndpRegistrationNotice('en'),
   brandLabel: 'Fisca, home',
 };
 

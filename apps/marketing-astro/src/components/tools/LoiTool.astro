@@ -5,6 +5,7 @@ import { LOI_UI } from '../../tools/copy/loi.ts';
 import { formatBpsAsPercentInput } from '../../tools/amounts.ts';
 import { paramView, rulesPayload } from '../../tools/registry.ts';
 import { LATE_PARAM_KEYS } from '../../tools/rule-params.ts';
+import TrialHandoff from './TrialHandoff.astro';
 
 interface Props {
   locale: CopyLocale;
@@ -60,6 +61,8 @@ const directorHint = fill(ui.directorHint, { value: base.display, date: base.as_
     <div class="rules-used" data-role="rules"></div>
   </div>
 </div>
+
+<TrialHandoff locale={locale} id="loi" />
 
 <script>
   import { mountLoiTool } from '../../tools/ui/loi-ui.ts';

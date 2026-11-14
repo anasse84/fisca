@@ -2,6 +2,7 @@
 import { ICE_UI } from '../../tools/copy/ice-ui.ts';
 import { ICE_EXISTENCE_NOTICE } from '../../tools/copy/ice.ts';
 import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import TrialHandoff from './TrialHandoff.astro';
 
 interface Props {
   locale: CopyLocale;
@@ -37,6 +38,8 @@ const ui = ICE_UI[locale];
     <p class="note" role="note">{ICE_EXISTENCE_NOTICE[locale]}</p>
   </div>
 </div>
+
+<TrialHandoff locale={locale} id="ice" />
 
 <script>
   import { mountIceTool } from '../../tools/ui/ice-ui.ts';

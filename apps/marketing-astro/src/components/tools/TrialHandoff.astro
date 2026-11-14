@@ -1,0 +1,32 @@
+---
+import { APP_ORIGIN } from '../../edge/handoff-contract.ts';
+import type { CopyLocale } from '../../i18n/copy-locale.ts';
+import { handoffCopy } from '../../tools/copy/handoff.ts';
+
+interface Props {
+  locale: CopyLocale;
+  /** Préfixe d'identifiant unique par outil. */
+  id: string;
+}
+
+const { locale, id } = Astro.props;
+const copy = handoffCopy(locale);
+---
+<aside class="tool handoff" data-handoff data-copy={JSON.stringify(copy)} aria-labelledby={`${id}-handoff-title`}>
+  <h3 id={`${id}-handoff-title`}>{copy.heading}</h3>
+  <div class="field">
+    <label for={`${id}-handoff-ice`}>{copy.iceLabel}</label>
+    <input id={`${id}-handoff-ice`} type="text" inputmode="numeric" autocomplete="off" dir="ltr" class="fisca-tabular-num" data-role="ice" aria-describedby={`${id}-handoff-hint`} />
+    <p class="field-hint" id={`${id}-handoff-hint`}>{copy.iceHint}</p>
+  </div>
+  <p><a class="button" href={`${APP_ORIGIN}/`} rel="noopener" data-role="trial">{copy.cta}</a></p>
+  <p class="tool-error" role="alert" data-role="error" hidden></p>
+  <p class="tool-status" role="status" aria-live="polite" data-role="status"></p>
+  <p class="note">{copy.note}</p>
+</aside>
+
+<script>
+  import { mountHandoff } from '../../tools/ui/handoff-ui.ts';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-handoff]')) mountHandoff(root);
+</script>

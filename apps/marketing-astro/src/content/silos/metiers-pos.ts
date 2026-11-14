@@ -44,7 +44,7 @@ export const METIERS_POS_PAGES: readonly SiloPageSpec[] = [
     sources: ['fisca-pricing', 'fisca-cabinet', 'loi-15-89'],
     faq: {
       q: t('Pourquoi la page peut-elle changer ?', 'Why might this page change?', 'لماذا قد تتغير هذه الصفحة؟', 'علاش هاد الصفحة يمكن تتبدل؟'),
-      a: t('Parce que la décision « prorata au jour ou mois minimum facturé » est ouverte ; une fois tranchée, un seul champ de la politique de facturation met à jour la grille et ce guide.', 'Because the “daily proration or minimum billed month” decision is open; once settled, a single billing-policy field updates the price list and this guide.', 'لأن قرار «تناسب يومي أو شهر أدنى مفوتر» لا يزال مفتوحا؛ وعند حسمه يحدث حقل واحد في سياسة الفوترة اللائحة وهذا الدليل.', 'حيت القرار «حساب باليوم ولا شهر أدنى مفوتر» باقي مفتوح؛ ومن بعد ما يتحسم حقل واحد فسياسة الفوترة كيحدث اللائحة وهاد الدليل.'),
+      a: t('Parce que la règle de facturation au jour (plancher d’un jour, sans mois minimum) est tenue dans un seul champ de la politique de facturation : si elle évolue, la grille et ce guide se mettent à jour ensemble.', 'Because the day-based billing rule (one-day floor, no minimum month) sits in a single billing-policy field: if it changes, the price list and this guide are updated together.', 'لأن قاعدة الفوترة اليومية (حد أدنى يوم واحد، دون شهر أدنى) محفوظة في حقل واحد من سياسة الفوترة: وإذا تغيرت يتحدث اللائحة وهذا الدليل معا.', 'حيت قاعدة الفوترة باليوم (على الأقل نهار واحد، بلا شهر أدنى) محفوظة فحقل واحد د سياسة الفوترة: وإيلا تبدلات اللائحة وهاد الدليل كيتحدثو بجوج.'),
     },
     cta: 'pricing',
     related: ['logiciel-fiduciaire-marque-blanche', 'remise-volume-100-dossiers', 'pack-mowakaba-cabinet'],

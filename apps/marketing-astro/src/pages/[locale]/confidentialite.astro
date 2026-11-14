@@ -47,7 +47,7 @@ const { copy } = view;
               <th scope="row"><span class="fisca-tabular-num" dir="ltr">{row.id}</span></th>
               <td>{row.purpose}</td>
               <td>{row.data}</td>
-              <td>{row.retention === copy.retention.ownerPending ? <span class="pending">{row.retention}</span> : row.retention}</td>
+              <td>{row.retention}</td>
             </tr>
           ))}
         </tbody>
@@ -61,7 +61,6 @@ const { copy } = view;
     <ul class="plain-list">
       <li>{copy.retention.fiscal}</li>
       <li>{copy.retention.nonAccounting}</li>
-      <li><span class="pending">{copy.retention.toBeSet}</span></li>
     </ul>
   </section>
 
@@ -84,13 +83,12 @@ const { copy } = view;
   <section class="section" aria-labelledby="cndp">
     <h2 id="cndp">{copy.cndp.heading}</h2>
     <p class="section-intro">{copy.cndp.intro}</p>
+    <p class="cndp-status">{copy.cndp.registering}</p>
     <ul class="plain-list">
       {view.references.map((ref) => (
         <li>
-          {ref.label} — {copy.cndp.numberLabel} :
-          {ref.number === null
-            ? <span class="pending">{copy.cndp.pending}</span>
-            : <span class="fisca-tabular-num" dir="ltr">{ref.number}</span>}
+          {ref.label}
+          {ref.number !== null && <Fragment> — {copy.cndp.numberLabel} : <span class="fisca-tabular-num" dir="ltr">{ref.number}</span></Fragment>}
         </li>
       ))}
     </ul>

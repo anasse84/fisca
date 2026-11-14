@@ -93,7 +93,7 @@ export const UBL_FEC_PAGE: ToolPageCopy = {
       {
         heading: 'Limites et points à valider',
         paragraphs: [
-          'Profil provisoire : les noms des 18 colonnes standard viennent du FEC publié (arrêté du 29 juillet 2013, art. A47 A-1 du LPF) et n’ont pas été recoupés avec le texte marocain ; les 6 extensions viennent des spécifications de Fisca. Le profil doit être confirmé par le propriétaire du projet et par votre expert-comptable. État : PROVISOIRE, au 2026-11-13.',
+          'Profil Fisca Art. 211 CGI en attente d’arrêté technique DGI : l’ordre des 18 colonnes standard (inspiré du FEC publié, arrêté du 29 juillet 2013, art. A47 A-1 du LPF) est confirmé par le propriétaire du projet ; les 6 extensions viennent des spécifications de Fisca. État : PROVISOIRE, au 2026-11-13.',
           'UBL : profil provisoire cius-ma-provisional. Les schémas officiels de la facturation électronique ne sont pas publiés (au 2026-11-13) : aucune validation XSD ni Schematron n’est exécutée ici. Un contrôle réussi dit seulement que les éléments contrôlés sont présents.',
           'Continuité des empreintes SHA-256 du FEC : non vérifiée, la formule n’étant pas documentée. Les dates, les comptes et les libellés du FEC ne sont pas contrôlés. Factur-X et PDF : non pris en charge, XML collé ou chargé seulement.',
         ],
@@ -115,7 +115,7 @@ export const UBL_FEC_PAGE: ToolPageCopy = {
       {
         heading: 'Limits and points to validate',
         paragraphs: [
-          'Provisional profile: the names of the 18 standard columns come from the published French FEC (order of 29 July 2013, art. A47 A-1 of the LPF) and have not been cross-checked with the Moroccan text; the 6 extensions come from Fisca’s specifications. The profile must be confirmed by the project owner and by your accountant. State: PROVISOIRE, as of 2026-11-13.',
+          'Fisca Art. 211 CGI profile, pending the DGI technical order: the order of the 18 standard columns (modelled on the published French FEC, order of 29 July 2013, art. A47 A-1 of the LPF) is confirmed by the project owner; the 6 extensions come from Fisca’s specifications. State: PROVISOIRE, as of 2026-11-13.',
           'UBL: provisional profile cius-ma-provisional. The official e-invoicing schemas are not published (as of 2026-11-13): no XSD or Schematron validation is run here. A passing check only says the checked elements are present.',
           'FEC SHA-256 hash continuity: not verified, the formula being undocumented. FEC dates, accounts and labels are not checked. Factur-X and PDF: not supported, pasted or loaded XML only.',
         ],
@@ -137,7 +137,7 @@ export const UBL_FEC_PAGE: ToolPageCopy = {
       {
         heading: 'الحدود ونقاط التحقق',
         paragraphs: [
-          'ملف تعريف مؤقت: أسماء الأعمدة الـ18 القياسية مأخوذة من FEC الفرنسي المنشور (قرار 29 يوليوز 2013، المادة A47 A-1 من LPF) ولم تُطابَق مع النص المغربي؛ أما الامتدادات الستة فمأخوذة من مواصفات Fisca. ويجب أن يؤكد ملف التعريف مالك المشروع وخبيرك المحاسب. الحالة: PROVISOIRE، بتاريخ 2026-11-13.',
+          'ملف Fisca وفق المادة 211 من CGI في انتظار القرار التقني للمديرية العامة للضرائب (DGI): ترتيب الأعمدة الـ18 القياسية (على غرار FEC الفرنسي المنشور، قرار 29 يوليوز 2013، المادة A47 A-1 من LPF) أكده مالك المشروع؛ أما الامتدادات الستة فمأخوذة من مواصفات Fisca. الحالة: PROVISOIRE، بتاريخ 2026-11-13.',
           'UBL: ملف التعريف المؤقت cius-ma-provisional. المخططات الرسمية للفوترة الإلكترونية غير منشورة (حتى 2026-11-13): لا يُنفَّذ هنا أي تحقق XSD أو Schematron. ونجاح الفحص يعني فقط أن العناصر المفحوصة موجودة.',
           'تسلسل بصمات SHA-256 في FEC: غير مفحوص لأن الصيغة غير موثقة. ولا تُفحص تواريخ FEC وحساباته وبياناته. Factur-X وPDF: غير مدعومين، XML ملصوق أو محمَّل فقط.',
         ],
@@ -159,7 +159,7 @@ export const UBL_FEC_PAGE: ToolPageCopy = {
       {
         heading: 'الحدود ونقط خاصها تتحقق',
         paragraphs: [
-          'ملف تعريف مؤقت: سميات الأعمدة الـ18 القياسية جايين من FEC الفرنسي المنشور (قرار 29 يوليوز 2013، المادة A47 A-1 د LPF) وما تقارنوش مع النص المغربي؛ والامتدادات الستة جايين من مواصفات Fisca. وخاص مالك المشروع والخبير المحاسب ديالك يأكدو ملف التعريف. الحالة: PROVISOIRE، بتاريخ 2026-11-13.',
+          'ملف Fisca حسب المادة 211 د CGI كيتسنى القرار التقني د المديرية العامة للضرائب (DGI): ترتيب الأعمدة الـ18 القياسية (على شاكلة FEC الفرنسي المنشور، قرار 29 يوليوز 2013، المادة A47 A-1 د LPF) أكدو مالك المشروع؛ والامتدادات الستة جايين من مواصفات Fisca. الحالة: PROVISOIRE، بتاريخ 2026-11-13.',
           'UBL: ملف التعريف المؤقت cius-ma-provisional. المخططات الرسمية د الفوترة الإلكترونية ما منشورينش (حتى 2026-11-13): ما كيتنفذ هنا حتى تحقق XSD ولا Schematron. ونجاح التحقق كيعني غير بلي العناصر المفحوصة كاينة.',
           'تسلسل بصمات SHA-256 د FEC: ما كيتفحصش حيت الصيغة ما موثقاش. وتواريخ FEC وحساباتو وبياناتو ما كيتفحصوش. Factur-X وPDF: ما مدعومينش، XML ملصوق ولا محمل غير.',
         ],

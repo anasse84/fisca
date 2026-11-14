@@ -261,10 +261,10 @@ export const CASE_COPY: Readonly<Record<CaseId, CaseCopy>> = {
   prorata: {
     title: l4('Dossier ajouté le 16 d’un mois de 30 jours', 'Client file added on the 16th of a 30-day month', 'ملف مضاف يوم 16 من شهر من 30 يوما', 'دوسي تزاد نهار 16 من شهر فيه 30 يوم'),
     scenario: l4(
-      'Quinze jours actifs sur trente. Le mode de prorata appliqué vient de la politique de facturation unique de Fisca ; le choix définitif du propriétaire est en attente.',
-      'Fifteen active days out of thirty. The proration mode applied comes from Fisca’s single billing policy; the owner’s final choice is pending.',
-      'خمسة عشر يوما نشطا من ثلاثين. نمط التناسب المطبق يأتي من سياسة الفوترة الموحدة لفيسكا؛ والقرار النهائي للمالك قيد الانتظار.',
-      'خمستاش يوم نشيط من تلاتين. نمط الحساب المطبق جاي من سياسة الفوترة الموحدة ديال فيسكا؛ والقرار النهائي ديال المالك باقي ما تحسمش.',
+      'Quinze jours actifs sur trente. La règle appliquée vient de la politique de facturation unique de Fisca : calcul au jour exact en centimes entiers, plancher d’un jour, sans mois minimum.',
+      'Fifteen active days out of thirty. The rule applied comes from Fisca’s single billing policy: exact day-based calculation in whole cents, one-day floor, no minimum month.',
+      'خمسة عشر يوما نشطا من ثلاثين. القاعدة المطبقة تأتي من سياسة الفوترة الموحدة لفيسكا: حساب يومي دقيق بالسنتيمات الصحيحة، حد أدنى يوم واحد، دون شهر أدنى.',
+      'خمستاش يوم نشيط من تلاتين. القاعدة المطبقة جاية من سياسة الفوترة الموحدة ديال فيسكا: حساب باليوم بالضبط بالسنتيمات الصحيحة، على الأقل نهار واحد، بلا شهر أدنى.',
     ),
     labels: {
       tpe_full: l4('Dossier TPE, mois entier HT', 'TPE file, full month excl. tax', 'ملف TPE، شهر كامل بدون ضريبة', 'دوسي TPE، شهر كامل بلا TVA'),

@@ -2,6 +2,7 @@ import type { CopyLocale } from '../../i18n/copy-locale.ts';
 import type { L4 } from '../../content/silos/types.ts';
 import type { FecIssueCode } from '../fec-check.ts';
 import type { UblBasis, UblCheckId, UblDetail } from '../ubl-check.ts';
+import { FEC_PROFILE_STATUS_NOTE } from '../fec-profile.ts';
 import { t } from './common.ts';
 
 /**
@@ -138,7 +139,7 @@ const TEXTS = {
   verdictOk: t('Aucune anomalie de structure sur les points contrôlés.', 'No structure anomaly on the points checked.', 'لا توجد أي مخالفة في البنية في النقاط المفحوصة.', 'ماكاين حتى مشكل فالبنية فالنقط المفحوصة.'),
   verdictKo: t('Anomalies de structure détectées : à corriger à la source.', 'Structure anomalies detected: fix them at the source.', 'تم رصد مخالفات في البنية: يجب تصحيحها عند المصدر.', 'تلقاو مشاكل فالبنية: خاصهم يتصلحو فالمصدر.'),
   verdictNote: t('Information indicative : cela ne vaut ni dépôt ni validation DGI.', 'Indicative information: this is neither a filing nor a DGI validation.', 'معلومة إرشادية: هذا ليس إيداعا ولا مصادقة من DGI.', 'معلومة إرشادية: هادشي ماشي إيداع ولا مصادقة د DGI.'),
-  profileLine: t('Profil FEC-MA provisoire (fec-ma-provisional), état PROVISOIRE : les noms des 18 colonnes standard ne sont pas recoupés avec le texte marocain.', 'Provisional FEC-MA profile (fec-ma-provisional), state PROVISOIRE: the names of the 18 standard columns are not cross-checked with the Moroccan text.', 'ملف FEC-MA المؤقت (fec-ma-provisional)، الحالة PROVISOIRE: أسماء الأعمدة الـ18 القياسية لم تُطابَق مع النص المغربي.', 'ملف FEC-MA المؤقت (fec-ma-provisional)، الحالة PROVISOIRE: سميات الأعمدة الـ18 القياسية ما تقارنوش مع النص المغربي.'),
+  profileLine: t(`${FEC_PROFILE_STATUS_NOTE} (fec-ma-provisional, état PROVISOIRE).`, 'Fisca Art. 211 CGI profile, pending the DGI technical order (fec-ma-provisional, state PROVISOIRE).', 'ملف Fisca وفق المادة 211 من CGI في انتظار القرار التقني للمديرية العامة للضرائب (fec-ma-provisional، الحالة PROVISOIRE).', 'ملف Fisca حسب المادة 211 د CGI كيتسنى القرار التقني د المديرية العامة للضرائب (fec-ma-provisional، الحالة PROVISOIRE).'),
   fecStats: t('{lines} lignes, {entries} écritures ; total débit {debit} et total crédit {credit}.', '{lines} lines, {entries} entries; total debit {debit} and total credit {credit}.', '{lines} سطرا، {entries} قيدا؛ مجموع المدين {debit} ومجموع الدائن {credit}.', '{lines} سطر، {entries} قيد؛ مجموع المدين {debit} ومجموع الدائن {credit}.'),
   fecHashNotVerified: t('Continuité des empreintes SHA-256 : NON vérifiée (la formule de calcul n’est pas documentée dans les spécifications).', 'SHA-256 hash continuity: NOT verified (the computation formula is not documented in the specifications).', 'تسلسل بصمات SHA-256: غير مفحوص (صيغة الحساب غير موثقة في المواصفات).', 'تسلسل بصمات SHA-256: ما تفحصش (صيغة الحساب ما موثقاش فالمواصفات).'),
   fecHashFilled: t('{n} ligne(s) portent des empreintes ; elles ne sont pas contrôlées.', '{n} line(s) carry hashes; they are not checked.', '{n} سطرا تحمل بصمات؛ ولا تُفحص.', '{n} سطر فيهم بصمات؛ وما كيتفحصوش.'),

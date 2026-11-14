@@ -5,12 +5,13 @@ import { buildMultilingualAlternates } from '../i18n/hreflang.ts';
 export const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
 
 /** Miroir Markdown pur d'une page éditoriale : aucune balise HTML (Doc_18 S03 et S12). */
-export function renderPageMarkdown(page: EditorialPage): string {
+export function renderPageMarkdown(page: EditorialPage, dateModifiedIso?: string): string {
   const lines: string[] = [`# ${page.heading}`, '', `> ${page.description}`, '', page.lead, ''];
   for (const section of page.sections) {
     lines.push(`## ${section.heading}`, '', section.body, '');
   }
   lines.push('## Versions', '', `- Source canonique : ${canonicalUrlOf(page)}`);
+  if (dateModifiedIso !== undefined) lines.push(`- Dernière modification : ${dateModifiedIso}`);
   for (const alt of buildMultilingualAlternates(page.slug)) {
     lines.push(`- ${alt.hreflang} : ${alt.href}`);
   }
@@ -18,8 +19,8 @@ export function renderPageMarkdown(page: EditorialPage): string {
   return lines.join('\n');
 }
 
-export function markdownResponse(page: EditorialPage, method: string): Response {
-  const body = renderPageMarkdown(page);
+export function markdownResponse(page: EditorialPage, method: string, dateModifiedIso?: string): Response {
+  const body = renderPageMarkdown(page, dateModifiedIso);
   const robots: Record<string, string> = page.noindex === true ? { 'X-Robots-Tag': 'noindex, follow' } : {};
   return new Response(method === 'HEAD' ? null : body, {
     status: 200,
