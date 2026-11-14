@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "ⵜⴰⵇⴰⵙⴰ ⵏ ⵜⵎⵙⵎⵓⵏⵜ",
+      "region": "ⴰⴳⵔⵓⴷⵎ ⵏ ⵜⵇⴰⵙⴰ",
+      "language": {
+        "label": "Langue",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "ⴰⵙⵏⵜⵍ",
+        "light": "ⴰⵎⵍⵖ",
+        "dark": "ⴰⴱⵔⴽⴰⵏ"
+      },
+      "sale": {
+        "catalog": "ⵉⴼⵔⴷⵉⵙⵏ",
+        "catalogEmpty": "ⵓⵍⴰⵛ ⴰⴼⵔⴷⵉⵙ ⴷⴳ ⵓⴽⴰⵜⴰⵍⵓⴳ",
+        "addItem": "ⵔⵏⵓ {name} ⵖⵔ ⵜⵇⴼⴼⵜ",
+        "cart": "ⵜⴰⵇⴼⴼⵜ",
+        "cartEmpty": "ⵜⴰⵇⴼⴼⵜ ⴷ ⵜⵉⵍⵎⵜ",
+        "itemCount": "{count} ⵏ ⵢⵉⴼⵔⴷⵉⵙⵏ",
+        "quantity": "ⴰⵛⵃⴰⵍ",
+        "unitPrice": "ⴰⵣⴰⵍ TTC",
+        "lineTotal": "ⴰⵎⴰⵜⵓ ⵏ ⵢⵉⵣⵉⵔⵉⴳ",
+        "increase": "ⵔⵏⵓ ⴰⵛⵃⴰⵍ ⵏ {name}",
+        "decrease": "ⵙⴼⵙⵅ ⴰⵛⵃⴰⵍ ⵏ {name}",
+        "remove": "ⴽⴽⵙ {name} ⵙⴳ ⵜⵇⴼⴼⵜ",
+        "clear": "ⵃⵡⵉ ⵜⴰⵇⴼⴼⵜ",
+        "totalHt": "ⴰⵎⴰⵜⵓ HT",
+        "newSale": "ⴰⵣⵏⵣⵉ ⴰⵎⴰⵢⵏⵓⵜ",
+        "vatRate": "TVA {rate} %",
+        "totalTtc": "ⴰⵎⴰⵜⵓ TTC",
+        "pay": "ⵅⵚⵚ",
+        "blocked": "ⴰⵣⵏⵣⵉ ⵢⵃⴱⵙ: ⵉⵍⴰⵇ ⵓⵙⵎⵍⵉⵍ ⴱⵄⴷ 72 ⵏ ⵜⵙⴰⵄⵜⵉⵏ ⵡⴰⵔ ⵜⵓⵇⵇⵏⴰ."
+      },
+      "pay": {
+        "title": "ⴰⵅⵍⵚ",
+        "methods": "ⴰⵏⴰⵡ ⵏ ⵓⵅⵍⵚ",
+        "cash": "ⵓⴽⴰⵛ",
+        "card": "ⵜⴰⴽⴰⵔⵟⴰ TPE",
+        "delivery": "ⴰⵙⵏⴰⵙ ⵏ ⵓⵙⵉⵡⴹ",
+        "totalDue": "ⴰⵎⴰⵜⵓ ⵏ ⵓⵅⵍⵚ",
+        "cashShare": "ⴰⴼⵔⴷⵉⵙ ⵏ ⵓⴽⴰⵛ",
+        "stamp": "ⴰⵣⴰⵍ ⵏ ⵜⵜⴰⴱⵄ",
+        "cashDue": "ⵓⴽⴰⵛ ⴰⵔⴰ ⵢⵜⵜⵡⴰⴽⴽⵙ",
+        "tendered": "ⴰⵎⴹⴰⵏ ⵉ ⵢⵜⵜⵓⵏⴼⴽⵏ",
+        "change": "ⴰⵏⴳⵣⵓⵎ",
+        "remaining": "ⵡⴰⵢⵏ ⵢⵇⵇⵉⵎⵏ",
+        "short": "ⴰⵎⴹⴰⵏ ⵓⵔ ⵢⴽⴼⵉ ⴰⵔⴰ",
+        "amountFor": "ⴰⵎⴹⴰⵏ ⵏ {method}",
+        "fillRemaining": "ⴰⵙⴽⵍⵓ",
+        "keypad": "ⵜⴰⴼⵍⵡⵉⵜ ⵏ ⵢⵉⵎⴹⴰⵏⵏ",
+        "key": "ⵜⴰⴼⴽⴽⴰ {digit}",
+        "backspace": "ⴽⴽⵙ ⵓⵟⵟⵓⵏ ⴰⵏⴳⴳⴰⵔⵓ",
+        "clear": "ⴽⴽⵙ ⴰⴽⴽ",
+        "validate": "ⵙⵏⵜⵎ ⵓ ⵙⵓⴼⴼⵖ ⵜⵉⴽⵜ",
+        "backToCart": "ⵓⵖⴰⵍ ⵖⵔ ⵜⵇⴼⴼⵜ",
+        "issuing": "ⴰⵙⵓⴼⴼⵖ ⵏ ⵜⵉⴽⵜ ⵢⵜⵜⵡⴰⵣⵄⵍⵏ…"
+      },
+      "net": {
+        "online": "ⵢⵇⵇⵏ",
+        "offlineWithin": "ⵜⴰⵎⵍⵍⴰⵍⵜ ⵡⴰⵔ ⵜⵓⵇⵇⵏⴰ",
+        "offlineExpired": "ⵡⴰⵔ ⵜⵓⵇⵇⵏⴰ: ⵢⵄⴷⴰ 72 ⵏ ⵜⵙⴰⵄⵜⵉⵏ",
+        "neverSynced": "ⵓⵔ ⵢⵙⵙⵎⵍⵉⵍ ⴰⵔⴰ ⴰⴽⴽ",
+        "clockAnomaly": "ⵜⴰⵎⵔⵉⵍⵜ ⵓⵔ ⵜⴼⵔⵉ ⴰⵔⴰ",
+        "pending": "{count} ⵏ ⵜⵉⴽⵜⵉⵢⵉⵏ ⵜⵜⵔⴰⵊⵓⵏⵜ ⴰⵙⵎⵍⵉⵍ",
+        "remaining": "{hours} h {minutes} min ⵙⵏⴷ ⴰⴷ ⵢⵃⴱⵙ ⵓⵣⵏⵣ",
+        "status": "ⴰⴷⴷⴰⴷ ⵏ ⵓⵣⵟⵟⴰ"
+      },
+      "receipt": {
+        "title": "ⵜⵉⴽⵜ ⵏ ⵜⵇⴰⵙⴰ",
+        "number": "ⵜⵉⴽⵜ ⵓⵟⵟⵓⵏ",
+        "date": "ⴰⵣⵎⵣ",
+        "totalHt": "ⴰⵎⴰⵜⵓ HT",
+        "vat": "TVA {rate} %",
+        "totalTtc": "ⴰⵎⴰⵜⵓ TTC",
+        "stamp": "ⴰⵣⴰⵍ ⵏ ⵜⵜⴰⴱⵄ",
+        "cash": "ⵓⴽⴰⵛ",
+        "card": "ⵜⴰⴽⴰⵔⵟⴰ TPE",
+        "delivery": "ⴰⵙⵏⴰⵙ ⵏ ⵓⵙⵉⵡⴹ",
+        "change": "ⴰⵏⴳⵣⵓⵎ",
+        "hash": "ⴰⵙⴽⵍⵓ ⵏ ⵓⴼⵕⵕⵏ",
+        "qrCaption": "ⵜⴰⴼⴰⵜⵓⵔⵜ B2B: ⵙⴽⵏ QR-ⴰ ⵙ ICE-ⵉⴽ",
+        "thanks": "ⵜⴰⵏⵎⵎⵉⵔⵜ ⵖⴼ ⵜⵎⵥⵥⵉ-ⵉⴽ"
+      },
+      "print": {
+        "preview": "ⵜⴰⵙⴽⴰⵏⵜ ⵏ ⵜⵉⴽⵜ ⵢⵜⵜⵡⴰⵙⵉⴳⵣⵏ",
+        "action": "ⵙⵉⴳⴳⵣ ⵜⵉⴽⵜ",
+        "drawer": "ⵍⴷⵉ ⵜⴰⵏⴰⴽⴰ ⵏ ⵜⵇⴰⵙⴰ",
+        "width": "ⵜⵀⵔⵉ ⵏ ⵜⴽⴰⵖⴹⵜ",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} ⵏ ⵓⵙⵉⴳⴳⵣ ⵜⵜⵔⴰⵊⵓⵏⵜ",
+        "printed": "ⵜⵉⴽⵜ ⵢⵜⵜⵡⴰⵙⵉⴳⵣⵏ",
+        "error": {
+          "absent": "ⵜⴰⵙⵉⴳⴳⵣⵜ ⵓⵍⴰⵛ-ⵉⵜⵜ ⵏⵖ ⵓⵔ ⵜⵇⵇⵉⵏ ⴰⵔⴰ",
+          "paper": "ⵜⴽⴰⵖⴹⵜ ⵜⴼⵓⴽ ⵏⵖ ⵜⴰⵖⴰⵟ ⵜⵍⴷⵉ",
+          "timeout": "ⵜⴰⵙⵉⴳⴳⵣⵜ ⵓⵔ ⴷ-ⵜⵜⵜⴰⵔⴳⵓ ⴰⵔⴰ (ⵢⴽⴼⴰ ⵡⴰⴽⵓⴷ)",
+          "unsupported": "ⵜⵓⵇⵇⵏⴰ ⵏ ⵓⵙⵉⴳⴳⵣ ⵓⵔ ⵜⵜⵜⵡⴰⵙⴼⵔⴰⴽ ⴰⵔⴰ ⴷⴳ ⵢⵉⵎⵉⵏⵉⴳ-ⴰ",
+          "generic": "ⴰⵙⵉⴳⴳⵣ ⵓⵔ ⵢⴷⴷⵉ ⴰⵔⴰ"
+        }
+      },
+      "b2b": {
+        "title": "ⵜⴰⴼⴰⵜⵓⵔⵜ B2B ⵙ QR",
+        "instruction": "ⴰⴽⵍⵢⴰⵏ ⴰⴷ ⵉⵙⴽⵏ QR-ⴰ ⴰⴷ ⴷ-ⵢⴰⵡⵉ ⵜⴰⴼⴰⵜⵓⵔⵜ ⵙ ICE-ⵏⵏⵙ.",
+        "qrAlt": "QR ⵏ ⵓⵙⵏⵉⴼⵍ ⵖⵔ ⵜⴼⴰⵜⵓⵔⵜ B2B",
+        "stateLabel": "ⴰⴷⴷⴰⴷ ⵏ ⵓⵙⵏⵉⴼⵍ",
+        "state": {
+          "NONE": "ⵓⵔ ⵢⵜⵜⵡⴰⵙⵏⵉⴼⵍ ⴰⵔⴰ",
+          "CONVERTI_B2B_AVANT_Z": "ⵢⵜⵜⵡⴰⵙⵏⵉⴼⵍ ⵖⵔ ⵜⴼⴰⵜⵓⵔⵜ B2B ⵙⵏⴷ ⵜⵉⴽⵜ Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "ⵢⵜⵜⵡⴰⵙⵏⵉⴼⵍ ⴱⵄⴷ ⵜⵉⴽⵜ Z: ⴰⵣⵏⵣ B2C ⵢⵜⵜⵡⴰⴱⵟⵟⵍ"
+        },
+        "noDoubleTax": "ⵢⵉⵡⵏ ⵏ ⵓⵣⴰⵍ ⴽⴰⵏ: ⵓⵙⵏⵉⴼⵍ ⵢⵜⵜⴰⴱⵟⵟⵉⵍ ⴰⵣⵏⵣ B2C.",
+        "alreadyConverted": "ⵜⵉⴽⵜ ⵢⵜⵜⵡⴰⵙⵏⵉⴼⵍ ⵢⴰⴽⴰⵏ: ⵓⵍⴰⵛ QR ⴰⵎⴰⵢⵏⵓⵜ.",
+        "link": "ⴰⵙⵖⵡⵏ ⵏ ⵓⵙⵏⵉⴼⵍ"
+      },
+      "err": {
+        "sessionNotOpen": "ⵓⵍⴰⵛ ⵜⵉⵖⵉⵎⵉⵜ ⵏ ⵜⵇⴰⵙⴰ ⵜⵍⴷⵉ",
+        "terminalNotPaired": "ⴰⵙⵔⴷⴰⵙ ⵓⵔ ⵢⵜⵜⵡⴰⵙⵏⴰⵖ ⴰⵔⴰ",
+        "stampRuleMissing": "ⴰⵍⵓⴳⵏ ⵏ ⵜⵜⴰⴱⵄ ⵓⵍⴰⵛ-ⵉⵜ: ⴰⵣⵏⵣ ⵢⵜⵜⵡⴰⴳⵉ",
+        "generic": "ⴰⵙⵓⴼⴼⵖ ⵓⵔ ⵉⵣⵎⵉⵔ ⴰⵔⴰ"
+      }
     }
   }
 }

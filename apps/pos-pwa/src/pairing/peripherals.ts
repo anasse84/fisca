@@ -2,7 +2,8 @@ import type { PosStorage } from '../storage/ports.ts';
 
 /**
  * Appairage de périphériques (imprimante, lecteur) : ports WebUSB / Bluetooth ABSTRAITS.
- * Aucun pilote ESC/POS ici (ticket T-P2B-11) : seule la sélection, l'enregistrement local et le contrat de transport.
+ * Aucun pilote ici : seule la sélection, l'enregistrement local et le contrat de transport. Les pilotes ESC/POS (WebUSB, Web Bluetooth,
+ * pont IP) vivent dans `src/printing/` (T-P2B-11).
  */
 
 export type PeripheralKind = 'usb' | 'bluetooth';

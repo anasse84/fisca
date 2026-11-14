@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "الكيسة اللمسية",
+      "region": "واجهة الكيسة",
+      "language": {
+        "label": "اللغة",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "المظهر",
+        "light": "فاتح",
+        "dark": "غامق"
+      },
+      "sale": {
+        "catalog": "السلعة",
+        "catalogEmpty": "ما كاين حتى سلعة ف الكاتالوڭ",
+        "addItem": "زيد {name} للسلة",
+        "cart": "السلة",
+        "cartEmpty": "السلة خاوية",
+        "itemCount": "{count} د السلعة",
+        "quantity": "الكمية",
+        "unitPrice": "الثمن مع TVA",
+        "lineTotal": "مجموع السطر",
+        "increase": "زيد الكمية د {name}",
+        "decrease": "نقص الكمية د {name}",
+        "remove": "حيد {name} من السلة",
+        "clear": "خوي السلة",
+        "totalHt": "المجموع HT",
+        "newSale": "بيعة جديدة",
+        "vatRate": "الضريبة TVA {rate} %",
+        "totalTtc": "المجموع TTC",
+        "pay": "خلص",
+        "blocked": "البيع واقف: خاصك تدير المزامنة من بعد 72 ساعة بلا إنترنت."
+      },
+      "pay": {
+        "title": "الخلاص",
+        "methods": "طريقة الخلاص",
+        "cash": "كاش",
+        "card": "كارط TPE",
+        "delivery": "تطبيق التوصيل",
+        "totalDue": "المبلغ لي خاصك تخلص",
+        "cashShare": "الجزء د الكاش",
+        "stamp": "واجب الطابع",
+        "cashDue": "الكاش لي خاصك تقبض",
+        "tendered": "المبلغ لي عطاك",
+        "change": "الصرف",
+        "remaining": "لي بقا",
+        "short": "المبلغ ما كافيش",
+        "amountFor": "مبلغ {method}",
+        "fillRemaining": "الباقي",
+        "keypad": "لوحة الأرقام",
+        "key": "الرقم {digit}",
+        "backspace": "مسح آخر رقم",
+        "clear": "مسح الكولشي",
+        "validate": "أكد وطلع التيكي",
+        "backToCart": "رجع للسلة",
+        "issuing": "كنطلعو التيكي الموقع…"
+      },
+      "net": {
+        "online": "متصل",
+        "offlineWithin": "خدمة بلا إنترنت",
+        "offlineExpired": "بلا إنترنت: فاتت 72 ساعة",
+        "neverSynced": "عمرها تزامنات",
+        "clockAnomaly": "الساعة ماشي مضبوطة",
+        "pending": "{count} تيكي كيتسناو المزامنة",
+        "remaining": "{hours} س {minutes} د قبل ما يوقف البيع",
+        "status": "حالة الإنترنت"
+      },
+      "receipt": {
+        "title": "تيكي د الكيسة",
+        "number": "تيكي نمرة",
+        "date": "التاريخ",
+        "totalHt": "المجموع HT",
+        "vat": "الضريبة TVA {rate} %",
+        "totalTtc": "المجموع TTC",
+        "stamp": "واجب الطابع",
+        "cash": "كاش",
+        "card": "كارط TPE",
+        "delivery": "تطبيق التوصيل",
+        "change": "الصرف",
+        "hash": "البصمة",
+        "qrCaption": "فاكتورة B2B: سكاني هاد QR مع ICE ديالك",
+        "thanks": "شكرا على الزيارة"
+      },
+      "print": {
+        "preview": "معاينة د التيكي المطبوع",
+        "action": "طبع التيكي",
+        "drawer": "حل الدرج د الفلوس",
+        "width": "عرض الورقة",
+        "width58": "58 مم",
+        "width80": "80 مم",
+        "queue": "{count} د الطبعات كيتسناو",
+        "printed": "التيكي تطبع",
+        "error": {
+          "absent": "الطابعة ماكايناش أو مقطوعة",
+          "paper": "سالات الورقة أو الغطا مفتوح",
+          "timeout": "الطابعة ما كتجاوبش (فات الوقت)",
+          "unsupported": "هاد المتصفح ما كيدعمش الطباعة",
+          "generic": "فشلات الطباعة"
+        }
+      },
+      "b2b": {
+        "title": "فاكتورة B2B بالـ QR",
+        "instruction": "الكليان كيسكاني هاد QR باش ياخد فاكتورة بالـ ICE ديالو.",
+        "qrAlt": "QR باش تتبدل التيكي لفاكتورة B2B",
+        "stateLabel": "حالة التبديل",
+        "state": {
+          "NONE": "ما تبدلاتش",
+          "CONVERTI_B2B_AVANT_Z": "تبدلات لفاكتورة B2B قبل تيكي Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "تبدلات من بعد تيكي Z: بيع B2C تحيد"
+        },
+        "noDoubleTax": "ضريبة وحدة غير: التبديل كيحيد بيع B2C.",
+        "alreadyConverted": "التيكي تبدلات من قبل: ما غاديش يبان QR جديد.",
+        "link": "رابط التبديل"
+      },
+      "err": {
+        "sessionNotOpen": "ما كاينة حتى جلسة د الكيسة مفتوحة",
+        "terminalNotPaired": "الجهاز ماشي مقرون",
+        "stampRuleMissing": "قاعدة الطابع ماكايناش: البيع تحبس",
+        "generic": "ما قدرناش نطلعو التيكي"
+      }
     }
   }
 }

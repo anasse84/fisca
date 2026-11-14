@@ -64,3 +64,47 @@ export {
 export type { SigningKeyStore } from './ticketing/ticket-signing.ts';
 export { TicketIssuanceError, issueSignedTicket, sequenceFromTicketNumber, verifyTicketChain } from './ticketing/ticket-issuer.ts';
 export type { ChainVerification, IssuedTicket, TicketInput, TicketIssuanceErrorCode, TicketIssuerDeps, TicketLinesInput, TicketPaymentsInput } from './ticketing/ticket-issuer.ts';
+
+export { CartError, TICKET_VAT_COLUMNS_BPS, addItem, cartTotals, changeQuantity, lineTotalTtcCents, removeItem, setQuantity } from './sale/cart.ts';
+export type { Cart, CartErrorCode, CartLine, CartTotals, CatalogItem, CatalogPort, VatBucket } from './sale/cart.ts';
+export { formatBps, formatMilli } from './sale/format.ts';
+export { appendDigit, computeSettlement, deleteLastDigit } from './sale/settlement.ts';
+export type { Settlement, SettlementInput, SettlementStatus } from './sale/settlement.ts';
+export { CheckoutError, checkoutCart } from './sale/checkout.ts';
+export type { CheckoutErrorCode, CheckoutInput, CheckoutResult } from './sale/checkout.ts';
+
+export { UnencodableTextError, encodeText, shapeArabicForPrinter } from './printing/codepage.ts';
+export type { EncodeOptions, TextEncoding } from './printing/codepage.ts';
+export {
+  EscPosBuilder,
+  PRINTER_PROFILE_58_CP858,
+  PRINTER_PROFILE_58_CP864,
+  PRINTER_PROFILE_80_CP858,
+  PRINTER_PROFILE_80_CP864,
+  columnsForWidth,
+} from './printing/escpos.ts';
+export type { Alignment, PaperWidthMm, PrinterProfile, QrErrorCorrection, QrOptions } from './printing/escpos.ts';
+export { FINGERPRINT_LENGTH, layoutReceipt, renderReceiptEscPos, shortFingerprint } from './printing/receipt-layout.ts';
+export type { ReceiptData, ReceiptElement, ReceiptLabelSet, ReceiptLayoutOptions, ReceiptLine, ReceiptVatLine, RenderOptions } from './printing/receipt-layout.ts';
+export { PrintError, PrintQueue } from './printing/print-queue.ts';
+export type { PrintErrorCode, PrintQueueConfig } from './printing/print-queue.ts';
+export { chunkBytes } from './printing/transport.ts';
+export type { PrinterConnection, PrinterDescriptor, PrinterStatus, PrinterTransport, PrinterTransportKind } from './printing/transport.ts';
+export { createWebUsbTransport, deviceIdOf } from './printing/transports/webusb.ts';
+export type { UsbDeviceLike, UsbLike, WebUsbConfig } from './printing/transports/webusb.ts';
+export { createWebBluetoothTransport } from './printing/transports/webbluetooth.ts';
+export type { BluetoothDeviceLike, BluetoothLike, WebBluetoothConfig } from './printing/transports/webbluetooth.ts';
+export { createIpBridgeTransport } from './printing/transports/ip-bridge.ts';
+export type { IpBridgeConfig } from './printing/transports/ip-bridge.ts';
+
+export {
+  ConversionError,
+  ConversionTracker,
+  buildConversionUrl,
+  countsInB2cBase,
+  expectedConversionState,
+  parseConversionQrPayload,
+  resolveConversionView,
+} from './b2b/qr-conversion.ts';
+export type { B2bConversionState, ConversionErrorCode, ConversionNotice, ConversionView } from './b2b/qr-conversion.ts';
+export { readTicketConversion } from './b2b/ticket-conversion-reader.ts';

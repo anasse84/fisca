@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "Taqasa n tmesmunt",
+      "region": "Agrudem n tqasa",
+      "language": {
+        "label": "Tutlayt",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "Asentel",
+        "light": "Amleɣ",
+        "dark": "Aberkan"
+      },
+      "sale": {
+        "catalog": "Iferdisen",
+        "catalogEmpty": "Ulac aferdis deg ukatalug",
+        "addItem": "Rnu {name} ɣer tqeffet",
+        "cart": "Taqeffet",
+        "cartEmpty": "Taqeffet d tilemt",
+        "itemCount": "{count} n yiferdisen",
+        "quantity": "Acḥal",
+        "unitPrice": "Azal TTC",
+        "lineTotal": "Amatu n yizirig",
+        "increase": "Rnu acḥal n {name}",
+        "decrease": "Sefsex acḥal n {name}",
+        "remove": "Kkes {name} seg tqeffet",
+        "clear": "Ḥwi taqeffet",
+        "totalHt": "Amatu HT",
+        "newSale": "Azenzi amaynut",
+        "vatRate": "TVA {rate} %",
+        "totalTtc": "Amatu TTC",
+        "pay": "Xeṣṣ",
+        "blocked": "Azenzi yeḥbes: ilaq usemlil beɛd 72 n tsaɛtin war tuqqna."
+      },
+      "pay": {
+        "title": "Axelṣ",
+        "methods": "Anaw n uxelṣ",
+        "cash": "Ukac",
+        "card": "Takarṭa TPE",
+        "delivery": "Asnas n usiweḍ",
+        "totalDue": "Amatu n uxelṣ",
+        "cashShare": "Aferdis n ukac",
+        "stamp": "Azal n ttabeɛ",
+        "cashDue": "Ukac ara yettwakkes",
+        "tendered": "Amḍan i yettunefken",
+        "change": "Anegzum",
+        "remaining": "Wayen yeqqimen",
+        "short": "Amḍan ur yekfi ara",
+        "amountFor": "Amḍan n {method}",
+        "fillRemaining": "Aseklu",
+        "keypad": "Tafelwit n yimḍanen",
+        "key": "Tafekka {digit}",
+        "backspace": "Kkes uṭṭun aneggaru",
+        "clear": "Kkes akk",
+        "validate": "Sentem u suffeɣ tikt",
+        "backToCart": "Uɣal ɣer tqeffet",
+        "issuing": "Asuffeɣ n tikt yettwazeɛlen…"
+      },
+      "net": {
+        "online": "Yeqqen",
+        "offlineWithin": "Tamellalt war tuqqna",
+        "offlineExpired": "War tuqqna: yeɛda 72 n tsaɛtin",
+        "neverSynced": "Ur yessemlil ara akk",
+        "clockAnomaly": "Tamrilt ur tefri ara",
+        "pending": "{count} n tiktiyin ttrajunt asemlil",
+        "remaining": "{hours} h {minutes} min send ad yeḥbes uzenz",
+        "status": "Addad n uzeṭṭa"
+      },
+      "receipt": {
+        "title": "Tikt n tqasa",
+        "number": "Tikt uṭṭun",
+        "date": "Azemz",
+        "totalHt": "Amatu HT",
+        "vat": "TVA {rate} %",
+        "totalTtc": "Amatu TTC",
+        "stamp": "Azal n ttabeɛ",
+        "cash": "Ukac",
+        "card": "Takarṭa TPE",
+        "delivery": "Asnas n usiweḍ",
+        "change": "Anegzum",
+        "hash": "Aseklu n ufeṛṛen",
+        "qrCaption": "Tafaturt B2B: sken QR-a s ICE-ik",
+        "thanks": "Tanemmirt ɣef tmeẓẓi-ik"
+      },
+      "print": {
+        "preview": "Taskant n tikt yettwasigzen",
+        "action": "Siggez tikt",
+        "drawer": "Ldi tanaka n tqasa",
+        "width": "Tehri n tkaɣeḍt",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} n usiggez ttrajunt",
+        "printed": "Tikt yettwasigzen",
+        "error": {
+          "absent": "Tasiggezt ulac-itt neɣ ur teqqin ara",
+          "paper": "Tkaɣeḍt tfuk neɣ taɣaṭ teldi",
+          "timeout": "Tasiggezt ur d-tettargu ara (yekfa wakud)",
+          "unsupported": "Tuqqna n usiggez ur tettwasefrak ara deg yiminig-a",
+          "generic": "Asiggez ur yeddi ara"
+        }
+      },
+      "b2b": {
+        "title": "Tafaturt B2B s QR",
+        "instruction": "Aklyan ad isken QR-a ad d-yawi tafaturt s ICE-nnes.",
+        "qrAlt": "QR n usnifel ɣer tfaturt B2B",
+        "stateLabel": "Addad n usnifel",
+        "state": {
+          "NONE": "Ur yettwasnifel ara",
+          "CONVERTI_B2B_AVANT_Z": "Yettwasnifel ɣer tfaturt B2B send Tikt Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "Yettwasnifel beɛd Tikt Z: azenz B2C yettwabeṭṭel"
+        },
+        "noDoubleTax": "Yiwen n uzal kan: usnifel yettabeṭṭil azenz B2C.",
+        "alreadyConverted": "Tikt yettwasnifel yakan: ulac QR amaynut.",
+        "link": "Aseɣwen n usnifel"
+      },
+      "err": {
+        "sessionNotOpen": "Ulac tiɣimit n tqasa teldi",
+        "terminalNotPaired": "Aserdas ur yettwasnaɣ ara",
+        "stampRuleMissing": "Alugen n ttabeɛ ulac-it: azenz yettwagi",
+        "generic": "Asuffeɣ ur izmir ara"
+      }
     }
   }
 }

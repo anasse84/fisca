@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "Touch register",
+      "region": "Register interface",
+      "language": {
+        "label": "Language",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "sale": {
+        "catalog": "Items",
+        "catalogEmpty": "No item in the catalogue",
+        "addItem": "Add {name} to the cart",
+        "cart": "Cart",
+        "cartEmpty": "The cart is empty",
+        "itemCount": "{count} item(s)",
+        "quantity": "Quantity",
+        "unitPrice": "Price incl. VAT",
+        "lineTotal": "Line total",
+        "increase": "Increase quantity of {name}",
+        "decrease": "Decrease quantity of {name}",
+        "remove": "Remove {name} from the cart",
+        "clear": "Empty the cart",
+        "totalHt": "Total excl. VAT",
+        "newSale": "New sale",
+        "vatRate": "VAT {rate} %",
+        "totalTtc": "Total incl. VAT",
+        "pay": "Pay",
+        "blocked": "Sales blocked: synchronisation required after 72 h offline."
+      },
+      "pay": {
+        "title": "Payment",
+        "methods": "Payment method",
+        "cash": "Cash",
+        "card": "Card TPE",
+        "delivery": "Delivery app",
+        "totalDue": "Total due",
+        "cashShare": "Cash share",
+        "stamp": "Stamp duty",
+        "cashDue": "Cash to collect",
+        "tendered": "Amount tendered",
+        "change": "Change",
+        "remaining": "Remaining",
+        "short": "Tendered amount is not enough",
+        "amountFor": "{method} amount",
+        "fillRemaining": "Balance",
+        "keypad": "Number pad",
+        "key": "Key {digit}",
+        "backspace": "Delete last digit",
+        "clear": "Clear all",
+        "validate": "Confirm and issue the ticket",
+        "backToCart": "Back to cart",
+        "issuing": "Issuing the signed ticket…"
+      },
+      "net": {
+        "online": "Online",
+        "offlineWithin": "Offline autonomy",
+        "offlineExpired": "Offline: 72 h window exceeded",
+        "neverSynced": "Never synchronised",
+        "clockAnomaly": "Clock inconsistent",
+        "pending": "{count} ticket(s) awaiting synchronisation",
+        "remaining": "{hours} h {minutes} min before sales are blocked",
+        "status": "Network status"
+      },
+      "receipt": {
+        "title": "Receipt",
+        "number": "Ticket no.",
+        "date": "Date",
+        "totalHt": "Total excl. VAT",
+        "vat": "VAT {rate} %",
+        "totalTtc": "Total incl. VAT",
+        "stamp": "Stamp duty",
+        "cash": "Cash",
+        "card": "Card TPE",
+        "delivery": "Delivery app",
+        "change": "Change",
+        "hash": "Fingerprint",
+        "qrCaption": "B2B invoice: scan this QR with your ICE",
+        "thanks": "Thank you for your visit"
+      },
+      "print": {
+        "preview": "Printed ticket preview",
+        "action": "Print the ticket",
+        "drawer": "Open the cash drawer",
+        "width": "Paper width",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} print job(s) waiting",
+        "printed": "Ticket printed",
+        "error": {
+          "absent": "Printer missing or disconnected",
+          "paper": "Out of paper or cover open",
+          "timeout": "The printer is not responding (timed out)",
+          "unsupported": "Printing connection not supported by this browser",
+          "generic": "Printing failed"
+        }
+      },
+      "b2b": {
+        "title": "B2B invoice by QR",
+        "instruction": "The customer scans this QR to get an invoice under their ICE.",
+        "qrAlt": "QR to convert the ticket into a B2B invoice",
+        "stateLabel": "Conversion state",
+        "state": {
+          "NONE": "Not converted",
+          "CONVERTI_B2B_AVANT_Z": "Converted into a B2B invoice before the Z ticket",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "Converted after the Z ticket: B2C sale neutralised"
+        },
+        "noDoubleTax": "Taxed once only: the conversion neutralises the B2C sale.",
+        "alreadyConverted": "Ticket already converted: no new QR is offered.",
+        "link": "Conversion link"
+      },
+      "err": {
+        "sessionNotOpen": "No open register session",
+        "terminalNotPaired": "Terminal not paired",
+        "stampRuleMissing": "Stamp rule unavailable: sale refused",
+        "generic": "Issuing failed"
+      }
     }
   }
 }

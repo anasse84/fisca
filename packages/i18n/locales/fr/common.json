@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "Caisse tactile",
+      "region": "Interface de caisse",
+      "language": {
+        "label": "Langue",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "Thème",
+        "light": "Clair",
+        "dark": "Sombre"
+      },
+      "sale": {
+        "catalog": "Articles",
+        "catalogEmpty": "Aucun article au catalogue",
+        "addItem": "Ajouter {name} au panier",
+        "cart": "Panier",
+        "cartEmpty": "Le panier est vide",
+        "itemCount": "{count} article(s)",
+        "quantity": "Quantité",
+        "unitPrice": "Prix TTC",
+        "lineTotal": "Total de la ligne",
+        "increase": "Augmenter la quantité de {name}",
+        "decrease": "Diminuer la quantité de {name}",
+        "remove": "Retirer {name} du panier",
+        "clear": "Vider le panier",
+        "totalHt": "Total HT",
+        "newSale": "Nouvelle vente",
+        "vatRate": "TVA {rate} %",
+        "totalTtc": "Total TTC",
+        "pay": "Régler",
+        "blocked": "Ventes bloquées : synchronisation requise après 72 h hors ligne."
+      },
+      "pay": {
+        "title": "Règlement",
+        "methods": "Mode de règlement",
+        "cash": "Espèces",
+        "card": "Carte TPE",
+        "delivery": "Appli livraison",
+        "totalDue": "Total à régler",
+        "cashShare": "Part en espèces",
+        "stamp": "Droit de timbre",
+        "cashDue": "Espèces à encaisser",
+        "tendered": "Montant remis",
+        "change": "Rendu monnaie",
+        "remaining": "Reste à encaisser",
+        "short": "Montant remis insuffisant",
+        "amountFor": "Montant {method}",
+        "fillRemaining": "Solde",
+        "keypad": "Pavé numérique",
+        "key": "Touche {digit}",
+        "backspace": "Effacer le dernier chiffre",
+        "clear": "Tout effacer",
+        "validate": "Valider et émettre le ticket",
+        "backToCart": "Retour au panier",
+        "issuing": "Émission du ticket signé…"
+      },
+      "net": {
+        "online": "En ligne",
+        "offlineWithin": "Autonomie hors ligne",
+        "offlineExpired": "Hors ligne : fenêtre de 72 h dépassée",
+        "neverSynced": "Jamais synchronisé",
+        "clockAnomaly": "Horloge incohérente",
+        "pending": "{count} ticket(s) en attente de synchronisation",
+        "remaining": "{hours} h {minutes} min avant blocage des ventes",
+        "status": "État du réseau"
+      },
+      "receipt": {
+        "title": "Ticket de caisse",
+        "number": "Ticket n°",
+        "date": "Date",
+        "totalHt": "Total HT",
+        "vat": "TVA {rate} %",
+        "totalTtc": "Total TTC",
+        "stamp": "Droit de timbre",
+        "cash": "Espèces",
+        "card": "Carte TPE",
+        "delivery": "Appli livraison",
+        "change": "Rendu",
+        "hash": "Empreinte",
+        "qrCaption": "Facture B2B : scannez ce QR avec votre ICE",
+        "thanks": "Merci de votre visite"
+      },
+      "print": {
+        "preview": "Aperçu du ticket imprimé",
+        "action": "Imprimer le ticket",
+        "drawer": "Ouvrir le tiroir-caisse",
+        "width": "Largeur du papier",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} impression(s) en attente",
+        "printed": "Ticket imprimé",
+        "error": {
+          "absent": "Imprimante absente ou déconnectée",
+          "paper": "Fin de papier ou capot ouvert",
+          "timeout": "L’imprimante ne répond pas (délai dépassé)",
+          "unsupported": "Connexion d’impression non prise en charge par ce navigateur",
+          "generic": "Échec d’impression"
+        }
+      },
+      "b2b": {
+        "title": "Facture B2B par QR",
+        "instruction": "Le client scanne ce QR pour obtenir une facture à son ICE.",
+        "qrAlt": "QR de conversion en facture B2B",
+        "stateLabel": "État de conversion",
+        "state": {
+          "NONE": "Non converti",
+          "CONVERTI_B2B_AVANT_Z": "Converti en facture B2B avant le Ticket Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "Converti après le Ticket Z : vente B2C neutralisée"
+        },
+        "noDoubleTax": "Une seule imposition : la conversion neutralise la vente B2C.",
+        "alreadyConverted": "Ticket déjà converti : aucun nouveau QR n’est proposé.",
+        "link": "Lien de conversion"
+      },
+      "err": {
+        "sessionNotOpen": "Aucune session de caisse ouverte",
+        "terminalNotPaired": "Terminal non appairé",
+        "stampRuleMissing": "Règle de timbre indisponible : vente refusée",
+        "generic": "Émission impossible"
+      }
     }
   }
 }

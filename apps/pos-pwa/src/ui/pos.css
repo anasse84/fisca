@@ -1,0 +1,500 @@
+/*
+ * Caisse tactile Fisca POS (Doc_08 § 06, 07, 08, 10). Tokens Mercury uniquement : aucune couleur hexadécimale ici.
+ * Propriétés logiques exclusivement (RTL pour ar et ary). Cibles tactiles : 56 px en tablette POS et au-delà, 44 px minimum sous 768 px.
+ * Libellés et montants comptables au jeton --text-primary (≥ 7:1 sur --bg-surface, --bg-canvas, --bg-subtle, clair et sombre).
+ * --brand-indigo : anneaux de focus et bordures seulement, jamais une couleur de texte.
+ */
+.pos-root {
+  --pos-touch: 56px;
+  --pos-gap: 12px;
+  --pos-radius: 12px;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  min-block-size: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  font-family: system-ui, "Noto Sans", "Noto Naskh Arabic", "Noto Sans Tifinagh", sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.pos-root *,
+.pos-root *::before,
+.pos-root *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .pos-root {
+    --pos-touch: 44px;
+    --pos-gap: 8px;
+  }
+}
+
+.pos-root :focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+/* En-tête : état réseau permanent, langue, thème */
+.pos-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pos-gap);
+  padding-block: var(--pos-gap);
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-block-end: 1px solid var(--line-border);
+}
+
+.pos-title {
+  --pos-text: accounting;
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.pos-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  flex: 1 1 280px;
+  padding-block: 6px;
+  padding-inline: 12px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--line-border);
+  border-inline-start: 6px solid var(--status-cleared-text);
+  border-radius: var(--pos-radius);
+}
+
+.pos-banner[data-tone="WARNING"] {
+  border-inline-start-color: var(--status-warning-text);
+}
+
+.pos-banner[data-tone="CRITICAL"] {
+  border-inline-start-color: var(--status-danger-text);
+}
+
+.pos-banner__icon {
+  font-weight: 700;
+}
+
+.pos-banner__title {
+  font-weight: 700;
+}
+
+.pos-banner__countdown {
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pos-group__label {
+  color: var(--text-primary);
+  font-weight: 600;
+  padding-inline-end: 4px;
+}
+
+/* Contrôles : toutes les cibles tactiles */
+.pos-root button,
+.pos-root [role="radio"],
+.pos-root input {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 2px solid var(--line-border);
+  border-radius: var(--pos-radius);
+  padding-inline: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 40ms linear;
+}
+
+.pos-root button:active,
+.pos-root [role="radio"]:active {
+  background: var(--bg-subtle);
+  transform: scale(0.98);
+}
+
+.pos-root button[aria-pressed="true"],
+.pos-root [role="radio"][aria-checked="true"] {
+  background: var(--bg-subtle);
+  border-color: var(--brand-emerald);
+  font-weight: 700;
+}
+
+.pos-root button:disabled {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.pos-lang-btn {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+}
+
+.pos-icon-btn {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  padding-inline: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.pos-action {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  font-weight: 700;
+}
+
+.pos-action--primary,
+.pos-root button.pos-action--primary {
+  background: var(--text-primary);
+  color: var(--bg-surface);
+  border-color: var(--brand-emerald);
+}
+
+.pos-root button.pos-action--primary:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+/* Écran de vente */
+.pos-main__full {
+  grid-column: 1 / -1;
+}
+
+.pos-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pos-gap);
+  padding: 16px;
+  flex: 1 1 auto;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .pos-main {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
+  }
+}
+
+.pos-panel {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--line-border);
+  border-radius: var(--pos-radius);
+  padding: 16px;
+  min-inline-size: 0;
+}
+
+.pos-panel__title {
+  --pos-text: accounting;
+  margin: 0 0 var(--pos-gap);
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.pos-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--pos-gap);
+}
+
+.pos-tile {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  padding-block: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  text-align: start;
+  padding-inline: 12px;
+}
+
+.pos-tile__name {
+  --pos-text: accounting;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pos-tile__price {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-cart {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--pos-gap);
+}
+
+.pos-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--pos-gap);
+  align-items: center;
+  padding-block-end: var(--pos-gap);
+  border-block-end: 1px solid var(--line-border);
+}
+
+.pos-line__name {
+  --pos-text: accounting;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pos-line__total {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.pos-line__controls {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pos-qty {
+  --pos-text: accounting;
+  min-inline-size: 3ch;
+  text-align: center;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-totals {
+  display: grid;
+  gap: 6px;
+  margin-block: var(--pos-gap);
+}
+
+.pos-totals__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--pos-gap);
+  color: var(--text-primary);
+}
+
+.pos-totals__row--grand {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.pos-alert {
+  margin-block: var(--pos-gap);
+  padding: 12px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--line-border);
+  border-inline-start: 6px solid var(--status-danger-text);
+  border-radius: var(--pos-radius);
+  font-weight: 600;
+}
+
+.pos-empty {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Règlement */
+.pos-pay {
+  display: grid;
+  gap: var(--pos-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .pos-pay {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.pos-methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 var(--pos-gap);
+  padding: 0;
+  border: 0;
+}
+
+.pos-method {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  padding-inline: 6px;
+  overflow-wrap: anywhere;
+}
+
+.pos-pay__summary {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.pos-pay__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pos-gap);
+  align-items: baseline;
+  color: var(--text-primary);
+}
+
+.pos-pay__row dt,
+.pos-pay__row dd {
+  --pos-text: accounting;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.pos-pay__row--change {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.pos-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(var(--pos-touch), 1fr));
+  gap: 8px;
+}
+
+.pos-key {
+  --pos-target: touch;
+  min-block-size: var(--pos-touch);
+  min-inline-size: var(--pos-touch);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-actions--spaced {
+  margin-block-start: 12px;
+}
+
+.pos-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Ticket imprimé */
+.pos-receipt {
+  display: grid;
+  gap: var(--pos-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .pos-receipt {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.pos-paper {
+  --cols: 32;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px dashed var(--line-border);
+  border-radius: 6px;
+  padding: 12px;
+  inline-size: calc(var(--cols) * 1ch + 26px);
+  max-inline-size: 100%;
+  margin-inline: auto;
+  font-family: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: min(14px, calc((100vw - 96px) / (var(--cols) * 0.62)));
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-paper__row {
+  --pos-text: accounting;
+  display: flex;
+  justify-content: space-between;
+  gap: 1ch;
+  color: var(--text-primary);
+  inline-size: 100%;
+}
+
+.pos-paper__row--bold {
+  font-weight: 800;
+}
+
+.pos-paper__text {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+.pos-paper__sep {
+  border: 0;
+  border-block-start: 1px dashed var(--text-primary);
+  margin-block: 4px;
+}
+
+.pos-qr {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.pos-qr__svg {
+  inline-size: min(180px, 100%);
+  block-size: auto;
+  background: white;
+  color: black;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.pos-b2b__link {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.pos-b2b__state {
+  --pos-text: accounting;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.pos-status {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}

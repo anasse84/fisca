@@ -507,6 +507,132 @@
           }
         }
       }
+    },
+    "pos": {
+      "title": "الصندوق اللمسي",
+      "region": "واجهة الصندوق",
+      "language": {
+        "label": "اللغة",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "المظهر",
+        "light": "فاتح",
+        "dark": "داكن"
+      },
+      "sale": {
+        "catalog": "المواد",
+        "catalogEmpty": "لا توجد مواد في الفهرس",
+        "addItem": "أضف {name} إلى السلة",
+        "cart": "السلة",
+        "cartEmpty": "السلة فارغة",
+        "itemCount": "{count} مادة",
+        "quantity": "الكمية",
+        "unitPrice": "الثمن بالرسوم",
+        "lineTotal": "مجموع السطر",
+        "increase": "زد كمية {name}",
+        "decrease": "أنقص كمية {name}",
+        "remove": "أزل {name} من السلة",
+        "clear": "إفراغ السلة",
+        "totalHt": "المجموع بدون رسوم HT",
+        "newSale": "بيع جديد",
+        "vatRate": "الضريبة TVA {rate} %",
+        "totalTtc": "المجموع TTC",
+        "pay": "الدفع",
+        "blocked": "المبيعات موقوفة: المزامنة مطلوبة بعد 72 ساعة دون اتصال."
+      },
+      "pay": {
+        "title": "التسوية",
+        "methods": "طريقة الدفع",
+        "cash": "نقدًا",
+        "card": "بطاقة TPE",
+        "delivery": "تطبيق التوصيل",
+        "totalDue": "المبلغ المستحق",
+        "cashShare": "الجزء النقدي",
+        "stamp": "رسم الطابع",
+        "cashDue": "النقد المطلوب",
+        "tendered": "المبلغ المقدَّم",
+        "change": "الباقي للزبون",
+        "remaining": "المتبقي للدفع",
+        "short": "المبلغ المقدَّم غير كافٍ",
+        "amountFor": "مبلغ {method}",
+        "fillRemaining": "الباقي",
+        "keypad": "لوحة الأرقام",
+        "key": "الرقم {digit}",
+        "backspace": "مسح آخر رقم",
+        "clear": "مسح الكل",
+        "validate": "تأكيد وإصدار التذكرة",
+        "backToCart": "العودة إلى السلة",
+        "issuing": "جارٍ إصدار التذكرة الموقعة…"
+      },
+      "net": {
+        "online": "متصل",
+        "offlineWithin": "الاستقلالية دون اتصال",
+        "offlineExpired": "دون اتصال: تجاوز 72 ساعة",
+        "neverSynced": "لم تتم المزامنة قط",
+        "clockAnomaly": "الساعة غير متسقة",
+        "pending": "{count} تذكرة بانتظار المزامنة",
+        "remaining": "{hours} س {minutes} د قبل إيقاف المبيعات",
+        "status": "حالة الشبكة"
+      },
+      "receipt": {
+        "title": "تذكرة الصندوق",
+        "number": "تذكرة رقم",
+        "date": "التاريخ",
+        "totalHt": "المجموع HT",
+        "vat": "الضريبة TVA {rate} %",
+        "totalTtc": "المجموع TTC",
+        "stamp": "رسم الطابع",
+        "cash": "نقدًا",
+        "card": "بطاقة TPE",
+        "delivery": "تطبيق التوصيل",
+        "change": "المبلغ المردود",
+        "hash": "البصمة",
+        "qrCaption": "فاتورة B2B: امسح هذا الرمز QR مع ICE الخاص بك",
+        "thanks": "شكرًا لزيارتكم"
+      },
+      "print": {
+        "preview": "معاينة التذكرة المطبوعة",
+        "action": "طباعة التذكرة",
+        "drawer": "فتح درج النقود",
+        "width": "عرض الورق",
+        "width58": "58 مم",
+        "width80": "80 مم",
+        "queue": "{count} طباعة قيد الانتظار",
+        "printed": "تمت طباعة التذكرة",
+        "error": {
+          "absent": "الطابعة غير موجودة أو غير متصلة",
+          "paper": "نفد الورق أو الغطاء مفتوح",
+          "timeout": "الطابعة لا تستجيب (انتهت المهلة)",
+          "unsupported": "اتصال الطباعة غير مدعوم في هذا المتصفح",
+          "generic": "فشلت الطباعة"
+        }
+      },
+      "b2b": {
+        "title": "فاتورة B2B عبر QR",
+        "instruction": "يمسح الزبون هذا الرمز للحصول على فاتورة باسم ICE الخاص به.",
+        "qrAlt": "رمز QR لتحويل التذكرة إلى فاتورة B2B",
+        "stateLabel": "حالة التحويل",
+        "state": {
+          "NONE": "غير محوَّلة",
+          "CONVERTI_B2B_AVANT_Z": "حُوّلت إلى فاتورة B2B قبل تذكرة Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "حُوّلت بعد تذكرة Z: بيع B2C مُحيَّد"
+        },
+        "noDoubleTax": "فرض ضريبي واحد فقط: التحويل يُحيّد بيع B2C.",
+        "alreadyConverted": "التذكرة محوَّلة مسبقًا: لا يُعرض رمز QR جديد.",
+        "link": "رابط التحويل"
+      },
+      "err": {
+        "sessionNotOpen": "لا توجد جلسة صندوق مفتوحة",
+        "terminalNotPaired": "الجهاز غير مقترن",
+        "stampRuleMissing": "قاعدة الطابع غير متاحة: رُفض البيع",
+        "generic": "تعذّر الإصدار"
+      }
     }
   }
 }
