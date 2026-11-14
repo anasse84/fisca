@@ -30,11 +30,11 @@ export function publishedSitemapSlugs(pages: readonly EditorialPage[]): readonly
 export function buildSitemapXml(pages: readonly EditorialPage[]): string {
   const entries: string[] = [];
   for (const slug of publishedSitemapSlugs(pages)) {
-    const alternates = buildMultilingualAlternates(slug)
-      .map((alt) => `    <xhtml:link rel="alternate" hreflang="${xmlEscape(alt.hreflang)}" href="${xmlEscape(alt.href)}" />`)
-      .join('\n');
     const first = pages.find((p) => p.slug === slug && p.locale === 'fr');
     const locales = first === undefined ? MARKETING_LOCALES : sitemapLocalesOf(first);
+    const alternates = buildMultilingualAlternates(slug, true, first?.indexLocales)
+      .map((alt) => `    <xhtml:link rel="alternate" hreflang="${xmlEscape(alt.hreflang)}" href="${xmlEscape(alt.href)}" />`)
+      .join('\n');
     for (const locale of locales) {
       entries.push(`  <url>\n    <loc>${xmlEscape(buildCanonicalUrl(locale, slug))}</loc>\n${alternates}\n  </url>`);
     }

@@ -15,6 +15,8 @@ export interface PageHead {
 export interface PageHeadInput {
   readonly title: string;
   readonly description: string;
+  /** Langues indexables de la page (hreflang réciproques) ; absent = les 6 langues. */
+  readonly alternateLocales?: readonly MarketingLocale[];
 }
 
 export function buildPageHead(locale: MarketingLocale, slug: string, input: PageHeadInput): PageHead {
@@ -25,7 +27,7 @@ export function buildPageHead(locale: MarketingLocale, slug: string, input: Page
     title: input.title,
     description: input.description,
     canonical: buildCanonicalUrl(locale, slug),
-    alternates: buildMultilingualAlternates(slug),
+    alternates: buildMultilingualAlternates(slug, true, input.alternateLocales),
   };
 }
 

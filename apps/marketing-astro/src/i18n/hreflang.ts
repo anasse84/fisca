@@ -20,8 +20,12 @@ export function buildCanonicalUrl(locale: MarketingLocale, slug: string): string
 }
 
 /** Alternates réciproques + x-default (Doc_18 S11, ERRATA § C). */
-export function buildMultilingualAlternates(slug: string, allSixLocalesAvailable = true): readonly HreflangLink[] {
-  const active = allSixLocalesAvailable ? ALL_LOCALES : INSTITUTIONAL_LOCALES;
+export function buildMultilingualAlternates(
+  slug: string,
+  allSixLocalesAvailable = true,
+  onlyLocales?: readonly MarketingLocale[],
+): readonly HreflangLink[] {
+  const active = onlyLocales ?? (allSixLocalesAvailable ? ALL_LOCALES : INSTITUTIONAL_LOCALES);
   const links: HreflangLink[] = active.map((loc) => ({
     hreflang: getLocaleMeta(loc).hreflang,
     href: buildCanonicalUrl(loc, slug),

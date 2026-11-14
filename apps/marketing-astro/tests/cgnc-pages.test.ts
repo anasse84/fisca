@@ -272,7 +272,7 @@ describe('seuil de qualité Doc_18 S10 : les 61 fiches sont indexables, une fich
     expect(locs.filter((l) => l.endsWith(`/${CGNC_HUB_SLUG}`))).toHaveLength(6);
     for (const p of ['ary', 'zgh', 'zgh-tfng']) expect(locs.some((l) => l.includes(`/${p}/${CGNC_HUB_SLUG}/compte-`))).toBe(false);
     const block = xml.split('<url>').find((b) => b.includes(`<loc>${buildCanonicalUrl('ar', CGNC_ACCOUNT_SLUGS[0] ?? '')}</loc>`)) ?? '';
-    expect((block.match(/hreflang="/g) ?? []).length).toBe(7);
+    expect((block.match(/hreflang="/g) ?? []).length).toBe(4);
     const short = await handleLlmsTxt().text();
     const full = await handleLlmsFullTxt().text();
     for (const s of CGNC_ACCOUNT_SLUGS) {
@@ -326,7 +326,7 @@ describe('seuil de qualité Doc_18 S10 : les 61 fiches sont indexables, une fich
 describe('HTML rendu : hub et fiches en fr, ar, en, ary, zgh et zgh-tfng', () => {
   const slugs = [CGNC_HUB_SLUG, 'dictionnaire-cgnc/compte-44558', 'dictionnaire-cgnc/compte-1111'];
 
-  it('200, h1, canonical, 7 hreflang, JSON-LD valide (FAQPage, HowTo, Legislation), aucun script ni cookie tiers', async () => {
+  it('200, h1, canonical, hreflang (7 pour le hub, 4 pour une fiche : fr, ar, en, x-default), JSON-LD valide (FAQPage, HowTo, Legislation), aucun script ni cookie tiers', async () => {
     for (const locale of MARKETING_LOCALES) {
       for (const slug of slugs) {
         const { html, status } = await render(locale, slug);
@@ -334,7 +334,7 @@ describe('HTML rendu : hub et fiches en fr, ar, en, ary, zgh et zgh-tfng', () =>
         expect(status, id).toBe(200);
         expect(html, id).toContain('<h1');
         expect(html, id).toContain(`rel="canonical" href="${buildCanonicalUrl(locale, slug)}"`);
-        expect((html.match(/rel="alternate" hreflang="/g) ?? []).length, id).toBe(7);
+        expect((html.match(/rel="alternate" hreflang="/g) ?? []).length, id).toBe(slug === CGNC_HUB_SLUG ? 7 : 4);
         const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
         expect(scripts.length, id).toBe(1);
         for (const m of scripts) {

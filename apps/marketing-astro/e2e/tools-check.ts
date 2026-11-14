@@ -75,7 +75,7 @@ try {
         check(`${tag} ice synthèse`, /4/.test(summary) && summary.includes('1'), summary);
         const rows = await page.locator('[data-role="table"] tbody tr').count();
         check(`${tag} ice lignes à relire`, rows === 2, String(rows));
-        const status = (await page.locator('[data-role="status"]').innerText()).trim();
+        const status = (await page.locator('[data-tool="ice"] [data-role="status"]').innerText()).trim();
         check(`${tag} ice statut annoncé`, status.length > 0, status);
         const cells = await page.locator('[data-role="table"] tbody tr').first().innerText();
         check(`${tag} ice réparé`, cells.includes('1534290000057') && cells.includes('001534290000057'), cells);
@@ -106,14 +106,14 @@ try {
         if (locale === 'fr' && scheme === 'light' && viewport.width === 1440) {
           writeFileSync(`${outDir}/tiers.xlsx`, buildXlsxFixture());
           await page.locator('#ice-file').setInputFiles(`${outDir}/tiers.xlsx`);
-          await page.waitForFunction(() => document.querySelector('[data-role="status"]')?.textContent?.includes('tiers.xlsx') === true, null, { timeout: 5000 });
+          await page.waitForFunction(() => document.querySelector('[data-tool="ice"] [data-role="status"]')?.textContent?.includes('tiers.xlsx') === true, null, { timeout: 5000 });
           const xr = await page.locator('[data-role="table"] tbody').innerText();
           check('xlsx ICE numérique réparé', xr.includes('001534290000057'), xr);
           check('xlsx notation scientifique signalée', /scientifique/.test(xr), xr);
           // fichier non pris en charge : message d'erreur annoncé
           await page.locator('#ice-file').setInputFiles({ name: 'x.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') });
-          await page.locator('[data-role="error"]').waitFor({ state: 'visible', timeout: 3000 });
-          check('erreur format', (await page.locator('[data-role="error"]').innerText()).length > 5);
+          await page.locator('[data-tool="ice"] [data-role="error"]').waitFor({ state: 'visible', timeout: 3000 });
+          check('erreur format', (await page.locator('[data-tool="ice"] [data-role="error"]').innerText()).length > 5);
         }
 
         // ---- Loi 69-21 ----
@@ -121,7 +121,7 @@ try {
         await page.locator('#loi-amount').fill('12345');
         await page.locator('#loi-delivery').fill('2026-06-01');
         await page.locator('#loi-payment').fill('2026-09-15');
-        await page.locator('button[type="submit"]').click();
+        await page.locator('[data-tool="loi"] button[type="submit"]').click();
         await page.locator('[data-role="results"]').waitFor({ state: 'visible', timeout: 3000 });
         const loi = (await page.locator('[data-role="list"]').innerText()).replace(/\s+/g, ' ');
         check(`${tag} loi 44 500 centimes = 445,00 MAD`, loi.includes('445,00 MAD') && loi.includes('2026-07-31') && loi.includes('360 bps'), loi);

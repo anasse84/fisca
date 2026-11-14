@@ -4,7 +4,7 @@ import '../styles/base.css';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import { CNDP_REFERENCES, DATA_CONTROLLER, hasCndpNumber } from '../content/cndp.ts';
 import type { CatalogOffer } from '../content/pricing.ts';
-import { PRICING_SLUG, PRIVACY_SLUG } from '../content/pages.ts';
+import { PRICING_SLUG, PRIVACY_SLUG, findEditorialPage } from '../content/pages.ts';
 import { usesFrenchFallback } from '../i18n/copy-locale.ts';
 import { buildPageHead } from '../i18n/head.ts';
 import { LOCALE_URL_PREFIX } from '../i18n/locales.ts';
@@ -34,7 +34,8 @@ interface Props {
 
 const { locale, slug, title, description, legislation, howTo, faqs, catalogOffers, noindex } = Astro.props;
 const dateModifiedIso = Astro.locals.dateModifiedIso;
-const head = buildPageHead(locale, slug, { title, description });
+const alternateLocales = findEditorialPage(locale, slug)?.indexLocales;
+const head = buildPageHead(locale, slug, { title, description, ...(alternateLocales === undefined ? {} : { alternateLocales }) });
 const site = getSiteCopy(locale);
 const prefix = LOCALE_URL_PREFIX[locale];
 const fallback = usesFrenchFallback(locale);
