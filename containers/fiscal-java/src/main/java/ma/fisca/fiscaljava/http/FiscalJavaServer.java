@@ -15,7 +15,7 @@ import ma.fisca.fiscaljava.validation.UnknownProfileException;
 import ma.fisca.fiscaljava.validation.ValidationProfiles;
 
 /**
- * Facade HTTP interne du conteneur : {@code POST /validate} (corps XML, réponse JSON) et {@code GET /health}.
+ * Facade HTTP interne du conteneur : {@code POST /validate} (corps XML, réponse JSON), {@code POST /facturx} (corps JSON, réponse PDF) et {@code GET /health}.
  * Aucun appel sortant ; aucun contenu de document n'est journalisé.
  */
 public final class FiscalJavaServer {
@@ -40,6 +40,8 @@ public final class FiscalJavaServer {
         http.setExecutor(pool);
         http.createContext("/health", FiscalJavaServer::health);
         http.createContext("/validate", FiscalJavaServer::validate);
+        FacturXEndpoint facturX = new FacturXEndpoint();
+        http.createContext("/facturx", exchange -> facturX(exchange, facturX));
         http.createContext("/", exchange -> send(exchange, 404, Json.error("NOT_FOUND", "Route inconnue")));
         http.start();
         return new FiscalJavaServer(http, pool);
@@ -81,6 +83,28 @@ public final class FiscalJavaServer {
             return;
         }
         send(exchange, 200, Json.report(service.validate(body)));
+    }
+
+    private static void facturX(HttpExchange exchange, FacturXEndpoint endpoint) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            send(exchange, 405, Json.error("METHOD_NOT_ALLOWED", "POST attendu"));
+            return;
+        }
+        byte[] body = readBounded(exchange.getRequestBody());
+        if (body == null) {
+            send(exchange, 413, Json.error("BODY_TOO_LARGE", "Corps supérieur à la limite"));
+            return;
+        }
+        FacturXEndpoint.Outcome outcome = endpoint.handle(body);
+        if (outcome.pdf() != null) {
+            exchange.getResponseHeaders().set("Content-Type", "application/pdf");
+            exchange.sendResponseHeaders(200, outcome.pdf().length);
+            try (var out = exchange.getResponseBody()) {
+                out.write(outcome.pdf());
+            }
+            return;
+        }
+        send(exchange, outcome.status(), Json.error(outcome.errorCode(), outcome.message(), outcome.path()));
     }
 
     private static String requestedProfile(String rawQuery) {

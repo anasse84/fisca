@@ -56,6 +56,13 @@ final class Json {
         return out.append("]}").toString();
     }
 
+    static String error(String code, String message, String path) {
+        if (path == null) {
+            return error(code, message);
+        }
+        return "{\"error\":" + quote(code) + ",\"message\":" + quote(message) + ",\"path\":" + quote(path) + "}";
+    }
+
     static String error(String code, String message) {
         return "{\"error\":" + quote(code) + ",\"message\":" + quote(message) + "}";
     }

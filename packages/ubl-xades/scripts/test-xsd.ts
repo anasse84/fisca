@@ -1,5 +1,6 @@
-import { generateUblInvoiceXml, resolveSchema, schemaKindOfTypeCode, signUblXades, verifyUblXades, type UblDocumentKind } from '../src/index.ts';
+import { buildFacturXRequest, generateUblInvoiceXml, resolveSchema, schemaKindOfTypeCode, signUblXades, verifyUblXades, type UblDocumentKind } from '../src/index.ts';
 import { buildFullInput, buildInput, TYPE_CODES } from '../tests/support/fixtures.ts';
+import { fromBase64 } from '../src/signature/bytes.ts';
 import { createTestIdentity, createTestTimestampProvider, type KeyKind } from '../tests/support/test-pki.ts';
 import { validateWithXmllint } from '../tests/support/xmllint.ts';
 
@@ -38,6 +39,27 @@ for (const code of TYPE_CODES) {
     process.stdout.write(`  type ${code} complet : INVALIDE\n${result.output}\n`);
   }
 }
+// XML tel qu'il sera embarqué dans le PDF/A-3b : octets de `xmlBase64` du corps de POST /facturx (T-P2A-06), validés contre le XSD OASIS.
+process.stdout.write('XML embarqué (corps /facturx, PDF/A-3b avec facture UBL embarquée, profil provisoire) :\n');
+let embeddedCount = 0;
+for (const code of TYPE_CODES) {
+  const input = buildFullInput(code);
+  const request = buildFacturXRequest({
+    input,
+    xml: generateUblInvoiceXml(input),
+    xhubUuid: '3f2b8c1e-5d4a-4e7b-9a10-2c6d8e0f1a23',
+    verificationBaseUrl: 'https://verif.exemple.test',
+  });
+  const schema = resolveSchema(KIND_BY_TYPE[code], '2.1');
+  const result = validateWithXmllint(new TextDecoder().decode(fromBase64(request.xmlBase64)), schema.path);
+  if (result.valid) {
+    embeddedCount += 1;
+    process.stdout.write(`  type ${code} embarqué : valide (base64 décodé, ${schema.path.split('/').pop() ?? ''})\n`);
+  } else {
+    failures += 1;
+    process.stdout.write(`  type ${code} embarqué : INVALIDE\n${result.output}\n`);
+  }
+}
 // Documents SIGNÉS (XAdES-Baseline-T dans UBLExtensions, clés éphémères de TEST, TSA de test non qualifiée) : toujours valides contre le XSD OASIS.
 process.stdout.write('Documents signés : signature de TEST (clés éphémères WebCrypto, TSA de test non qualifiée), profil provisoire\n');
 let signedCount = 0;
@@ -67,5 +89,5 @@ if (failures > 0) {
   process.stdout.write(`${failures} document(s) invalide(s)\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`${10 + signedCount} documents valides (5 simples, 5 complets, ${signedCount} signés)\n`);
+  process.stdout.write(`${10 + embeddedCount + signedCount} documents valides (5 simples, 5 complets, ${embeddedCount} embarqués, ${signedCount} signés)\n`);
 }

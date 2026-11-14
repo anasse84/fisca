@@ -3,6 +3,7 @@ export const PACKAGE_NAME = '@fisca/ubl-xades' as const;
 export * from './errors.ts';
 export * from './profile.ts';
 export * from './schema-resolver.ts';
+export * from './amount-in-words/index.ts';
 export * from './generator/format.ts';
 export * from './generator/input.ts';
 export * from './generator/invoice-number.ts';
@@ -49,3 +50,15 @@ export { buildTimeStampRequest, parseTimeStampToken, extractTimeStampTokenFromRe
 export type { ParsedTimeStampToken, TimeStampRequest, TimeStampRequestOptions } from './signature/timestamp.ts';
 export { preparePadesSignature, finalizePadesSignature, signPades } from './signature/pades.ts';
 export type { PreparedPadesSignature, PreparePadesOptions, SignPadesOptions, SignedPades } from './signature/pades.ts';
+export * from './facturx/schema.ts';
+export { FacturXRequestError, buildFacturXRequest } from './facturx/build-request.ts';
+export type { BuildFacturXRequestOptions } from './facturx/build-request.ts';
+export { FiscalJavaClient, FiscalJavaClientError, ValidationReportSchema } from './facturx/client.ts';
+export type {
+  FiscalJavaClientConfig,
+  FiscalJavaClientErrorCode,
+  FiscalJavaHttpClient,
+  FiscalJavaHttpResponse,
+  FiscalJavaRequestInit,
+  FiscalJavaValidationReport,
+} from './facturx/client.ts';

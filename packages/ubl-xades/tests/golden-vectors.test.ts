@@ -46,8 +46,8 @@ const TOTALS_FILES = ['invoice-debours.vectors.json', 'invoice-retention-garanti
 
 describe('métadonnées de tous les vecteurs', () => {
   const files = readdirSync(GOLDEN_DIR).filter((name) => name.endsWith('.vectors.json'));
-  it('les quatre fichiers attendus existent', () => {
-    expect(files.sort()).toEqual([...TOTALS_FILES, 'invoice-pih.vectors.json'].sort());
+  it('les cinq fichiers attendus existent', () => {
+    expect(files.sort()).toEqual([...TOTALS_FILES, 'invoice-pih.vectors.json', 'amount-in-words.vectors.json'].sort());
   });
   it.each(files)('%s : article, date, état et calcul renseignés', (name) => {
     const file = load<VectorBase>(name);

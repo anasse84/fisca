@@ -1,8 +1,11 @@
 package ma.fisca.fiscaljava.facturx;
 
 /**
- * Contrat d'assemblage Factur-X (PDF/A-3b portant le XML UBL ou CII). L'implémentation, fondée sur
- * Mustangproject, est livrée par le ticket P2A-06 ; ce ticket n'installe que la dépendance et le contrat.
+ * Contrat d'assemblage : PDF/A-3b portant la facture XML (UBL 2.1 dans ce dépôt). L'implémentation est
+ * {@link MustangFacturXAssembler}.
+ *
+ * <p>Statut : « PDF/A-3b avec facture UBL embarquée, profil provisoire ». Ce n'est pas un Factur-X conforme : la norme
+ * Factur-X exige un XML CII (Cross Industry Invoice), voir {@code FACTURX-NOTES.md}.
  */
 public interface FacturXAssembler {
 
@@ -11,7 +14,7 @@ public interface FacturXAssembler {
      *
      * @param invoiceXml XML de facture déjà validé
      * @param basePdf    PDF visuel (bilingue français/arabe) à enrichir
-     * @return octets du PDF/A-3b Factur-X
+     * @return octets du PDF/A-3b avec facture embarquée
      */
     byte[] assemble(byte[] invoiceXml, byte[] basePdf);
 }
