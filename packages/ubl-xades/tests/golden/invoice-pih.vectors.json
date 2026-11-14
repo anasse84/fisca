@@ -1,0 +1,80 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-03",
+  "description": "Empreinte PIH : SHA-256 hexadécimal minuscule de l'UTF-8 de JSON.stringify du tuple FISCA_INV_PIH_V1 (13 éléments). Vecteur PIH-01 : empreinte d'or imposée par le propriétaire.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "vectors": [
+    {
+      "id": "PIH-01",
+      "title": "Empreinte d'or : première facture, amorce GENESIS_HASH_",
+      "legalArticle": "CGI art. 145-IX (facturation électronique) : décret d'application non paru au 2026-11-13 (ERRATA B-13) ; formule du hash décidée par le propriétaire, aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "SHA-256(UTF-8(JSON.stringify(tuple))) ; previousPiHash = GENESIS_HASH_ + 32 zéros (45 caractères) ; résultat imposé : 0ec5abda…a797.",
+      "input": {
+        "emitterIce15": "001534290000057",
+        "sequentialNumber": "FAC-2026-000001",
+        "icvCounter": 1,
+        "ublTypeCode": "380",
+        "issueDate": "2026-11-13",
+        "buyerIdentifier": "003042032000080",
+        "currencyCode": "MAD",
+        "totalHtCents": 100000,
+        "totalVatCents": 20000,
+        "stampDutyCents": 0,
+        "totalTtcCents": 120000,
+        "previousPiHash": "GENESIS_HASH_00000000000000000000000000000000"
+      },
+      "expectedSerialization": "[\"FISCA_INV_PIH_V1\",\"001534290000057\",\"FAC-2026-000001\",1,\"380\",\"2026-11-13\",\"003042032000080\",\"MAD\",100000,20000,0,120000,\"GENESIS_HASH_00000000000000000000000000000000\"]",
+      "expectedHash": "0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797"
+    },
+    {
+      "id": "PIH-02",
+      "title": "Deuxième maillon : previousPiHash = empreinte de PIH-01, timbre 150 c",
+      "legalArticle": "CGI art. 145-IX (facturation électronique) : décret d'application non paru au 2026-11-13 (ERRATA B-13) ; formule du hash décidée par le propriétaire, aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "Même formule ; ICV 2 ; previousPiHash = hash de PIH-01 ; TTC 60150 = 50000 + 10000 + 150.",
+      "input": {
+        "emitterIce15": "001534290000057",
+        "sequentialNumber": "FAC-2026-000002",
+        "icvCounter": 2,
+        "ublTypeCode": "380",
+        "issueDate": "2026-11-14",
+        "buyerIdentifier": "003042032000080",
+        "currencyCode": "MAD",
+        "totalHtCents": 50000,
+        "totalVatCents": 10000,
+        "stampDutyCents": 150,
+        "totalTtcCents": 60150,
+        "previousPiHash": "0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797"
+      },
+      "expectedSerialization": "[\"FISCA_INV_PIH_V1\",\"001534290000057\",\"FAC-2026-000002\",2,\"380\",\"2026-11-14\",\"003042032000080\",\"MAD\",50000,10000,150,60150,\"0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797\"]",
+      "expectedHash": "69801262b4dbc0e141ba7da2ceab4aeb3ead6c56a1e2e9889197317dfeaa826b"
+    },
+    {
+      "id": "PIH-03",
+      "title": "Troisième maillon : avoir 381 sans identifiant d'acheteur (undefined → null)",
+      "legalArticle": "CGI art. 145-IX (facturation électronique) : décret d'application non paru au 2026-11-13 (ERRATA B-13) ; formule du hash décidée par le propriétaire, aucun texte officiel",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "calculation": "Même formule ; buyerIdentifier absent sérialisé null ; previousPiHash = hash de PIH-02.",
+      "input": {
+        "emitterIce15": "001534290000057",
+        "sequentialNumber": "AVO-2026-000003",
+        "icvCounter": 3,
+        "ublTypeCode": "381",
+        "issueDate": "2026-11-15",
+        "currencyCode": "MAD",
+        "totalHtCents": 20000,
+        "totalVatCents": 4000,
+        "stampDutyCents": 0,
+        "totalTtcCents": 24000,
+        "previousPiHash": "69801262b4dbc0e141ba7da2ceab4aeb3ead6c56a1e2e9889197317dfeaa826b"
+      },
+      "expectedSerialization": "[\"FISCA_INV_PIH_V1\",\"001534290000057\",\"AVO-2026-000003\",3,\"381\",\"2026-11-15\",null,\"MAD\",20000,4000,0,24000,\"69801262b4dbc0e141ba7da2ceab4aeb3ead6c56a1e2e9889197317dfeaa826b\"]",
+      "expectedHash": "797be3ad99d55a4390ef5ba11b5de6141fb29093d19d991c8022d91551a6cf2d"
+    }
+  ]
+}

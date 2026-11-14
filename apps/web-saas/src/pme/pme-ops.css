@@ -1,0 +1,462 @@
+/* Boîte d'achats, rapprochement bancaire, radar Loi 69-21 (T-P2B-08) : variables Mercury seulement, propriétés logiques (RTL/LTR).
+   Contraste : libellés comptables (__acct, __total, __table, __th, __td, __caption) en --text-primary ; --text-secondary jamais ici.
+   Les pastilles de statut gardent le texte principal : le ton passe par la bordure, le fond et l'icône (jamais la couleur seule).
+   --brand-indigo n'apparaît jamais en couleur de texte. */
+.fisca-pme.fisca-pme-ops-wide {
+  max-inline-size: 1440px;
+}
+
+.fisca-pme-ops__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.fisca-pme-ops__density {
+  min-inline-size: 44px;
+}
+
+.fisca-pme-ops__density[aria-pressed="true"] {
+  background: var(--bg-subtle);
+  border-width: 2px;
+}
+
+.fisca-pme-ops__connection {
+  min-block-size: 24px;
+}
+
+/* Lignes de grille : le filet de séparation est un ombrage interne, pas une bordure (la cellule garde ses 44 px pleins). */
+.fisca-pme .fisca-grid__row {
+  border-block-end: 0;
+  box-shadow: inset 0 -1px 0 var(--line-border);
+}
+
+/* En-têtes de grille : libellés comptables au texte principal (7:1 minimum). */
+.fisca-pme .fisca-grid__header {
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__ellipsis {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fisca-pme-ops__acct {
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__skeleton {
+  display: block;
+  block-size: 0.75em;
+  inline-size: 60%;
+  border-radius: 4px;
+  background: var(--line-border);
+}
+
+.fisca-pme-ops__icon {
+  flex: none;
+}
+
+.fisca-pme-ops__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding-block: 2px;
+  padding-inline: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-border);
+  border-radius: 6px;
+}
+
+.fisca-pme-ops__badge-label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fisca-pme-ops__badge[data-tone="warning"] {
+  background: var(--status-warning-bg);
+  border: 2px solid var(--status-warning-text);
+}
+
+.fisca-pme-ops__badge[data-tone="warning"] .fisca-pme-ops__icon {
+  color: var(--status-warning-text);
+}
+
+.fisca-pme-ops__badge[data-tone="danger"] {
+  background: var(--status-danger-bg);
+  border: 2px solid var(--status-danger-text);
+}
+
+.fisca-pme-ops__badge[data-tone="danger"] .fisca-pme-ops__icon {
+  color: var(--status-danger-text);
+}
+
+.fisca-pme-ops__badge[data-tone="cleared"] {
+  background: var(--status-cleared-bg);
+  border: 2px solid var(--status-cleared-text);
+}
+
+.fisca-pme-ops__badge[data-tone="cleared"] .fisca-pme-ops__icon {
+  color: var(--status-cleared-text);
+}
+
+/* Bouton d'ouverture dans une ligne de grille : cible pleine hauteur (44 px en confort). */
+.fisca-pme-ops__row-button {
+  min-inline-size: 44px;
+  min-block-size: 24px;
+  block-size: 100%;
+  padding-inline: 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Tiroir de revue. */
+.fisca-pme-ops__dl {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__dl dt {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__dl dd {
+  margin: 0;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.fisca-pme-ops__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.fisca-pme-ops__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__caption {
+  padding-block-end: 8px;
+  font-weight: 650;
+  text-align: start;
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__th,
+.fisca-pme-ops__td {
+  padding-block: 8px;
+  padding-inline: 8px;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  border-block-end: 1px solid var(--line-border);
+}
+
+.fisca-pme-ops__th {
+  font-weight: 650;
+}
+
+.fisca-pme-ops__th--end,
+.fisca-pme-ops__td--end {
+  text-align: end;
+}
+
+.fisca-pme-ops__td--end {
+  white-space: nowrap;
+}
+
+.fisca-pme-ops__total {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fisca-pme-ops__pipeline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fisca-pme-ops__problem {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Rapprochement : deux colonnes à partir du poste de travail, une colonne sur mobile. */
+.fisca-pme-ops__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .fisca-pme-ops__cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fisca-pme-ops__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.fisca-pme-ops__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fisca-pme-ops__item {
+  display: flex;
+  min-inline-size: 0;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme-ops__item[data-selected="true"] {
+  background: var(--bg-subtle);
+  border: 2px solid var(--brand-indigo);
+}
+
+.fisca-pme-ops__entry-item {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 8px;
+  padding-inline: 12px;
+  min-block-size: 44px;
+}
+
+.fisca-pme-ops__entry-item[data-candidate="true"] {
+  background: var(--bg-subtle);
+  border: 2px solid var(--brand-emerald);
+}
+
+.fisca-pme-ops__line {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding-block: 8px;
+  padding-inline: 12px;
+  font: inherit;
+  text-align: start;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-pme-ops__line-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  flex: 1 1 10rem;
+}
+
+.fisca-pme-ops__line-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.fisca-pme-ops__decision {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding-block: 16px;
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme-ops__decision .fisca-pme__field {
+  inline-size: min(100%, 24rem);
+}
+
+.fisca-pme-ops__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fisca-pme-ops__ambiguous {
+  background: var(--status-warning-bg);
+  border: 2px solid var(--status-warning-text);
+}
+
+.fisca-pme-ops__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Preuves de litige. */
+.fisca-pme-ops__evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block: 16px;
+  padding-inline: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+}
+
+.fisca-pme-ops__evidence-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fisca-pme-ops__evidence-head h2:focus-visible {
+  outline: 3px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+/* Sélecteur de fichiers : le champ natif (libellé du navigateur) est invisible, superposé à un bouton localisé de 44 px. */
+.fisca-pme-ops__picker {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+  border-radius: 8px;
+}
+
+.fisca-pme-ops__picker:focus-within {
+  outline: 3px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+.fisca-pme-ops__picker-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 44px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fisca-pme-ops__picker-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  text-align: center;
+}
+
+.fisca-pme-ops__file-item {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+  padding-inline: 12px;
+}
+
+.fisca-pme .fisca-pme-ops__hash {
+  min-inline-size: 0;
+  white-space: normal;
+  word-break: break-all;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Tableau de l'écriture proposée : empilé en fiches sur petit écran (aucune colonne rognée), libellés repris des en-têtes. */
+@media (max-width: 640px) {
+  .fisca-pme-ops__table--stack thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .fisca-pme-ops__table--stack,
+  .fisca-pme-ops__table--stack tbody,
+  .fisca-pme-ops__table--stack tfoot,
+  .fisca-pme-ops__table--stack tr {
+    display: block;
+  }
+
+  .fisca-pme-ops__table--stack tr {
+    padding-block: 8px;
+    border-block-end: 1px solid var(--line-border);
+  }
+
+  .fisca-pme-ops__table--stack .fisca-pme-ops__th,
+  .fisca-pme-ops__table--stack .fisca-pme-ops__td {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding-block: 2px;
+    border-block-end: 0;
+    text-align: start;
+  }
+
+  .fisca-pme-ops__table--stack .fisca-pme-ops__td[data-empty="true"] {
+    display: none;
+  }
+
+  .fisca-pme-ops__table--stack .fisca-pme-ops__td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 650;
+  }
+
+  .fisca-pme-ops__table--stack tfoot th[colspan] {
+    inline-size: 100%;
+  }
+}

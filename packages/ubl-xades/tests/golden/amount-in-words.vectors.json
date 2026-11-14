@@ -1,0 +1,1191 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-06",
+  "description": "Montant en centimes entiers en toutes lettres, français (orthographe traditionnelle, traits d'union) et arabe (nominatif, sans voyelles brèves). Source de vérité unique : rejouée par vitest (TypeScript) ET par JUnit (Java, containers/fiscal-java). Phrase complète : préfixe d'arrêté + texte ci-dessous. Centimes nuls omis ; zéro dirham conservé quand il reste des centimes.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "maxCents": "99999999999999",
+  "prefixes": {
+    "380": {
+      "fr": "Arrêtée la présente facture à la somme de : ",
+      "ar": "أوقفت هذه الفاتورة عند مبلغ: "
+    },
+    "381": {
+      "fr": "Arrêté le présent avoir à la somme de : ",
+      "ar": "أوقف هذا الإشعار الدائن عند مبلغ: "
+    },
+    "383": {
+      "fr": "Arrêtée la présente note de débit à la somme de : ",
+      "ar": "أوقف هذا الإشعار المدين عند مبلغ: "
+    },
+    "386": {
+      "fr": "Arrêtée la présente facture d’acompte à la somme de : ",
+      "ar": "أوقفت فاتورة الدفعة المقدمة هذه عند مبلغ: "
+    },
+    "389": {
+      "fr": "Arrêtée la présente autofacture à la somme de : ",
+      "ar": "أوقفت هذه الفاتورة الذاتية عند مبلغ: "
+    }
+  },
+  "vectors": [
+    {
+      "id": "AIW-01",
+      "title": "Zéro",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "0 centimes = 0 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "0"
+      },
+      "expected": {
+        "fr": "zéro dirham",
+        "ar": "صفر درهم"
+      }
+    },
+    {
+      "id": "AIW-02",
+      "title": "Un dirham",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100 centimes = 1 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100"
+      },
+      "expected": {
+        "fr": "un dirham",
+        "ar": "درهم"
+      }
+    },
+    {
+      "id": "AIW-03",
+      "title": "Deux dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "200 centimes = 2 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "200"
+      },
+      "expected": {
+        "fr": "deux dirhams",
+        "ar": "درهمان"
+      }
+    },
+    {
+      "id": "AIW-04",
+      "title": "Trois dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "300 centimes = 3 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "300"
+      },
+      "expected": {
+        "fr": "trois dirhams",
+        "ar": "ثلاثة دراهم"
+      }
+    },
+    {
+      "id": "AIW-05",
+      "title": "Dix dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1000 centimes = 10 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1000"
+      },
+      "expected": {
+        "fr": "dix dirhams",
+        "ar": "عشرة دراهم"
+      }
+    },
+    {
+      "id": "AIW-06",
+      "title": "Onze dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1100 centimes = 11 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1100"
+      },
+      "expected": {
+        "fr": "onze dirhams",
+        "ar": "أحد عشر درهما"
+      }
+    },
+    {
+      "id": "AIW-07",
+      "title": "Douze dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1200 centimes = 12 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1200"
+      },
+      "expected": {
+        "fr": "douze dirhams",
+        "ar": "اثنا عشر درهما"
+      }
+    },
+    {
+      "id": "AIW-08",
+      "title": "Seize dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1600 centimes = 16 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1600"
+      },
+      "expected": {
+        "fr": "seize dirhams",
+        "ar": "ستة عشر درهما"
+      }
+    },
+    {
+      "id": "AIW-09",
+      "title": "Dix-sept dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1700 centimes = 17 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1700"
+      },
+      "expected": {
+        "fr": "dix-sept dirhams",
+        "ar": "سبعة عشر درهما"
+      }
+    },
+    {
+      "id": "AIW-10",
+      "title": "Vingt dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "2000 centimes = 20 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "2000"
+      },
+      "expected": {
+        "fr": "vingt dirhams",
+        "ar": "عشرون درهما"
+      }
+    },
+    {
+      "id": "AIW-11",
+      "title": "Vingt et un dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "2100 centimes = 21 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "2100"
+      },
+      "expected": {
+        "fr": "vingt et un dirhams",
+        "ar": "أحد وعشرون درهما"
+      }
+    },
+    {
+      "id": "AIW-12",
+      "title": "Vingt-deux dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "2200 centimes = 22 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "2200"
+      },
+      "expected": {
+        "fr": "vingt-deux dirhams",
+        "ar": "اثنان وعشرون درهما"
+      }
+    },
+    {
+      "id": "AIW-13",
+      "title": "Trente et un dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "3100 centimes = 31 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "3100"
+      },
+      "expected": {
+        "fr": "trente et un dirhams",
+        "ar": "أحد وثلاثون درهما"
+      }
+    },
+    {
+      "id": "AIW-14",
+      "title": "Soixante et un dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "6100 centimes = 61 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "6100"
+      },
+      "expected": {
+        "fr": "soixante et un dirhams",
+        "ar": "أحد وستون درهما"
+      }
+    },
+    {
+      "id": "AIW-15",
+      "title": "Soixante-dix dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "7000 centimes = 70 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "7000"
+      },
+      "expected": {
+        "fr": "soixante-dix dirhams",
+        "ar": "سبعون درهما"
+      }
+    },
+    {
+      "id": "AIW-16",
+      "title": "Soixante et onze dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "7100 centimes = 71 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "7100"
+      },
+      "expected": {
+        "fr": "soixante et onze dirhams",
+        "ar": "أحد وسبعون درهما"
+      }
+    },
+    {
+      "id": "AIW-17",
+      "title": "Soixante-dix-sept dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "7700 centimes = 77 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "7700"
+      },
+      "expected": {
+        "fr": "soixante-dix-sept dirhams",
+        "ar": "سبعة وسبعون درهما"
+      }
+    },
+    {
+      "id": "AIW-18",
+      "title": "Quatre-vingts dirhams (s final)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "8000 centimes = 80 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "8000"
+      },
+      "expected": {
+        "fr": "quatre-vingts dirhams",
+        "ar": "ثمانون درهما"
+      }
+    },
+    {
+      "id": "AIW-19",
+      "title": "Quatre-vingt-un dirhams (pas de s)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "8100 centimes = 81 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "8100"
+      },
+      "expected": {
+        "fr": "quatre-vingt-un dirhams",
+        "ar": "أحد وثمانون درهما"
+      }
+    },
+    {
+      "id": "AIW-20",
+      "title": "Quatre-vingt-dix dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "9000 centimes = 90 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "9000"
+      },
+      "expected": {
+        "fr": "quatre-vingt-dix dirhams",
+        "ar": "تسعون درهما"
+      }
+    },
+    {
+      "id": "AIW-21",
+      "title": "Quatre-vingt-onze dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "9100 centimes = 91 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "9100"
+      },
+      "expected": {
+        "fr": "quatre-vingt-onze dirhams",
+        "ar": "أحد وتسعون درهما"
+      }
+    },
+    {
+      "id": "AIW-22",
+      "title": "Quatre-vingt-dix-neuf dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "9900 centimes = 99 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "9900"
+      },
+      "expected": {
+        "fr": "quatre-vingt-dix-neuf dirhams",
+        "ar": "تسعة وتسعون درهما"
+      }
+    },
+    {
+      "id": "AIW-23",
+      "title": "Cent dirhams (cent singulier)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "10000 centimes = 100 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "10000"
+      },
+      "expected": {
+        "fr": "cent dirhams",
+        "ar": "مائة درهم"
+      }
+    },
+    {
+      "id": "AIW-24",
+      "title": "Cent un dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "10100 centimes = 101 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "10100"
+      },
+      "expected": {
+        "fr": "cent un dirhams",
+        "ar": "مائة ودرهم"
+      }
+    },
+    {
+      "id": "AIW-25",
+      "title": "Cent deux dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "10200 centimes = 102 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "10200"
+      },
+      "expected": {
+        "fr": "cent deux dirhams",
+        "ar": "مائة ودرهمان"
+      }
+    },
+    {
+      "id": "AIW-26",
+      "title": "Cent onze dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "11100 centimes = 111 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "11100"
+      },
+      "expected": {
+        "fr": "cent onze dirhams",
+        "ar": "مائة وأحد عشر درهما"
+      }
+    },
+    {
+      "id": "AIW-27",
+      "title": "Deux cents dirhams (cents pluriel final)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "20000 centimes = 200 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "20000"
+      },
+      "expected": {
+        "fr": "deux cents dirhams",
+        "ar": "مائتا درهم"
+      }
+    },
+    {
+      "id": "AIW-28",
+      "title": "Deux cent un dirhams (pas de s)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "20100 centimes = 201 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "20100"
+      },
+      "expected": {
+        "fr": "deux cent un dirhams",
+        "ar": "مائتان ودرهم"
+      }
+    },
+    {
+      "id": "AIW-29",
+      "title": "Trois cents dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "30000 centimes = 300 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "30000"
+      },
+      "expected": {
+        "fr": "trois cents dirhams",
+        "ar": "ثلاثمائة درهم"
+      }
+    },
+    {
+      "id": "AIW-30",
+      "title": "Deux cent quatre-vingts dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "28000 centimes = 280 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "28000"
+      },
+      "expected": {
+        "fr": "deux cent quatre-vingts dirhams",
+        "ar": "مائتان وثمانون درهما"
+      }
+    },
+    {
+      "id": "AIW-31",
+      "title": "Huit cents dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "80000 centimes = 800 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "80000"
+      },
+      "expected": {
+        "fr": "huit cents dirhams",
+        "ar": "ثمانمائة درهم"
+      }
+    },
+    {
+      "id": "AIW-32",
+      "title": "Neuf cent quatre-vingt-dix-neuf dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "99900 centimes = 999 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "99900"
+      },
+      "expected": {
+        "fr": "neuf cent quatre-vingt-dix-neuf dirhams",
+        "ar": "تسعمائة وتسعة وتسعون درهما"
+      }
+    },
+    {
+      "id": "AIW-33",
+      "title": "Mille dirhams (mille invariable, sans un)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100000 centimes = 1000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100000"
+      },
+      "expected": {
+        "fr": "mille dirhams",
+        "ar": "ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-34",
+      "title": "Mille un dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100100 centimes = 1001 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100100"
+      },
+      "expected": {
+        "fr": "mille un dirhams",
+        "ar": "ألف ودرهم"
+      }
+    },
+    {
+      "id": "AIW-35",
+      "title": "Mille deux dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100200 centimes = 1002 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100200"
+      },
+      "expected": {
+        "fr": "mille deux dirhams",
+        "ar": "ألف ودرهمان"
+      }
+    },
+    {
+      "id": "AIW-36",
+      "title": "Mille trois dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100300 centimes = 1003 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100300"
+      },
+      "expected": {
+        "fr": "mille trois dirhams",
+        "ar": "ألف وثلاثة دراهم"
+      }
+    },
+    {
+      "id": "AIW-37",
+      "title": "Mille cent dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "110000 centimes = 1100 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "110000"
+      },
+      "expected": {
+        "fr": "mille cent dirhams",
+        "ar": "ألف ومائة درهم"
+      }
+    },
+    {
+      "id": "AIW-38",
+      "title": "Mille deux cents dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "120000 centimes = 1200 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "120000"
+      },
+      "expected": {
+        "fr": "mille deux cents dirhams",
+        "ar": "ألف ومائتا درهم"
+      }
+    },
+    {
+      "id": "AIW-39",
+      "title": "1 220,50 : exemple du ticket",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "122050 centimes = 1220 dirhams et 50 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "122050"
+      },
+      "expected": {
+        "fr": "mille deux cent vingt dirhams et cinquante centimes",
+        "ar": "ألف ومائتان وعشرون درهما وخمسون سنتيما"
+      }
+    },
+    {
+      "id": "AIW-40",
+      "title": "Deux mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "200000 centimes = 2000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "200000"
+      },
+      "expected": {
+        "fr": "deux mille dirhams",
+        "ar": "ألفا درهم"
+      }
+    },
+    {
+      "id": "AIW-41",
+      "title": "Trois mille cent dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "310000 centimes = 3100 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "310000"
+      },
+      "expected": {
+        "fr": "trois mille cent dirhams",
+        "ar": "ثلاثة آلاف ومائة درهم"
+      }
+    },
+    {
+      "id": "AIW-42",
+      "title": "Cinq mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "500000 centimes = 5000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "500000"
+      },
+      "expected": {
+        "fr": "cinq mille dirhams",
+        "ar": "خمسة آلاف درهم"
+      }
+    },
+    {
+      "id": "AIW-43",
+      "title": "Dix mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1000000 centimes = 10000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1000000"
+      },
+      "expected": {
+        "fr": "dix mille dirhams",
+        "ar": "عشرة آلاف درهم"
+      }
+    },
+    {
+      "id": "AIW-44",
+      "title": "Onze mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1100000 centimes = 11000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1100000"
+      },
+      "expected": {
+        "fr": "onze mille dirhams",
+        "ar": "أحد عشر ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-45",
+      "title": "Vingt et un mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "2100000 centimes = 21000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "2100000"
+      },
+      "expected": {
+        "fr": "vingt et un mille dirhams",
+        "ar": "أحد وعشرون ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-46",
+      "title": "Soixante et onze mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "7100000 centimes = 71000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "7100000"
+      },
+      "expected": {
+        "fr": "soixante et onze mille dirhams",
+        "ar": "أحد وسبعون ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-47",
+      "title": "Quatre-vingt mille (pas de s devant mille)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "8000000 centimes = 80000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "8000000"
+      },
+      "expected": {
+        "fr": "quatre-vingt mille dirhams",
+        "ar": "ثمانون ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-48",
+      "title": "Cent mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "10000000 centimes = 100000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "10000000"
+      },
+      "expected": {
+        "fr": "cent mille dirhams",
+        "ar": "مائة ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-49",
+      "title": "Cent un mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "10100000 centimes = 101000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "10100000"
+      },
+      "expected": {
+        "fr": "cent un mille dirhams",
+        "ar": "مائة ألف وألف درهم"
+      }
+    },
+    {
+      "id": "AIW-50",
+      "title": "Deux cent mille (pas de s devant mille)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "20000000 centimes = 200000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "20000000"
+      },
+      "expected": {
+        "fr": "deux cent mille dirhams",
+        "ar": "مائتا ألف درهم"
+      }
+    },
+    {
+      "id": "AIW-51",
+      "title": "Deux cent un mille dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "20100000 centimes = 201000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "20100000"
+      },
+      "expected": {
+        "fr": "deux cent un mille dirhams",
+        "ar": "مائتا ألف وألف درهم"
+      }
+    },
+    {
+      "id": "AIW-52",
+      "title": "Un million de dirhams (de)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100000000 centimes = 1000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100000000"
+      },
+      "expected": {
+        "fr": "un million de dirhams",
+        "ar": "مليون درهم"
+      }
+    },
+    {
+      "id": "AIW-53",
+      "title": "Un million un dirhams (pas de de)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100000100 centimes = 1000001 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100000100"
+      },
+      "expected": {
+        "fr": "un million un dirhams",
+        "ar": "مليون ودرهم"
+      }
+    },
+    {
+      "id": "AIW-54",
+      "title": "Un million deux cents dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100020000 centimes = 1000200 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100020000"
+      },
+      "expected": {
+        "fr": "un million deux cents dirhams",
+        "ar": "مليون ومائتا درهم"
+      }
+    },
+    {
+      "id": "AIW-55",
+      "title": "Un million de dirhams et cinquante centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100000050 centimes = 1000000 dirhams et 50 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100000050"
+      },
+      "expected": {
+        "fr": "un million de dirhams et cinquante centimes",
+        "ar": "مليون درهم وخمسون سنتيما"
+      }
+    },
+    {
+      "id": "AIW-56",
+      "title": "Deux millions de dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "200000000 centimes = 2000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "200000000"
+      },
+      "expected": {
+        "fr": "deux millions de dirhams",
+        "ar": "مليونا درهم"
+      }
+    },
+    {
+      "id": "AIW-57",
+      "title": "Trois millions de dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "300000000 centimes = 3000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "300000000"
+      },
+      "expected": {
+        "fr": "trois millions de dirhams",
+        "ar": "ثلاثة ملايين درهم"
+      }
+    },
+    {
+      "id": "AIW-58",
+      "title": "Deux millions cinq cent mille dirhams et cinq centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "250000005 centimes = 2500000 dirhams et 5 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "250000005"
+      },
+      "expected": {
+        "fr": "deux millions cinq cent mille dirhams et cinq centimes",
+        "ar": "مليونان وخمسمائة ألف درهم وخمسة سنتيمات"
+      }
+    },
+    {
+      "id": "AIW-59",
+      "title": "Quatre-vingts millions de dirhams (s devant million)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "8000000000 centimes = 80000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "8000000000"
+      },
+      "expected": {
+        "fr": "quatre-vingts millions de dirhams",
+        "ar": "ثمانون مليون درهم"
+      }
+    },
+    {
+      "id": "AIW-60",
+      "title": "Deux cents millions de dirhams (s devant million)",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "20000000000 centimes = 200000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "20000000000"
+      },
+      "expected": {
+        "fr": "deux cents millions de dirhams",
+        "ar": "مائتا مليون درهم"
+      }
+    },
+    {
+      "id": "AIW-61",
+      "title": "12 345 678,90 : exemple du ticket",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1234567890 centimes = 12345678 dirhams et 90 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1234567890"
+      },
+      "expected": {
+        "fr": "douze millions trois cent quarante-cinq mille six cent soixante-dix-huit dirhams et quatre-vingt-dix centimes",
+        "ar": "اثنا عشر مليونا وثلاثمائة وخمسة وأربعون ألفا وستمائة وثمانية وسبعون درهما وتسعون سنتيما"
+      }
+    },
+    {
+      "id": "AIW-62",
+      "title": "Un milliard de dirhams",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "100000000000 centimes = 1000000000 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "100000000000"
+      },
+      "expected": {
+        "fr": "un milliard de dirhams",
+        "ar": "مليار درهم"
+      }
+    },
+    {
+      "id": "AIW-63",
+      "title": "0 dirham et 1 centime",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "1 centimes = 0 dirhams et 1 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "1"
+      },
+      "expected": {
+        "fr": "zéro dirham et un centime",
+        "ar": "صفر درهم وسنتيم"
+      }
+    },
+    {
+      "id": "AIW-64",
+      "title": "0 dirham et 2 centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "2 centimes = 0 dirhams et 2 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "2"
+      },
+      "expected": {
+        "fr": "zéro dirham et deux centimes",
+        "ar": "صفر درهم وسنتيمان"
+      }
+    },
+    {
+      "id": "AIW-65",
+      "title": "0 dirham et 5 centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "5 centimes = 0 dirhams et 5 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "5"
+      },
+      "expected": {
+        "fr": "zéro dirham et cinq centimes",
+        "ar": "صفر درهم وخمسة سنتيمات"
+      }
+    },
+    {
+      "id": "AIW-66",
+      "title": "0 dirham et 50 centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "50 centimes = 0 dirhams et 50 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "50"
+      },
+      "expected": {
+        "fr": "zéro dirham et cinquante centimes",
+        "ar": "صفر درهم وخمسون سنتيما"
+      }
+    },
+    {
+      "id": "AIW-67",
+      "title": "1 dirham et 1 centime",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "101 centimes = 1 dirhams et 1 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "101"
+      },
+      "expected": {
+        "fr": "un dirham et un centime",
+        "ar": "درهم وسنتيم"
+      }
+    },
+    {
+      "id": "AIW-68",
+      "title": "2 dirhams et 2 centimes",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "202 centimes = 2 dirhams et 2 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "202"
+      },
+      "expected": {
+        "fr": "deux dirhams et deux centimes",
+        "ar": "درهمان وسنتيمان"
+      }
+    },
+    {
+      "id": "AIW-69",
+      "title": "5 dirhams et 0 centime : centimes nuls omis",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "500 centimes = 5 dirhams et 0 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "500"
+      },
+      "expected": {
+        "fr": "cinq dirhams",
+        "ar": "خمسة دراهم"
+      }
+    },
+    {
+      "id": "AIW-70",
+      "title": "Plafond : 999 999 999 999,99",
+      "legalArticle": "Mention « arrêtée à la somme de » : usage commercial, texte légal non identifié (à faire valider par l'expert-comptable)",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "99999999999999 centimes = 999999999999 dirhams et 99 centimes ; divmod entier par 100, groupes de 3 chiffres (milliard, million, mille, unités), aucune division flottante.",
+      "input": {
+        "amountCents": "99999999999999"
+      },
+      "expected": {
+        "fr": "neuf cent quatre-vingt-dix-neuf milliards neuf cent quatre-vingt-dix-neuf millions neuf cent quatre-vingt-dix-neuf mille neuf cent quatre-vingt-dix-neuf dirhams et quatre-vingt-dix-neuf centimes",
+        "ar": "تسعمائة وتسعة وتسعون مليارا وتسعمائة وتسعة وتسعون مليونا وتسعمائة وتسعة وتسعون ألفا وتسعمائة وتسعة وتسعون درهما وتسعة وتسعون سنتيما"
+      }
+    },
+    {
+      "id": "AIW-R1",
+      "title": "Refus : plafond + 1 centime",
+      "legalArticle": "Plafond technique de la fonction (999 999 999 999,99 MAD), pas une règle fiscale",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "Au-delà du plafond ou négatif : refus AMOUNT_OUT_OF_RANGE.",
+      "input": {
+        "amountCents": "100000000000000"
+      },
+      "expectedError": "AMOUNT_OUT_OF_RANGE"
+    },
+    {
+      "id": "AIW-R2",
+      "title": "Refus : montant négatif",
+      "legalArticle": "Plafond technique de la fonction (999 999 999 999,99 MAD), pas une règle fiscale",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "Au-delà du plafond ou négatif : refus AMOUNT_OUT_OF_RANGE.",
+      "input": {
+        "amountCents": "-1"
+      },
+      "expectedError": "AMOUNT_OUT_OF_RANGE"
+    },
+    {
+      "id": "AIW-R3",
+      "title": "Refus : 10^18 centimes",
+      "legalArticle": "Plafond technique de la fonction (999 999 999 999,99 MAD), pas une règle fiscale",
+      "ruleDate": "2026-11-13",
+      "status": "PROVISOIRE",
+      "statusNote": "PROVISOIRE — orthographe à faire relire par un locuteur natif",
+      "calculation": "Au-delà du plafond ou négatif : refus AMOUNT_OUT_OF_RANGE.",
+      "input": {
+        "amountCents": "1000000000000000000"
+      },
+      "expectedError": "AMOUNT_OUT_OF_RANGE"
+    }
+  ]
+}

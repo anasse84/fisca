@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "Ajurnal",
+    "entry": "Aṣebbeḥ n tsiḍent"
+  },
+  "ledger": {
+    "generalLedger": "Adlis ameqqran",
+    "trialBalance": "Amizan amatu",
+    "balanceSheet": "Abilan",
+    "incomeStatement": "Amiḍan n tmuɣli d yimesli"
+  },
+  "account": {
+    "number": "Uṭṭun n umiḍan",
+    "label": "Isem n umiḍan"
+  },
+  "entry": {
+    "debit": "Ddin",
+    "credit": "Ddayen",
+    "balance": "Azgen",
+    "reversal": "Aṣebbeḥ n uɣal",
+    "posted": "Yettwaḥseb",
+    "immutable": "Aṣebbeḥ yettwaḥseben ur yettwabeddal ara, yettuɣal."
+  },
+  "period": {
+    "fiscalYear": "Aseggas n tsiḍent",
+    "close": "Aqdec n tallit"
+  },
+  "bank": {
+    "reconcile": "Asenmedal n lbanka",
+    "cash": "Tacaisset"
+  }
+}

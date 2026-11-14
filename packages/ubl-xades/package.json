@@ -7,6 +7,31 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:xsd": "node scripts/test-xsd.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./clearance": {
+      "types": "./src/clearance/index.ts",
+      "default": "./src/clearance/index.ts"
+    },
+    "./certify": {
+      "types": "./src/certify/index.ts",
+      "default": "./src/certify/index.ts"
+    },
+    "./pos": {
+      "types": "./src/pos/index.ts",
+      "default": "./src/pos/index.ts"
+    }
+  },
+  "dependencies": {
+    "@fisca/shared-types": "workspace:*",
+    "zod": "^4.6.7"
   }
 }

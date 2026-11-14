@@ -1,0 +1,180 @@
+/* Tiroir Split-Screen Review (Doc_08 Sections 05, 06 et 10) : propriétés logiques uniquement (RTL/LTR). */
+.fisca-drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-inline-start: 1px solid var(--line-border);
+  box-shadow: 0 0 32px rgb(20 20 19 / 0.18);
+  padding-block-start: env(safe-area-inset-top);
+  padding-block-end: env(safe-area-inset-bottom);
+}
+
+.fisca-drawer:focus {
+  outline: none;
+}
+
+.fisca-drawer__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+  padding-inline: 16px;
+  border-block-end: 1px solid var(--line-border);
+}
+
+.fisca-drawer__title {
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.fisca-drawer__badge {
+  padding-block: 2px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.fisca-drawer__badge--ai {
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 2px solid var(--brand-indigo);
+}
+
+.fisca-drawer__badge--review {
+  color: var(--status-warning-text);
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-text);
+}
+
+.fisca-drawer__close {
+  flex-shrink: 0;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding-inline: 12px;
+  color: var(--text-primary);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-drawer__pane:focus-visible,
+.fisca-drawer__close:focus-visible,
+.fisca-drawer__approve:focus-visible,
+.fisca-drawer__reject:focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+.fisca-drawer__panes {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.fisca-drawer__pane {
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding: 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.fisca-drawer__pane:focus-visible {
+  outline-offset: -2px;
+}
+
+.fisca-drawer__pane + .fisca-drawer__pane {
+  border-block-start: 1px solid var(--line-border);
+}
+
+.fisca-drawer__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block: 12px;
+  padding-inline: 16px;
+  border-block-start: 1px solid var(--line-border);
+  background: var(--bg-subtle);
+}
+
+.fisca-drawer__notice {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: start;
+}
+
+.fisca-drawer__notice--illegible {
+  color: var(--status-warning-text);
+  font-weight: 600;
+}
+
+.fisca-drawer__approve,
+.fisca-drawer__reject {
+  min-block-size: 44px;
+  padding-inline: 16px;
+  font: inherit;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-drawer__approve {
+  color: var(--bg-canvas);
+  background: var(--brand-emerald);
+  border: 0;
+}
+
+.fisca-drawer__approve:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fisca-drawer__reject {
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--line-border);
+}
+
+/* Tablette et plus : deux volets côte à côte, document source à l'inline-start, saisie à l'inline-end. */
+@media (min-width: 768px) {
+  .fisca-drawer {
+    inline-size: 80%;
+  }
+
+  .fisca-drawer__panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .fisca-drawer__pane + .fisca-drawer__pane {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--line-border);
+  }
+}
+
+/* Bureau : tiroir superposé à 55 % de la largeur (Section 06). */
+@media (min-width: 1280px) {
+  .fisca-drawer {
+    inline-size: 55%;
+  }
+}

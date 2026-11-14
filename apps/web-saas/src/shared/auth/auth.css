@@ -1,0 +1,360 @@
+/* Parcours Signup / Login / 2FA / onboarding ICE (T-P2B-06) : variables Mercury seulement, propriétés logiques (RTL/LTR). */
+.fisca-auth {
+  box-sizing: border-box;
+  display: grid;
+  place-items: start center;
+  min-block-size: 100%;
+  padding-block: 24px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", "Noto Sans Tifinagh", sans-serif;
+  line-height: 1.5;
+}
+
+.fisca-auth *,
+.fisca-auth *::before,
+.fisca-auth *::after {
+  box-sizing: border-box;
+}
+
+.fisca-auth__card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  inline-size: min(440px, 100%);
+  min-inline-size: 0;
+  padding-block: 24px;
+  padding-inline: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-border);
+  border-radius: 12px;
+}
+
+.fisca-auth__title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 650;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.fisca-auth__title:focus,
+.fisca-auth__alert:focus {
+  outline: none;
+}
+
+.fisca-auth__title:focus-visible,
+.fisca-auth__alert:focus-visible {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: 4px;
+}
+
+.fisca-auth__subtitle,
+.fisca-auth__hint,
+.fisca-auth__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.fisca-auth__alert {
+  margin: 0;
+  color: var(--status-danger-text);
+  background: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-text);
+  border-radius: 8px;
+  padding-block: 10px;
+  padding-inline: 12px;
+  font-size: 0.9375rem;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.fisca-auth__alert:empty {
+  display: none;
+}
+
+.fisca-auth__status {
+  margin: 0;
+  color: var(--status-warning-text);
+  font-size: 0.875rem;
+  text-align: start;
+}
+
+.fisca-auth__status:empty {
+  display: none;
+}
+
+.fisca-auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-inline-size: 0;
+}
+
+.fisca-auth__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.fisca-auth__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.fisca-auth__control {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-inline-size: 0;
+}
+
+.fisca-auth__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  min-block-size: 48px;
+  padding-inline: 12px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--text-secondary);
+  border-radius: 8px;
+  font: inherit;
+  text-align: start;
+}
+
+.fisca-auth__input[aria-invalid="true"] {
+  border-color: var(--status-danger-text);
+  border-width: 2px;
+}
+
+.fisca-auth__input:focus-visible,
+.fisca-auth__button:focus-visible,
+.fisca-auth__link:focus-visible,
+.fisca-auth__radio input:focus-visible + span {
+  outline: 2px solid var(--brand-indigo);
+  outline-offset: 2px;
+}
+
+.fisca-auth__field-error {
+  margin: 0;
+  color: var(--status-danger-text);
+  font-size: 0.875rem;
+  text-align: start;
+}
+
+.fisca-auth__code {
+  font-family: "Geist Mono", "Geist", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.12em;
+  unicode-bidi: isolate;
+}
+
+.fisca-auth__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-block-size: 48px;
+  min-inline-size: 48px;
+  padding-inline: 16px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--text-secondary);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.fisca-auth__button--primary {
+  color: var(--bg-surface);
+  background: var(--brand-emerald);
+  border-color: var(--brand-emerald);
+}
+
+.fisca-auth__button--quiet {
+  min-inline-size: 48px;
+  padding-inline: 12px;
+  font-weight: 500;
+}
+
+.fisca-auth__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.fisca-auth__link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding-inline: 4px;
+  color: var(--brand-emerald);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.fisca-auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.fisca-auth__divider::before,
+.fisca-auth__divider::after {
+  content: "";
+  flex: 1 1 auto;
+  border-block-start: 1px solid var(--line-border);
+}
+
+.fisca-auth__radiogroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.fisca-auth__radiogroup legend {
+  padding: 0;
+  margin-block-end: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.fisca-auth__radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 48px;
+  padding-inline: 12px;
+  border: 1px solid var(--line-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.fisca-auth__radio input {
+  inline-size: 20px;
+  block-size: 20px;
+  margin: 0;
+  accent-color: var(--brand-emerald);
+}
+
+.fisca-auth__radio span {
+  text-align: start;
+}
+
+.fisca-auth__meter {
+  display: flex;
+  gap: 4px;
+  block-size: 8px;
+}
+
+.fisca-auth__meter-seg {
+  flex: 1 1 0;
+  border-radius: 4px;
+  background: var(--line-border);
+}
+
+.fisca-auth__meter-seg[data-on="true"] {
+  background: var(--text-secondary);
+}
+
+.fisca-auth__meter[data-level="strong"] .fisca-auth__meter-seg[data-on="true"],
+.fisca-auth__meter[data-level="good"] .fisca-auth__meter-seg[data-on="true"] {
+  background: var(--brand-emerald);
+}
+
+.fisca-auth__meter[data-level="weak"] .fisca-auth__meter-seg[data-on="true"] {
+  background: var(--status-danger-text);
+}
+
+.fisca-auth__strength-text {
+  margin: 0;
+  font-size: 0.875rem;
+  text-align: start;
+}
+
+.fisca-auth__progress {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.fisca-auth__dossier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+}
+
+.fisca-auth__dossier-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  padding-block-end: 8px;
+  border-block-end: 1px solid var(--line-border);
+}
+
+.fisca-auth__dossier dt {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  text-align: start;
+}
+
+.fisca-auth__dossier dd {
+  margin: 0;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.fisca-auth__ltr {
+  unicode-bidi: isolate;
+}
+
+.fisca-auth__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .fisca-auth {
+    place-items: center;
+    padding-block: 48px;
+  }
+  .fisca-auth__card {
+    padding-block: 32px;
+    padding-inline: 32px;
+  }
+  .fisca-auth__title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fisca-auth * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

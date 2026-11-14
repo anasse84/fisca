@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "ⴰⵊⵓⵔⵏⴰⵍ",
+    "entry": "ⴰⵚⴱⴱⵃ ⵏ ⵜⵙⵉⴹⵏⵜ"
+  },
+  "ledger": {
+    "generalLedger": "ⴰⴷⵍⵉⵙ ⴰⵎⵇⵇⵔⴰⵏ",
+    "trialBalance": "ⴰⵎⵉⵣⴰⵏ ⴰⵎⴰⵜⵓ",
+    "balanceSheet": "ⴰⴱⵉⵍⴰⵏ",
+    "incomeStatement": "ⴰⵎⵉⴹⴰⵏ ⵏ ⵜⵎⵓⵖⵍⵉ ⴷ ⵢⵉⵎⵙⵍⵉ"
+  },
+  "account": {
+    "number": "ⵓⵟⵟⵓⵏ ⵏ ⵓⵎⵉⴹⴰⵏ",
+    "label": "ⵉⵙⵎ ⵏ ⵓⵎⵉⴹⴰⵏ"
+  },
+  "entry": {
+    "debit": "ⴷⴷⵉⵏ",
+    "credit": "ⴷⴷⴰⵢⵏ",
+    "balance": "ⴰⵣⴳⵏ",
+    "reversal": "ⴰⵚⴱⴱⵃ ⵏ ⵓⵖⴰⵍ",
+    "posted": "ⵢⵜⵜⵡⴰⵃⵙⴱ",
+    "immutable": "ⴰⵚⴱⴱⵃ ⵢⵜⵜⵡⴰⵃⵙⴱⵏ ⵓⵔ ⵢⵜⵜⵡⴰⴱⴷⴷⴰⵍ ⴰⵔⴰ, ⵢⵜⵜⵓⵖⴰⵍ."
+  },
+  "period": {
+    "fiscalYear": "ⴰⵙⴳⴳⴰⵙ ⵏ ⵜⵙⵉⴹⵏⵜ",
+    "close": "ⴰⵇⴷⵛ ⵏ ⵜⴰⵍⵍⵉⵜ"
+  },
+  "bank": {
+    "reconcile": "ⴰⵙⵏⵎⴷⴰⵍ ⵏ ⵍⴱⴰⵏⴽⴰ",
+    "cash": "ⵜⴰⵛⴰⵉⵙⵙⵜ"
+  }
+}

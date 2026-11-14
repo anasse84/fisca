@@ -1,0 +1,35 @@
+{
+  "invoice": {
+    "title": "ⵜⴰⴼⴰⵜⵓⵔⵜ",
+    "quote": "ⴰⵙⵏⴼⴰⵔ ⵏ ⵜⵜⴰⵎⴰⵏ",
+    "creditNote": "ⵜⴰⵎⴰⴳⵉⵜ ⵏ ⵓⵖⴰⵍ",
+    "number": "ⵓⵟⵟⵓⵏ ⵏ ⵜⴼⴰⵜⵓⵔⵜ",
+    "customer": "ⴰⵎⵙⴰⵖ",
+    "dueDate": "ⴰⵣⵎⵣ ⵏ ⵜⵎⴰⴳⵉⵜ",
+    "new": "ⵜⴰⴼⴰⵜⵓⵔⵜ ⵜⴰⵎⴰⵢⵏⵓⵜ"
+  },
+  "lines": {
+    "description": "ⴰⴳⵍⴰⵎ",
+    "quantity": "ⵜⵉⴽⵜ",
+    "unitPrice": "ⴰⵥⵟⴰ ⵏ ⵓⵣⵡⵉⵍ"
+  },
+  "totals": {
+    "excludingVat": "ⴰⵏⵎⵎⵓⴷ ⵡⴰⵔ TVA",
+    "vat": "TVA",
+    "includingVat": "ⴰⵏⵎⵎⵓⴷ ⵙ TVA"
+  },
+  "payment": {
+    "method": "ⵜⴰⵔⵔⴰⵢⵜ ⵏ ⵓⵅⵍⵍⵚ",
+    "cash": "ⴷⴷⵔⴰⵀⵎ",
+    "card": "ⵜⴰⴽⴰⵔⵟⵜ ⵏ ⵍⴱⴰⵏⴽⴰ",
+    "transfer": "ⴰⵙⵓⴷⴷⵎ"
+  },
+  "pos": {
+    "newSale": "ⵣⵏⵣ ⴰⵎⴰⵢⵏⵓⵜ",
+    "openRegister": "ⵍⴷⵉ ⵜⴰⵛⴰⵉⵙⵙⵜ",
+    "closeRegister": "ⵎⴷⵍ ⵜⴰⵛⴰⵉⵙⵙⵜ",
+    "ticketZ": "ⵜⵉⴽⵉⵜ Z",
+    "syncPending": "ⴰⵎⵙⴰⵙⴰ ⵉⵜⵜⵔⴰⵊⵓ",
+    "signedReceipt": "ⵜⵉⴽⵉⵜ ⵢⵜⵜⵡⴰⵣⵔⴰⴳ"
+  }
+}

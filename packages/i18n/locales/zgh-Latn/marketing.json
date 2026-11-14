@@ -1,0 +1,30 @@
+{
+  "hero": {
+    "title": "Tafaturt d usiḍen n tebratt-ik, s tefses",
+    "subtitle": "Yettwaxdem deg Lmeɣrib i tebrattin timeẓẓyanin d inegrafen."
+  },
+  "cta": {
+    "start": "Bdu war ccerṭ",
+    "demo": "Suter timeẓriwt"
+  },
+  "nav": {
+    "features": "Timahilin",
+    "pricing": "Ttamanin",
+    "contact": "Nermes",
+    "login": "Kcem"
+  },
+  "footer": {
+    "publisher": "Amessuffeɣ: SYNAPTIC SYSTEMS SARL AU, Rbaṭ",
+    "privacy": "Tabaḍnit",
+    "terms": "Tiwtilin n useqdec"
+  },
+  "features": {
+    "invoicing": "Tafaturt tilectrunit",
+    "pos": "Tacaisset n uẓuẓi, yal ma ur yettwaqqen ara",
+    "accounting": "Tasiḍent CGNC"
+  },
+  "pricing": {
+    "free": "War ṭamen",
+    "perMonth": "deg yiwen wayyur"
+  }
+}

@@ -1,0 +1,45 @@
+:root,
+[data-theme="light"] {
+  --bg-canvas: #FAF9F5;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F2EFE9;
+  --text-primary: #141413;
+  --text-secondary: #5C5A54;
+  --line-border: #E4E1D8;
+  --brand-emerald: #0F5338;
+  --brand-indigo: #4F46E5;
+  --status-cleared-bg: #E3F2E9;
+  --status-cleared-text: #0B4F32;
+  --status-warning-bg: #F8EEDB;
+  --status-warning-text: #8A5300;
+  --status-danger-bg: #FCE8E6;
+  --status-danger-text: #A51D24;
+  --table-row-height: 44px;
+}
+
+[data-theme="dark"] {
+  --bg-canvas: #0B0E14;
+  --bg-surface: #121722;
+  --bg-subtle: #181F2E;
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --line-border: #222B3A;
+  --brand-emerald: #10B981;
+  --brand-indigo: #6366F1;
+  --status-cleared-bg: #092E20;
+  --status-cleared-text: #34D399;
+  --status-warning-bg: #2E210B;
+  --status-warning-text: #FBBF24;
+  --status-danger-bg: #311114;
+  --status-danger-text: #F87171;
+}
+
+[data-density="compact"] {
+  --table-row-height: 28px;
+}
+
+.fisca-tabular-num {
+  font-family: "Geist Mono", "Geist", monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  unicode-bidi: isolate;
+}

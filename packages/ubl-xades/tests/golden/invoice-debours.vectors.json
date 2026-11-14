@@ -1,0 +1,75 @@
+{
+  "schema": "fisca.golden-vectors/1",
+  "package": "@fisca/ubl-xades",
+  "ticket": "T-P2A-03",
+  "description": "Débours hors TVA (catégorie O) : comptés dans le TTC et le net à payer, jamais dans la base de TVA.",
+  "statusLegend": "RECOUPÉ | NON RECOUPÉ | PROVISOIRE (ERRATA section E)",
+  "vectors": [
+    {
+      "id": "DEB-01",
+      "title": "Débours seul : 500,00 hors champ, aucune TVA",
+      "legalArticle": "Débours hors base de TVA : référence à confirmer par l'expert-comptable",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "Débours 1 × 50000 c = 50000 c ; base TVA 0 ; TVA 0 ; TTC = net à payer = 50000 c.",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Débours de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 50000,
+            "vatRateBps": 0,
+            "isDisbursementDebours": true
+          }
+        ]
+      },
+      "expected": {
+        "lineExtensionCents": 50000,
+        "vatBaseCents": 0,
+        "disbursementsCents": 50000,
+        "taxTotalCents": 0,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 50000,
+        "taxInclusiveCents": 50000,
+        "retentionCents": 0,
+        "payableCents": 50000
+      }
+    },
+    {
+      "id": "DEB-02",
+      "title": "Service à 20 % + débours : TVA sur le seul service",
+      "legalArticle": "Débours hors base de TVA : référence à confirmer par l'expert-comptable",
+      "ruleDate": "2026-11-13",
+      "status": "NON RECOUPÉ",
+      "calculation": "Service 100000 c à 20 % → TVA 20000 c ; débours 50000 c hors base ; HT lignes 150000 c ; base TVA 100000 c ; TTC = 150000 + 20000 = 170000 c. Cette combinaison viole BR-O-11 d'EN 16931 (contrôle croisé PHIVE, comportement réel consigné).",
+      "input": {
+        "lines": [
+          {
+            "descriptionFr": "Ligne de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 100000,
+            "vatRateBps": 2000
+          },
+          {
+            "descriptionFr": "Débours de test",
+            "quantityMilli": 1000,
+            "unitPriceCents": 50000,
+            "vatRateBps": 0,
+            "isDisbursementDebours": true
+          }
+        ]
+      },
+      "expected": {
+        "lineExtensionCents": 150000,
+        "vatBaseCents": 100000,
+        "disbursementsCents": 50000,
+        "taxTotalCents": 20000,
+        "stampDutyCents": 0,
+        "taxExclusiveCents": 150000,
+        "taxInclusiveCents": 170000,
+        "retentionCents": 0,
+        "payableCents": 170000
+      }
+    }
+  ]
+}

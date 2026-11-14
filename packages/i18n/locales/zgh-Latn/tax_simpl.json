@@ -1,0 +1,28 @@
+{
+  "vat": {
+    "title": "Asarag n TVA",
+    "rate": "Aserɣu n TVA",
+    "deductible": "TVA i yettwakksen",
+    "collected": "TVA yettwagraɛen"
+  },
+  "declaration": {
+    "period": "Tallit n usarag",
+    "deadline": "Azemz aneggaru n usali",
+    "draft": "Arewwaq n usarag",
+    "submit": "Wejjed i usarag amelmi"
+  },
+  "withholding": {
+    "title": "Aɛeddi seg uɣbalu"
+  },
+  "invoice": {
+    "clearance": "Asentem n usegzi",
+    "clearanceNotice": "Asegzi ur d-ittak ara azref unṣib seg DGI."
+  },
+  "rules": {
+    "source": "Iserɣuyen d tmesmunin ttwakksen seg yiɣbalen n tfarest yettwazemzen"
+  },
+  "status": {
+    "accepted": "Yettwaqbel deg usegzi",
+    "refused": "Yettwagi deg usegzi"
+  }
+}

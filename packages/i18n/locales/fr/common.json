@@ -1,0 +1,718 @@
+{
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "export": "Exporter",
+    "import": "Importer",
+    "print": "Imprimer",
+    "send": "Envoyer",
+    "retry": "Réessayer"
+  },
+  "states": {
+    "loading": "Chargement en cours…",
+    "empty": "Aucun élément à afficher",
+    "error": "Une erreur est survenue",
+    "success": "Opération réussie",
+    "draft": "Brouillon",
+    "pending": "En attente",
+    "cleared": "Validation simulée",
+    "rejected": "Rejeté",
+    "archived": "Archivé",
+    "offline": "Hors ligne"
+  },
+  "notice": {
+    "simulated": "Mode pilote simulé : aucune validation officielle de la DGI n'est affichée."
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "language": "Langue",
+    "logout": "Se déconnecter"
+  },
+  "fields": {
+    "ice": "ICE",
+    "if": "IF",
+    "rib": "RIB",
+    "amount": "Montant",
+    "date": "Date",
+    "currency": "Devise",
+    "required": "Champ obligatoire"
+  },
+  "ui": {
+    "palette": {
+      "title": "Palette de commande",
+      "placeholder": "Commande, dossier ou ICE…",
+      "results": "{count} résultat(s)"
+    },
+    "review": {
+      "title": "Révision de la pièce",
+      "sourcePane": "Document source",
+      "entryPane": "Écriture proposée",
+      "aiBadge": "IA",
+      "reviewBadge": "Point à examiner",
+      "approve": "Valider (approbation humaine)",
+      "reject": "Rejeter",
+      "humanApprovalNotice": "Aucune écriture n’est comptabilisée sans votre validation explicite.",
+      "illegibleAmountNotice": "Montant illisible : saisie humaine requise."
+    },
+    "ai": {
+      "confidence": "Confiance de l’IA",
+      "illegibleAmountGroup": "Montant illisible",
+      "illegibleAmountText": "Montant illisible — à saisir par un humain",
+      "validatedByHuman": "Validé par un humain",
+      "rejectedByHuman": "Rejeté par un humain"
+    },
+    "auth": {
+      "title": {
+        "login": "Connexion",
+        "signup": "Créer un compte",
+        "mfa": "Vérification en deux étapes",
+        "forgot": "Mot de passe oublié",
+        "forgotSent": "Vérifiez votre boîte e-mail",
+        "reset": "Réinitialisation du mot de passe",
+        "resetDone": "Mot de passe modifié",
+        "verifyEmail": "Confirmez votre adresse e-mail",
+        "ice": "Votre société en 90 secondes",
+        "iceReview": "Vérifiez votre dossier",
+        "iceDone": "Dossier prêt"
+      },
+      "subtitle": {
+        "mfa": "Saisissez le code de votre second facteur pour terminer la connexion.",
+        "forgot": "Indiquez votre adresse e-mail : si un compte existe, nous vous enverrons un lien.",
+        "ice": "Saisissez l’ICE de votre société : nous pré-remplissons le dossier depuis l’annuaire."
+      },
+      "field": {
+        "email": "Adresse e-mail",
+        "password": "Mot de passe",
+        "newPassword": "Nouveau mot de passe",
+        "fullName": "Nom complet",
+        "code": "Code",
+        "resetToken": "Jeton du lien de réinitialisation",
+        "verifyCode": "Code de vérification",
+        "ice": "ICE"
+      },
+      "action": {
+        "login": "Se connecter",
+        "signup": "Créer mon compte",
+        "google": "Continuer avec Google",
+        "passkey": "Se connecter avec une clé d’accès",
+        "verifyEmail": "Confirmer l’adresse",
+        "forgot": "Mot de passe oublié ?",
+        "sendLink": "Envoyer le lien",
+        "reset": "Enregistrer le mot de passe",
+        "toSignup": "Pas encore de compte ? Créer un compte",
+        "toLogin": "Déjà un compte ? Se connecter",
+        "backToLogin": "Retour à la connexion",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+        "submitCode": "Valider le code",
+        "lookup": "Rechercher dans l’annuaire",
+        "confirmDossier": "Confirmer ce dossier",
+        "editIce": "Modifier l’ICE"
+      },
+      "divider": {
+        "or": "ou"
+      },
+      "method": {
+        "label": "Méthode de vérification",
+        "TOTP": "Application d’authentification",
+        "RECOVERY_CODE": "Code de secours",
+        "INFOBIP_OTP": "Code reçu par message"
+      },
+      "hint": {
+        "TOTP": "Code à 6 chiffres affiché par votre application.",
+        "RECOVERY_CODE": "Un code de secours à usage unique.",
+        "INFOBIP_OTP": "Code reçu par WhatsApp ou par SMS."
+      },
+      "strength": {
+        "label": "Robustesse du mot de passe",
+        "weak": "Faible",
+        "fair": "Moyenne",
+        "good": "Bonne",
+        "strong": "Forte",
+        "hint": "12 caractères minimum ; une phrase de passe longue est plus robuste."
+      },
+      "ice": {
+        "shapeNote": "Ce contrôle ne porte que sur la forme (15 chiffres). Seule la recherche dans l’annuaire indique si l’ICE est connu.",
+        "counter": "{count} / 15 chiffres",
+        "progress": "Étape {current} sur {total}",
+        "elapsed": "Temps écoulé : {seconds} s",
+        "review": {
+          "legalName": "Raison sociale",
+          "legalNameAr": "Raison sociale (arabe)",
+          "if": "IF",
+          "rc": "RC",
+          "legalForm": "Forme juridique",
+          "capital": "Capital social",
+          "address": "Adresse",
+          "notice": "Informations issues de l’annuaire : vérifiez-les avant de continuer."
+        },
+        "done": {
+          "body": "Les informations de votre société sont prêtes. Vous pouvez poursuivre."
+        }
+      },
+      "body": {
+        "forgotSent": "Si un compte existe pour cette adresse, un lien valable 15 minutes vient d’être envoyé.",
+        "resetDone": "Votre mot de passe a été modifié. Vous pouvez vous connecter.",
+        "verifyEmail": "Un code de vérification a été envoyé à {email}. Saisissez-le pour activer votre compte."
+      },
+      "status": {
+        "busy": "Traitement en cours…",
+        "locked": "Trop de tentatives. Réessayez dans {seconds} s.",
+        "passkeyWaiting": "Validation sur votre appareil…"
+      },
+      "errors": {
+        "generic": "Une erreur est survenue. Réessayez.",
+        "network": "Connexion impossible. Vérifiez votre réseau puis réessayez.",
+        "invalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
+        "accountLocked": "Compte temporairement verrouillé après trop d’échecs. Réessayez plus tard.",
+        "rateLimited": "Trop de requêtes. Patientez un instant puis réessayez.",
+        "turnstile": "La vérification anti-robot a échoué. Rechargez la page puis réessayez.",
+        "requestInvalid": "Certaines informations sont invalides. Vérifiez les champs.",
+        "registrationInvalid": "Opération impossible : vérifiez l’adresse e-mail, le nom et la longueur du mot de passe.",
+        "tokenInvalid": "Ce code ou ce lien est invalide ou déjà utilisé.",
+        "tokenExpired": "Ce code a expiré. Demandez-en un nouveau.",
+        "mfaCodeInvalid": "Code incorrect. Vérifiez-le puis réessayez.",
+        "challengeExpired": "La vérification a expiré. Recommencez la connexion.",
+        "attemptsExhausted": "Trop d’essais. Recommencez la connexion.",
+        "methodUnavailable": "Cette méthode n’est pas disponible pour votre compte.",
+        "enrollmentRequired": "Votre compte doit d’abord activer un second facteur avant de pouvoir se connecter.",
+        "passkeyFailed": "La clé d’accès n’a pas pu être validée. Utilisez votre mot de passe.",
+        "passkeyCancelled": "Validation de la clé d’accès annulée.",
+        "sessionRequired": "Votre session a expiré. Reconnectez-vous.",
+        "iceNotFound": "Cet ICE n’a pas été trouvé dans l’annuaire. Vérifiez la saisie.",
+        "iceRejected": "Cet ICE est refusé : vérifiez les 15 chiffres.",
+        "iceShape": "L’ICE doit comporter exactement 15 chiffres.",
+        "server": "Le service est momentanément indisponible. Réessayez plus tard.",
+        "googleFailed": "La connexion avec Google a échoué. Réessayez.",
+        "field": {
+          "email": "Adresse e-mail invalide.",
+          "password": "Mot de passe invalide.",
+          "generic": "Valeur invalide."
+        }
+      }
+    },
+    "pme": {
+      "dashboard": {
+        "title": "Trésorerie et TVA"
+      },
+      "chart": {
+        "title": "Courbe de trésorerie et TVA sur 90 jours",
+        "summary": "Courbe du {from} au {to}. Point le plus bas : {min} le {minDate}. Point le plus haut : {max} le {maxDate}.",
+        "settledLegend": "Encaissements bancaires lettrés",
+        "forecastLegend": "Prévision à 90 jours (pointillés)",
+        "vatLegend": "TVA à provisionner",
+        "cursorLabel": "Date affichée dans la lecture",
+        "cursorReadout": "{date} — encaissé : {settled} ; prévision : {forecast} ; TVA : {vat}",
+        "noValue": "Aucune valeur",
+        "asOf": "Situation au {date}",
+        "table": {
+          "summary": "Afficher le tableau de données",
+          "caption": "Trésorerie et TVA, jour par jour",
+          "date": "Date",
+          "settled": "Encaissé (lettré)",
+          "forecast": "Prévision",
+          "vat": "TVA provisionnée"
+        }
+      },
+      "vatDue": {
+        "title": "Échéances de TVA prévues"
+      },
+      "severity": {
+        "info": "Information",
+        "warning": "Attention",
+        "danger": "Alerte critique"
+      },
+      "banner": {
+        "region": "Règles fiscales applicables",
+        "rule": "Règle",
+        "effective": "En vigueur depuis le",
+        "reference": "Référence"
+      },
+      "rule": {
+        "cashCeiling": "Paiement en espèces : au-delà du plafond de {threshold}, l’écriture d’achat doit être scindée.",
+        "rasTvaExpired": "L’attestation de retenue à la source de TVA est expirée.",
+        "autoEntrepreneurThreshold": "Votre chiffre d’affaires approche le seuil de {threshold} du régime auto-entrepreneur.",
+        "cashLowBalance": "Le solde de caisse est proche de zéro : {balance} disponible."
+      },
+      "invoice": {
+        "title": "Nouvelle facture",
+        "invoiceDate": "Date de la facture",
+        "customerSection": "Client",
+        "customerNameFr": "Raison sociale du client (français)",
+        "customerNameAr": "Raison sociale du client (arabe)",
+        "customerIce": "ICE du client",
+        "linesSection": "Lignes de la facture",
+        "line": {
+          "title": "Ligne {n}",
+          "designationFr": "Désignation (français)",
+          "designationAr": "Désignation (arabe)",
+          "quantity": "Quantité",
+          "unitPrice": "Prix unitaire HT (MAD)",
+          "vatRate": "Taux de TVA",
+          "total": "Total HT de la ligne"
+        },
+        "ratePlaceholder": "Choisir un taux",
+        "ratesUnavailable": "La liste des taux de TVA est indisponible : l’enregistrement est bloqué.",
+        "addLine": "Ajouter une ligne",
+        "removeLine": "Supprimer la ligne {n}",
+        "totals": {
+          "title": "Totaux",
+          "totalHt": "Total HT",
+          "totalVat": "Total TVA",
+          "totalTtc": "Total TTC",
+          "byRate": "Ventilation par taux",
+          "baseHt": "Base HT"
+        },
+        "saveDraft": "Enregistrer le brouillon",
+        "saved": "Brouillon enregistré (non validé)",
+        "saveFailed": "L’enregistrement du brouillon a échoué. Réessayez.",
+        "errors": {
+          "designation": "Saisissez une désignation en français ou en arabe.",
+          "quantity": "Quantité invalide : nombre positif, trois décimales au plus.",
+          "unitPrice": "Prix invalide : montant en dirhams, deux décimales au plus.",
+          "rate": "Choisissez un taux de TVA dans la liste.",
+          "ice": "L’ICE doit comporter exactement 15 chiffres.",
+          "noLines": "Ajoutez au moins une ligne complète."
+        }
+      },
+      "preview": {
+        "title": "Aperçu bilingue (français / arabe)",
+        "invoice": "Facture",
+        "number": "N° de facture",
+        "numberPending": "Numéro attribué à la validation",
+        "date": "Date",
+        "seller": "Émetteur",
+        "customer": "Client",
+        "name": "Raison sociale",
+        "legalForm": "Forme juridique",
+        "capital": "Capital social",
+        "address": "Adresse",
+        "ice": "ICE",
+        "if": "IF",
+        "rc": "RC",
+        "designation": "Désignation",
+        "quantity": "Quantité",
+        "unitPrice": "Prix unitaire HT",
+        "vatRate": "Taux TVA",
+        "lineTotal": "Total HT",
+        "baseHt": "Base HT",
+        "vat": "TVA",
+        "totalHt": "Total HT",
+        "totalVat": "Total TVA",
+        "totalTtc": "Total TTC",
+        "legalReason": "Motif légal",
+        "arrete": "Arrêtée la présente facture à la somme de :"
+      },
+      "purchases": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support."
+        },
+        "density": {
+          "comfortable": "Confort (44 px)",
+          "compact": "Haute densité (28 px)"
+        },
+        "title": "Boîte d’achats",
+        "gridLabel": "Pièces d’achat reçues en temps réel",
+        "newRows": "Nouvelles lignes : {count}",
+        "keyboardHint": "J / K ou flèches : parcourir ; Entrée : ouvrir ; Mod+Entrée : valider.",
+        "empty": "Aucune pièce reçue pour l’instant.",
+        "open": "Ouvrir",
+        "openLabel": "Ouvrir la pièce {name}",
+        "illegible": "Montant illisible",
+        "col": {
+          "source": "Pièce",
+          "supplier": "Fournisseur",
+          "date": "Date",
+          "total": "Total TTC",
+          "status": "Statut d’extraction",
+          "alert": "Alerte",
+          "open": "Revue"
+        },
+        "status": {
+          "queued": "En file d’attente",
+          "extracted": "Champs extraits",
+          "proposed": "Écriture proposée"
+        },
+        "alert": {
+          "cashSplit": "Point à examiner : scission espèces"
+        },
+        "connection": {
+          "connecting": "Connexion au flux…",
+          "open": "Flux en direct connecté",
+          "reconnecting": "Reconnexion en cours, reprise au dernier événement…",
+          "closed": "Flux fermé"
+        },
+        "drawer": {
+          "title": "Pièce d’achat {name}",
+          "entryTitle": "Écriture comptable proposée",
+          "account": "Compte",
+          "description": "Libellé",
+          "debit": "Débit",
+          "credit": "Crédit",
+          "totals": "Totaux",
+          "noProposal": "Aucune proposition comptable pour l’instant."
+        },
+        "stage": {
+          "running": "Envoi en cours…",
+          "submitted": "Écriture soumise en brouillon. Le visa reste à donner.",
+          "visaed": "Écriture visée par un humain."
+        },
+        "visa": {
+          "action": "Viser l’écriture (visa humain)",
+          "notice": "Le visa du cycle est un second geste humain, distinct de la validation de la proposition."
+        }
+      },
+      "bank": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support.",
+          "alreadyReconciled": "Cette ligne bancaire est déjà traitée."
+        },
+        "title": "Rapprochement bancaire",
+        "statementTitle": "Relevé bancaire",
+        "entriesTitle": "Écritures de factures ouvertes",
+        "decisionTitle": "Décision de rapprochement",
+        "selectPrompt": "Sélectionnez une ligne du relevé pour voir la suggestion.",
+        "dueDate": "Échéance",
+        "candidate": "Candidate",
+        "score": "Score de la suggestion",
+        "notice": {
+          "humanValidation": "Aucun rapprochement n’est enregistré sans votre validation explicite."
+        },
+        "suggestion": {
+          "none": "Aucune écriture candidate pour cette ligne.",
+          "unique": "Une écriture candidate : à valider par vous.",
+          "ambiguous": "Plusieurs écritures candidates : le rapprochement est ambigu, le lettrage automatique est interdit. Choisissez de mettre la ligne en suspens."
+        },
+        "method": {
+          "label": "Mode de règlement",
+          "placeholder": "Choisir un mode de règlement",
+          "cash": "Espèces",
+          "cheque": "Chèque",
+          "transfer": "Virement",
+          "lcn": "Effet de commerce (LCN)",
+          "card": "Carte bancaire",
+          "offset": "Compensation"
+        },
+        "actions": {
+          "validate": "Valider le rapprochement",
+          "suspend": "Mettre en suspens (3497 / 4497)"
+        },
+        "suspenseNotice": "La ligne sera isolée dans les comptes de suspens 3497 / 4497 ; aucune facture n’est lettrée.",
+        "state": {
+          "unmatched": "À rapprocher",
+          "matched": "Rapprochée",
+          "partial": "Rapprochée partiellement",
+          "suspense": "En suspens",
+          "noMatch": "Non rapprochée"
+        },
+        "outcome": {
+          "matched": "Rapprochement enregistré : brouillon d’écriture de lettrage créé.",
+          "partial": "Rapprochement partiel enregistré : brouillon créé pour le montant réglé.",
+          "suspense": "Ligne mise en suspens (3497 / 4497) : aucune facture lettrée.",
+          "noMatch": "Aucun rapprochement : rien n’a été écrit."
+        }
+      },
+      "radar": {
+        "errors": {
+          "network": "Le serveur est injoignable. Vérifiez la connexion puis réessayez.",
+          "session": "Votre session a expiré. Reconnectez-vous.",
+          "forbidden": "Votre rôle ne permet pas cette action.",
+          "invalid": "Les données envoyées sont invalides. Vérifiez puis réessayez.",
+          "conflict": "L’état de la pièce a changé entre-temps. Actualisez avant de continuer.",
+          "notFound": "Élément introuvable côté serveur.",
+          "idempotency": "Cette demande a déjà été traitée ou est en cours de traitement.",
+          "unavailable": "Service momentanément indisponible. Réessayez dans un instant.",
+          "generic": "L’opération a échoué. Réessayez ou contactez le support."
+        },
+        "density": {
+          "comfortable": "Confort (44 px)",
+          "compact": "Haute densité (28 px)"
+        },
+        "title": "Radar Loi 69-21",
+        "gridLabel": "Factures clients en retard de paiement",
+        "asOf": "Situation au {date}",
+        "note": {
+          "serverComputed": "Jours de retard, pénalité et gel sont calculés par le serveur : l’interface les affiche sans les recalculer."
+        },
+        "col": {
+          "invoice": "Facture",
+          "customer": "Client",
+          "due": "Échéance",
+          "daysLate": "Jours de retard",
+          "amountDue": "Reste dû",
+          "penalty": "Pénalité",
+          "penaltyState": "État de la pénalité",
+          "dispute": "Litige",
+          "action": "Preuves"
+        },
+        "penalty": {
+          "frozen": "Pénalité gelée (litige)",
+          "active": "Pénalité en cours"
+        },
+        "dispute": {
+          "none": "Aucun litige",
+          "documented": "Litige documenté"
+        },
+        "evidence": {
+          "open": "Déposer une preuve",
+          "openLabel": "Déposer une preuve pour la facture {number}",
+          "title": "Preuves de litige — facture {number}",
+          "frozenNotice": "Le gel éventuel de la pénalité est décidé par le serveur selon le statut du litige ; cet écran ne l’applique jamais lui-même.",
+          "policy": "Taille maximale par fichier : {maxSize} ; types acceptés : {types} ; {maxFiles} fichiers au plus.",
+          "pick": "Choisir un ou plusieurs fichiers",
+          "hash": "Empreinte SHA-256",
+          "hashing": "Calcul de l’empreinte…",
+          "remove": "Retirer",
+          "removeLabel": "Retirer le fichier {name}",
+          "submit": "Déposer les preuves",
+          "submitting": "Dépôt en cours…",
+          "sent": "Preuves déposées. Le statut du litige et le gel éventuel sont mis à jour par le serveur.",
+          "unit": {
+            "byte": "o",
+            "kb": "Ko",
+            "mb": "Mo"
+          },
+          "errors": {
+            "tooLarge": "Fichier {name} trop volumineux.",
+            "type": "Type de fichier non accepté : {name}.",
+            "empty": "Fichier vide : {name}.",
+            "tooMany": "Trop de fichiers : {name} n’a pas été retenu.",
+            "hash": "Empreinte impossible à calculer pour {name}."
+          }
+        }
+      }
+    },
+    "pos": {
+      "title": "Caisse tactile",
+      "region": "Interface de caisse",
+      "language": {
+        "label": "Langue",
+        "fr": "Français",
+        "ar": "العربية",
+        "ary": "الدارجة",
+        "zgh-Latn": "Tamaziɣt (Latin)",
+        "zgh-Tfng": "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+        "en": "English"
+      },
+      "theme": {
+        "label": "Thème",
+        "light": "Clair",
+        "dark": "Sombre"
+      },
+      "sale": {
+        "catalog": "Articles",
+        "catalogEmpty": "Aucun article au catalogue",
+        "addItem": "Ajouter {name} au panier",
+        "cart": "Panier",
+        "cartEmpty": "Le panier est vide",
+        "itemCount": "{count} article(s)",
+        "quantity": "Quantité",
+        "unitPrice": "Prix TTC",
+        "lineTotal": "Total de la ligne",
+        "increase": "Augmenter la quantité de {name}",
+        "decrease": "Diminuer la quantité de {name}",
+        "remove": "Retirer {name} du panier",
+        "clear": "Vider le panier",
+        "totalHt": "Total HT",
+        "newSale": "Nouvelle vente",
+        "vatRate": "TVA {rate} %",
+        "totalTtc": "Total TTC",
+        "pay": "Régler",
+        "blocked": "Ventes bloquées : synchronisation requise après 72 h hors ligne."
+      },
+      "pay": {
+        "title": "Règlement",
+        "methods": "Mode de règlement",
+        "cash": "Espèces",
+        "card": "Carte TPE",
+        "delivery": "Appli livraison",
+        "totalDue": "Total à régler",
+        "cashShare": "Part en espèces",
+        "stamp": "Droit de timbre",
+        "cashDue": "Espèces à encaisser",
+        "tendered": "Montant remis",
+        "change": "Rendu monnaie",
+        "remaining": "Reste à encaisser",
+        "short": "Montant remis insuffisant",
+        "amountFor": "Montant {method}",
+        "fillRemaining": "Solde",
+        "keypad": "Pavé numérique",
+        "key": "Touche {digit}",
+        "backspace": "Effacer le dernier chiffre",
+        "clear": "Tout effacer",
+        "validate": "Valider et émettre le ticket",
+        "backToCart": "Retour au panier",
+        "issuing": "Émission du ticket signé…"
+      },
+      "net": {
+        "online": "En ligne",
+        "offlineWithin": "Autonomie hors ligne",
+        "offlineExpired": "Hors ligne : fenêtre de 72 h dépassée",
+        "neverSynced": "Jamais synchronisé",
+        "clockAnomaly": "Horloge incohérente",
+        "pending": "{count} ticket(s) en attente de synchronisation",
+        "remaining": "{hours} h {minutes} min avant blocage des ventes",
+        "status": "État du réseau"
+      },
+      "receipt": {
+        "title": "Ticket de caisse",
+        "number": "Ticket n°",
+        "date": "Date",
+        "totalHt": "Total HT",
+        "vat": "TVA {rate} %",
+        "totalTtc": "Total TTC",
+        "stamp": "Droit de timbre",
+        "cash": "Espèces",
+        "card": "Carte TPE",
+        "delivery": "Appli livraison",
+        "change": "Rendu",
+        "hash": "Empreinte",
+        "qrCaption": "Facture B2B : scannez ce QR avec votre ICE",
+        "thanks": "Merci de votre visite"
+      },
+      "print": {
+        "preview": "Aperçu du ticket imprimé",
+        "action": "Imprimer le ticket",
+        "drawer": "Ouvrir le tiroir-caisse",
+        "width": "Largeur du papier",
+        "width58": "58 mm",
+        "width80": "80 mm",
+        "queue": "{count} impression(s) en attente",
+        "printed": "Ticket imprimé",
+        "error": {
+          "absent": "Imprimante absente ou déconnectée",
+          "paper": "Fin de papier ou capot ouvert",
+          "timeout": "L’imprimante ne répond pas (délai dépassé)",
+          "unsupported": "Connexion d’impression non prise en charge par ce navigateur",
+          "generic": "Échec d’impression"
+        }
+      },
+      "b2b": {
+        "title": "Facture B2B par QR",
+        "instruction": "Le client scanne ce QR pour obtenir une facture à son ICE.",
+        "qrAlt": "QR de conversion en facture B2B",
+        "stateLabel": "État de conversion",
+        "state": {
+          "NONE": "Non converti",
+          "CONVERTI_B2B_AVANT_Z": "Converti en facture B2B avant le Ticket Z",
+          "CONVERTI_B2B_POST_Z_NEUTRALISE": "Converti après le Ticket Z : vente B2C neutralisée"
+        },
+        "noDoubleTax": "Une seule imposition : la conversion neutralise la vente B2C.",
+        "alreadyConverted": "Ticket déjà converti : aucun nouveau QR n’est proposé.",
+        "link": "Lien de conversion"
+      },
+      "err": {
+        "sessionNotOpen": "Aucune session de caisse ouverte",
+        "terminalNotPaired": "Terminal non appairé",
+        "stampRuleMissing": "Règle de timbre indisponible : vente refusée",
+        "generic": "Émission impossible"
+      },
+      "count": {
+        "title": "Comptage de caisse",
+        "instruction": "Comptez les billets et pièces du tiroir, puis saisissez les quantités.",
+        "blindNotice": "Comptage à l’aveugle : saisissez uniquement ce que vous comptez.",
+        "banknotes": "Billets",
+        "coins": "Pièces",
+        "increase": "Ajouter un exemplaire de {value}",
+        "decrease": "Retirer un exemplaire de {value}",
+        "quantity": "Quantité de {value}",
+        "counted": "Total compté",
+        "lock": "Verrouiller le comptage",
+        "locking": "Verrouillage…",
+        "locked": "Comptage verrouillé",
+        "lockedWait": "Remettez la caisse au superviseur pour le contrôle.",
+        "error": {
+          "invalid": "Comptage invalide : vérifiez les quantités.",
+          "notActive": "Le comptage est déjà verrouillé.",
+          "generic": "Le comptage n’a pas pu être enregistré."
+        },
+        "emptyGrid": "Aucune coupure disponible pour le comptage"
+      },
+      "variance": {
+        "title": "Contrôle superviseur",
+        "counted": "Montant compté",
+        "expected": "Montant attendu",
+        "difference": "Écart",
+        "shortage": "Manquant",
+        "overage": "Excédent",
+        "balanced": "Caisse juste",
+        "loading": "Calcul de l’écart…",
+        "error": "Écart indisponible pour ce rôle"
+      },
+      "z": {
+        "title": "Ticket Z",
+        "preview": "Aperçu du Ticket Z",
+        "closureNumber": "Clôture n° {number}",
+        "businessDate": "Date comptable",
+        "ticketCount": "{count} ticket(s)",
+        "ht": "HT à {rate} %",
+        "vat": "TVA à {rate} %",
+        "stamp": "Droit de timbre",
+        "tpeGross": "TPE brut",
+        "hash": "Empreinte Z",
+        "prevHash": "Empreinte précédente",
+        "thanks": "Fin de poste",
+        "seal": "Sceller la clôture Z",
+        "sealing": "Scellement…",
+        "sealed": "Clôture Z scellée",
+        "print": "Imprimer le Ticket Z",
+        "printed": "Ticket Z imprimé",
+        "noSale": "Session clôturée : aucune vente n’est possible.",
+        "error": {
+          "notReady": "Verrouillez d’abord le comptage de caisse.",
+          "generic": "La clôture n’a pas pu être scellée."
+        },
+        "loading": "Préparation du Ticket Z…"
+      },
+      "sync": {
+        "status": "Synchronisation",
+        "state": {
+          "pending": "En attente",
+          "syncing": "Synchronisation en cours",
+          "error": "Erreur de synchronisation",
+          "synced": "Synchronisé"
+        },
+        "pendingTickets": "{count} ticket(s) en attente",
+        "pendingClosures": "{count} clôture(s) en attente",
+        "blocked": "Ventes bloquées : plus de {hours} h sans synchronisation",
+        "retry": "Réessayer maintenant",
+        "retryIn": "Nouvelle tentative dans {seconds} s",
+        "cause": {
+          "NETWORK": "Réseau indisponible",
+          "SERVER": "Serveur indisponible",
+          "REJECTED": "Lot refusé par le serveur"
+        }
+      },
+      "closing": {
+        "open": "Fin de poste",
+        "back": "Retour à la vente"
+      }
+    }
+  }
+}

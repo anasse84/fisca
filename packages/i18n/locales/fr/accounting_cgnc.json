@@ -1,0 +1,32 @@
+{
+  "journal": {
+    "title": "Journal",
+    "entry": "Écriture comptable"
+  },
+  "ledger": {
+    "generalLedger": "Grand livre",
+    "trialBalance": "Balance générale",
+    "balanceSheet": "Bilan",
+    "incomeStatement": "Compte de produits et charges"
+  },
+  "account": {
+    "number": "N° de compte",
+    "label": "Intitulé du compte"
+  },
+  "entry": {
+    "debit": "Débit",
+    "credit": "Crédit",
+    "balance": "Solde",
+    "reversal": "Contre-passation",
+    "posted": "Comptabilisée",
+    "immutable": "Une écriture comptabilisée ne se modifie pas : elle se contre-passe."
+  },
+  "period": {
+    "fiscalYear": "Exercice comptable",
+    "close": "Clôture de la période"
+  },
+  "bank": {
+    "reconcile": "Rapprochement bancaire",
+    "cash": "Caisse"
+  }
+}

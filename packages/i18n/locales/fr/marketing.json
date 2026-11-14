@@ -1,0 +1,30 @@
+{
+  "hero": {
+    "title": "La facturation et la comptabilité de votre entreprise, simplifiées",
+    "subtitle": "Conçu au Maroc pour les TPE, les PME et les commerçants."
+  },
+  "cta": {
+    "start": "Commencer gratuitement",
+    "demo": "Demander une démonstration"
+  },
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "contact": "Contact",
+    "login": "Se connecter"
+  },
+  "footer": {
+    "publisher": "Éditeur : SYNAPTIC SYSTEMS SARL AU, Rabat",
+    "privacy": "Confidentialité",
+    "terms": "Conditions d'utilisation"
+  },
+  "features": {
+    "invoicing": "Facturation électronique",
+    "pos": "Caisse tactile, même hors ligne",
+    "accounting": "Comptabilité CGNC"
+  },
+  "pricing": {
+    "free": "Gratuit",
+    "perMonth": "par mois"
+  }
+}
