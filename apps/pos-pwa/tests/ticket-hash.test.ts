@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { POS_CHAIN_GENESIS, POS_TICKET_LABEL, buildTicketTuple, canonicalJsonTuple, computeTicketSha256 } from '../src/ticketing/ticket-hash.ts';
+import { POS_TICKET_KIND_TUPLE_LABEL, ticketKindTupleLabel, POS_CHAIN_GENESIS, POS_TICKET_LABEL, buildTicketTuple, canonicalJsonTuple, computeTicketSha256 } from '../src/ticketing/ticket-hash.ts';
 import type { TicketHashFields } from '../src/ticketing/ticket-hash.ts';
 
 interface GoldenVectors {
@@ -44,7 +44,7 @@ describe('empreinte du ticket POS (FISCA_POS_TKT_V1, ERRATA D-22)', () => {
 
   it('le tuple positionnel suit l’ordre décidé : étiquette, terminal, séquence, date, nature, 5 montants, timbre, TTC, précédent', () => {
     expect(buildTicketTuple(FIELDS)).toEqual([
-      'FISCA_POS_TKT_V1', 'POS-M01-C01', 1, '2026-11-13T10:15:00.000Z', 'SALE_B2C', 10000, 2000, 0, 0, 0, 30, 12030, '0'.repeat(64),
+      'FISCA_POS_TKT_V1', 'POS-M01-C01', 1, '2026-11-13T10:15:00.000Z', 'SALE', 10000, 2000, 0, 0, 0, 30, 12030, '0'.repeat(64),
     ]);
   });
 
@@ -65,5 +65,16 @@ describe('empreinte du ticket POS (FISCA_POS_TKT_V1, ERRATA D-22)', () => {
 
   it('refuse un précédent qui n’est pas 64 hexadécimaux minuscules', async () => {
     await expect(computeTicketSha256({ ...FIELDS, prevTicketSha256: 'GENESIS_HASH_' + '0'.repeat(32) })).rejects.toThrow(/64 hexadécimaux/);
+  });
+
+  it('le tuple est construit depuis la valeur stockée : SALE_B2C → "SALE", RETURN_REFUND inchangé, valeur inconnue refusée', async () => {
+    expect(buildTicketTuple(FIELDS)[4]).toBe('SALE');
+    expect(buildTicketTuple({ ...FIELDS, ticketKind: 'RETURN_REFUND' })[4]).toBe('RETURN_REFUND');
+    expect(POS_TICKET_KIND_TUPLE_LABEL).toEqual({ SALE_B2C: 'SALE', RETURN_REFUND: 'RETURN_REFUND' });
+    expect(ticketKindTupleLabel('SALE')).toBe('SALE');
+    expect(() => ticketKindTupleLabel('REFUND')).toThrow(/nature de ticket inconnue/);
+    expect(() => ticketKindTupleLabel('sale_b2c')).toThrow(/nature de ticket inconnue/);
+    expect(() => ticketKindTupleLabel('toString')).toThrow(/nature de ticket inconnue/);
+    await expect(computeTicketSha256({ ...FIELDS, ticketKind: 'VENTE' })).rejects.toThrow(/nature de ticket inconnue/);
   });
 });

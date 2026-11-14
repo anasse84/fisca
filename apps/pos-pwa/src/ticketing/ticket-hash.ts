@@ -37,12 +37,35 @@ export async function sha256HexOfText(text: string): Promise<string> {
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Libellé de nature DANS LE TUPLE d'empreinte, par valeur stockée de `pos_tickets.ticket_kind`.
+ * Copie de `POS_TICKET_KIND_TUPLE_LABEL` (packages/ubl-xades/src/pos/hash.ts, serveur) : un test les compare pour qu'elles ne dérivent pas.
+ * `RETURN_REFUND → "RETURN_REFUND"` est une hypothèse du serveur, à confirmer. Toute autre valeur est refusée (échec fermé).
+ */
+export const POS_TICKET_KIND_TUPLE_LABEL: Readonly<Record<string, string>> = {
+  SALE_B2C: 'SALE',
+  RETURN_REFUND: 'RETURN_REFUND',
+};
+
+const TUPLE_LABELS: ReadonlySet<string> = new Set(Object.values(POS_TICKET_KIND_TUPLE_LABEL));
+
+/**
+ * Valeur stockée → libellé du tuple. Un libellé déjà valide du tuple (SALE, RETURN_REFUND) est rendu tel quel : il est idempotent et
+ * exigé par le test adverse G2 « client alimenté par le libellé du tuple » ; `ticket_kind` ne peut jamais valoir SALE en base (CHECK).
+ * Toute autre valeur est refusée (échec fermé).
+ */
+export function ticketKindTupleLabel(kind: string): string {
+  if (Object.prototype.hasOwnProperty.call(POS_TICKET_KIND_TUPLE_LABEL, kind)) return POS_TICKET_KIND_TUPLE_LABEL[kind] as string;
+  if (TUPLE_LABELS.has(kind)) return kind;
+  throw new TypeError(`empreinte : nature de ticket inconnue (${kind}).`);
+}
+
 export interface TicketHashFields {
   readonly terminalId: string;
   /** Séquence entière du terminal (la partie numérique du numéro `POS-{MAG}-{TERM}-{AAAA}-{séq6}`). */
   readonly terminalSeqNumber: number;
   readonly issuedAtIso: string;
-  /** Valeur stockée de `pos_tickets.ticket_kind`. */
+  /** Valeur STOCKÉE de `pos_tickets.ticket_kind` (SALE_B2C | RETURN_REFUND) ; le tuple en reçoit le libellé de la table. */
   readonly ticketKind: string;
   readonly ht20Cents: number;
   readonly vat20Cents: number;
@@ -60,7 +83,7 @@ export function buildTicketTuple(fields: TicketHashFields): readonly CanonicalVa
     fields.terminalId,
     fields.terminalSeqNumber,
     fields.issuedAtIso,
-    fields.ticketKind,
+    ticketKindTupleLabel(fields.ticketKind),
     fields.ht20Cents,
     fields.vat20Cents,
     fields.ht10Cents,
