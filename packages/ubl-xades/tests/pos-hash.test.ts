@@ -5,6 +5,10 @@ import {
   computePosTicketHash,
   POS_CHAIN_GENESIS,
   PosError,
+  POS_STORED_TICKET_KINDS,
+  POS_TICKET_KIND_TUPLE_LABEL,
+  buildPosTicketTuple,
+  posTicketKindTupleLabel,
   serializePosTuple,
   verifyPosClosureChain,
   verifyPosTicketChain,
@@ -23,18 +27,41 @@ interface Vector {
   readonly input: Record<string, number | string>;
   readonly expected: Record<string, string>;
   readonly negativeZeroField?: string;
+  readonly storedTicketKind?: string;
 }
 const file = JSON.parse(readFileSync(new URL('./golden/pos-hash.vectors.json', import.meta.url), 'utf8')) as { vectors: Vector[]; staleValues: Record<string, string> };
 
-const ticketFields = (v: Vector): PosTicketHashFields => v.input as unknown as PosTicketHashFields;
+const ticketFields = (v: Vector): PosTicketHashFields => ({ ...v.input, ticketKind: v.storedTicketKind ?? String(v.input['ticketKind']) }) as unknown as PosTicketHashFields;
 const closureFields = (v: Vector): PosClosureHashFields => v.input as unknown as PosClosureHashFields;
+
+describe('correspondance ticketKind (base) → libellé du tuple', () => {
+  it('une entrée pour chaque valeur du CHECK de pos_tickets, et aucune autre', () => {
+    expect(Object.keys(POS_TICKET_KIND_TUPLE_LABEL).sort()).toEqual([...POS_STORED_TICKET_KINDS].sort());
+  });
+  it('SALE_B2C → "SALE" (vecteur du propriétaire) et RETURN_REFUND → "RETURN_REFUND" (hypothèse)', () => {
+    expect(posTicketKindTupleLabel('SALE_B2C')).toBe('SALE');
+    expect(posTicketKindTupleLabel('RETURN_REFUND')).toBe('RETURN_REFUND');
+  });
+  it('une valeur inconnue (dont « SALE », qui est un libellé de tuple et non une valeur stockée) est refusée', () => {
+    expect(() => posTicketKindTupleLabel('SALE')).toThrow(PosError);
+    expect(() => posTicketKindTupleLabel('')).toThrow(PosError);
+  });
+  it.each(POS_STORED_TICKET_KINDS)('%s : le tuple porte le libellé de la table en 5e position', (kind) => {
+    const base = ticketFields(file.vectors[0] as Vector);
+    expect(buildPosTicketTuple({ ...base, ticketKind: kind })[4]).toBe(POS_TICKET_KIND_TUPLE_LABEL[kind]);
+  });
+  it('le tuple du vecteur d’or reste exactement celui du propriétaire (terminalId et terminalSeqNumber compris)', () => {
+    const base = ticketFields(file.vectors[0] as Vector);
+    expect(buildPosTicketTuple(base)).toEqual(['FISCA_POS_TKT_V1', 'POS-M01-C01', 1, '2026-11-13T10:15:00.000Z', 'SALE', 10000, 2000, 0, 0, 0, 30, 12030, '0'.repeat(64)]);
+  });
+});
 
 describe('empreintes d’or POS (D-22, amorce de 64 zéros)', () => {
   it('l’amorce POS vaut 64 zéros', () => {
     expect(POS_CHAIN_GENESIS).toBe('0'.repeat(64));
   });
   it.each(file.vectors.map((v) => [v.id, v] as const))('%s : empreinte recalculée = attendue', async (_id, v) => {
-    const fields = v.negativeZeroField === undefined ? v.input : { ...v.input, [v.negativeZeroField]: -0 };
+    const fields = { ...(v.kind === 'TICKET' ? ticketFields(v) : v.input), ...(v.negativeZeroField === undefined ? {} : { [v.negativeZeroField]: -0 }) };
     const actual = v.kind === 'TICKET' ? await computePosTicketHash(fields as unknown as PosTicketHashFields) : await computePosClosureHash(fields as unknown as PosClosureHashFields);
     expect(actual).toBe(v.kind === 'TICKET' ? v.expected['ticketSha256'] : v.expected['zSha256']);
   });

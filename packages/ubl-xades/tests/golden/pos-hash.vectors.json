@@ -35,7 +35,8 @@
       "expected": {
         "ticketSha256": "a9677d45d9429b948d9d36c01641db05086575926ef658879d61c8e57d32c7fe"
       },
-      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable",
+      "storedTicketKind": "SALE_B2C"
     },
     {
       "id": "POS-TKT-02",
@@ -62,7 +63,8 @@
       "expected": {
         "ticketSha256": "e2e821a8de48fb7c1c9139f5838620167ea1680cb24b292dc68502569222767d"
       },
-      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable",
+      "storedTicketKind": "SALE_B2C"
     },
     {
       "id": "POS-TKT-03",
@@ -90,11 +92,12 @@
         "ticketSha256": "a9677d45d9429b948d9d36c01641db05086575926ef658879d61c8e57d32c7fe"
       },
       "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable",
-      "negativeZeroField": "ht0Cents"
+      "negativeZeroField": "ht0Cents",
+      "storedTicketKind": "SALE_B2C"
     },
     {
       "id": "POS-TKT-04",
-      "title": "Cas limite : ticketKind différent (SALE_B2C au lieu de SALE) donne une autre empreinte",
+      "title": "Cas limite : ticketKind différent (SALE_B2C au lieu de SALE) donne une autre empreinte [remboursement : libellé de tuple RETURN_REFUND = HYPOTHÈSE à confirmer]",
       "kind": "TICKET",
       "legalArticle": "Référence à confirmer par l'expert-comptable : Doc_02 § 13 (FSM 10) ne cite aucun article de loi pour l'immuabilité du ticket ni de la clôture Z ; formule de l'empreinte décidée par le propriétaire (ERRATA D-22), aucun texte officiel",
       "ruleDate": "2026-11-13",
@@ -104,7 +107,7 @@
         "terminalId": "POS-M01-C01",
         "terminalSeqNumber": 1,
         "issuedAtIso": "2026-11-13T10:15:00.000Z",
-        "ticketKind": "SALE_B2C",
+        "ticketKind": "RETURN_REFUND",
         "ht20Cents": 10000,
         "vat20Cents": 2000,
         "ht10Cents": 0,
@@ -115,9 +118,10 @@
         "prevTicketSha256": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       "expected": {
-        "ticketSha256": "46bbdd353ed86a48d2e8c698a2b91777dc51060f35691061e6bf0576cabe4e9f"
+        "ticketSha256": "7009e47f8a0356c02eac9d76cb8b9fd9c63a1af05ee5bedf471a33122eb6ba57"
       },
-      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable"
+      "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto (SHA-256 de JSON.stringify), pas par l'expert-comptable",
+      "storedTicketKind": "RETURN_REFUND"
     },
     {
       "id": "POS-Z-01",
@@ -171,5 +175,10 @@
       },
       "crossCheck": "NON RECOUPÉ par une source externe : confirmé indépendamment par node:crypto"
     }
-  ]
+  ],
+  "ticketKindMapping": {
+    "SALE_B2C": "SALE",
+    "RETURN_REFUND": "RETURN_REFUND (hypothèse)",
+    "note": "La base stocke ticket_kind ; le tuple d'empreinte reçoit le libellé de droite. Le vecteur du propriétaire écrit SALE."
+  }
 }

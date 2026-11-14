@@ -12,16 +12,39 @@ export const POS_TICKET_LABEL = 'FISCA_POS_TKT_V1' as const;
 export const POS_CLOSURE_LABEL = 'FISCA_POS_Z_V1' as const;
 export const POS_CHAIN_GENESIS = '0'.repeat(64);
 
+/** Valeurs du CHECK `pos_tickets.ticket_kind` (db-schema, `POS_TICKET_KINDS`). */
+export const POS_STORED_TICKET_KINDS = ['SALE_B2C', 'RETURN_REFUND'] as const;
+export type PosStoredTicketKind = (typeof POS_STORED_TICKET_KINDS)[number];
+
+/**
+ * Correspondance explicite entre la valeur STOCKÉE de `ticket_kind` et le libellé qui entre dans le tuple d'empreinte.
+ * Le vecteur d'or du propriétaire écrit « SALE » pour une vente : la base stocke `SALE_B2C`, donc `SALE_B2C → "SALE"`.
+ * `RETURN_REFUND → "RETURN_REFUND"` est une HYPOTHÈSE (aucun vecteur du propriétaire pour un remboursement) : à confirmer.
+ * Un client (apps/pos-pwa) qui construit le tuple doit appliquer la même table ; la barrière G2 compare client et serveur.
+ */
+export const POS_TICKET_KIND_TUPLE_LABEL: Readonly<Record<PosStoredTicketKind, string>> = {
+  SALE_B2C: 'SALE',
+  RETURN_REFUND: 'RETURN_REFUND',
+};
+
+export function posTicketKindTupleLabel(storedKind: string): string {
+  const label = (POS_TICKET_KIND_TUPLE_LABEL as Readonly<Record<string, string>>)[storedKind];
+  if (label === undefined) throw new PosError('POS_FIELDS_INVALID', [{ path: 'ticketKind', code: 'invalid' }]);
+  return label;
+}
+
 const HEX64 = /^[0-9a-f]{64}$/;
 const TERMINAL_ID = /^[A-Za-z0-9._-]{1,64}$/;
-const KIND = /^[A-Z0-9_]{1,32}$/;
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface PosTicketHashFields {
+  /** `pos_tickets.terminal_id` tel quel (ex. « POS-M01-C01 »). */
   readonly terminalId: string;
+  /** Entier de la formule (1, 2, …), PAS la colonne `terminal_seq_number` (TEXT) qui stocke « {terminalId}-{séquence sur 9 chiffres} ». */
   readonly terminalSeqNumber: number;
   readonly issuedAtIso: string;
+  /** Valeur stockée (`SALE_B2C` | `RETURN_REFUND`) ; le tuple en reçoit le libellé de `POS_TICKET_KIND_TUPLE_LABEL`. */
   readonly ticketKind: string;
   readonly ht20Cents: number;
   readonly vat20Cents: number;
@@ -77,7 +100,7 @@ export function assertPosTicketHashFields(fields: PosTicketHashFields): void {
   check(issues, 'terminalId', typeof fields.terminalId === 'string' && TERMINAL_ID.test(fields.terminalId));
   check(issues, 'terminalSeqNumber', isSafeInt(fields.terminalSeqNumber) && fields.terminalSeqNumber >= 1);
   check(issues, 'issuedAtIso', typeof fields.issuedAtIso === 'string' && isRealInstant(fields.issuedAtIso));
-  check(issues, 'ticketKind', typeof fields.ticketKind === 'string' && KIND.test(fields.ticketKind));
+  check(issues, 'ticketKind', (POS_STORED_TICKET_KINDS as readonly string[]).includes(fields.ticketKind));
   for (const key of ['ht20Cents', 'vat20Cents', 'ht10Cents', 'vat10Cents', 'ht0Cents', 'stampDutyCents', 'totalTtcCents'] as const) {
     check(issues, key, isNonNegativeInt(fields[key]));
   }
@@ -98,7 +121,7 @@ export function assertPosClosureHashFields(fields: PosClosureHashFields): void {
 }
 
 export function buildPosTicketTuple(f: PosTicketHashFields): readonly unknown[] {
-  return [POS_TICKET_LABEL, f.terminalId, f.terminalSeqNumber, f.issuedAtIso, f.ticketKind, f.ht20Cents, f.vat20Cents, f.ht10Cents, f.vat10Cents, f.ht0Cents, f.stampDutyCents, f.totalTtcCents, f.prevTicketSha256];
+  return [POS_TICKET_LABEL, f.terminalId, f.terminalSeqNumber, f.issuedAtIso, posTicketKindTupleLabel(f.ticketKind), f.ht20Cents, f.vat20Cents, f.ht10Cents, f.vat10Cents, f.ht0Cents, f.stampDutyCents, f.totalTtcCents, f.prevTicketSha256];
 }
 
 export function buildPosClosureTuple(f: PosClosureHashFields): readonly unknown[] {
