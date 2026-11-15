@@ -7,6 +7,14 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 01 — PRD Maître Fisca (Product Requirements Document)
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 08 | US-01 à US-03 : état de réalisation et réserves ; US-04 à US-06 prévues | G2 ; `backlog.json` |
+| 2026-11-14 | 03, 11, 12 | Qualification du régime provisoire DGI/xHub (aucune promesse de conformité) ; jalons de la Definition of Done : état au 2026-11-14 | ERRATA B-13 |
+
 Ce document constitue le référentiel fonctionnel et produit de Fisca (domaine fisca.ma), édité par la société SYNAPTIC SYSTEMS SARL AU (siège social et compétence juridictionnelle : Tribunal de Commerce de Rabat, Maroc). Il est structuré en 12 sections nommées prêtes à être importées dans Hyperagent avec la portée Project.
 ## Section 01 — Vision Produit, Positionnement & Cadre Réglementaire
 Fisca est une plateforme SaaS souveraine tout-en-un de facturation électronique certifiée, de comptabilité électronique immuable, de télédéclaration fiscale EDI et d'intelligence financière neuro-symbolique destinée au marché marocain. Elle unifie dans une architecture découplée et mobile-first les besoins des Auto-Entrepreneurs, des TPE/PME, des Cabinets Comptables (Fiduciaires membres de l'OEC) et des Grandes Entreprises.
@@ -48,6 +56,8 @@ La gouvernance linguistique sépare strictement les surfaces grand public/PME de
 - Convention Tamazight IRCAM (Latin et Tifinagh) : En script latin, les termes comptables intraduisibles restent en Français officiel ; en Tifinagh, les sigles latins sont conservés avec une infobulle bilingue FR/AR.
 - Limitation vocale WhatsApp V1 : Les notes vocales WhatsApp sont transcrites en Darija, Arabe, Français et Anglais, mais refusées proprement en Tamazight avec invitation à photographier la pièce ou écrire au clavier.
 ## Section 03 — Pilier 1 : Facturation Clearance xHub, Cas Maroc & Signature Loi 43-20
+**Qualification (ERRATA B-13).** Ni la DGI ni xHub n'ont publié de spécification technique (profil UBL, XSD, Schematron, API) : toute mention de conformité, d'homologation ou de certification DGI du produit est à lire comme une cible. Le produit est livré sous un profil provisoire remplaçable, avec une passerelle simulée et l'affichage « Validation simulée ». État de réalisation : Doc_07 section 07.
+
 Le module d'émission couvre l'intégralité du cycle commercial et fiscal conforme à l'Article 145 du CGI et au standard OASIS UBL 2.1 / EN 16931 :
 - Onboarding ICE en 90 secondes : La saisie de l'ICE à 15 chiffres (vérifié par clé Modulo 97) ou du nom pré-remplit raison sociale FR/AR, IF, RC, Tribunal, Taxe Pro, adresse ADC450, forme juridique et capital social.
 - Validation intelligente des identifiants : L'ICE, l'IF et la Taxe Professionnelle sont requis pour tous ; le RC n'est bloquant que pour les sociétés commerciales et commerçants, et la CNSS est optionnelle sans salarié.
@@ -103,6 +113,17 @@ La couche agentique combine la méthode en 6 repères d'AI Crafters, la mémoire
 - Auto-détection de nouvelles règles depuis le LLM Wiki : Dès l'ajout d'une circulaire ou loi dans le Wiki, le compilateur détecte les nouveautés via Clef-flash, génère la règle AST JSON accompagnée de 3 tests contradictoires Vitest et simule son impact en silence avant approbation administrateur.
 - Serveur MCP Stateless & Connecteur Meta Muse : Exposition sécurisée sur mcp.fisca.ma/mcp via createMcpHandler et OAuth 2.1, classifiant chaque outil en Read, Non-Sensitive Write ou Sensitive Write avec confirmation humaine et aucun outil de transfert d'argent.
 ## Section 08 — User Stories Critiques & Critères d'Acceptation
+**État au 2026-11-14 (vagues 0 à 2 fusionnées).**
+
+| Story | État | Précision |
+|---|---|---|
+| US-01 | Partiel | Génération UBL, signature XAdES (clés de test), Factur-X, numéro `{FAC|AVO|NDB|ACO|AUT}-{AAAA}-{SEQ6}` réalisés ; « valide PHIVE » vaut avec les écarts connus ; « en moins de 3 s » non mesuré ; câblage de production après G2 |
+| US-02 | Prévu | Import d'achats et scission Art. 11-II : vague 3 (P3-B) |
+| US-03 | Partiel | Lettrage et `VAT_CLEARING` (34558 vers 34552 pour les charges, 34551 pour les immobilisations) réalisés dans `apps/api-hono` ; « ZIP SIMPL-TVA v4 conforme » : vague 3 (P3-A), sous XSD provisoires |
+| US-04 | Prévu | Liasse SIMPL-IS, DRVT, 9421, FEC-MA : vague 3 |
+| US-05 | Prévu | 3-way matching et `pain.001` : vagues 3 et 4 |
+| US-06 | Prévu | FactorFlow : vague 4 (P4-B) |
+
 
 | ID Story | Persona | Action Clé | Résultat Mesurable Attendu |
 |---|---|---|---|
@@ -133,6 +154,8 @@ Le détail technique des quotas et du moteur de facturation figure au Document 0
 - Contrats Annuels Grands Comptes (3 langues, hors Mowakaba) : Enterprise Corporate à 58 000 MAD HT/an (jusqu'à 5 ICE) et Fisca Souverain Loi 05-20 DGSSI à 140 000 MAD HT/an (jusqu'à 10 ICE, hébergement et GPU au Maroc).
 - Objectifs SLA & FinOps : Latence API inférieure à 50 ms au Maroc, extraction documentaire inférieure à 2,5 secondes, disponibilité de 99,95 %, et coût marginal d'infrastructure inférieur ou égal à 5 MAD HT/mois par PME active contre 50 000 EUR/an sur les déploiements IA classiques.
 ## Section 12 — Definition of Done Globale (v1.0.0)
+**État au 2026-11-14.** Jalons satisfaits ou partiels : séquenceur et chaînage PIH (réalisés, signature avec clés de test), inaltérabilité du grand livre (réalisée et auditée à G1), double mode cryptographique (réalisé en S1A, `packages/crypto-e2ee`), Merkle quotidien (réalisé, P2-A). Jalons non atteints : validation des flux SIMPL, IS, 9421, DRVT, Loi 69-21 et FEC-MA (vague 3, XSD provisoires) ; provisionnement D1 et onboarding en moins de 90 s (vague 4, P4-C) ; tout ce qui exige les schémas officiels de la DGI. La Definition of Done ne peut jamais affirmer une conformité DGI tant que ces schémas ne sont pas publiés (B-13).
+
 La version v1.0.0 de Fisca ne peut être déclarée prête pour la production que lorsque les 10 jalons suivants sont intégralement vérifiés par le harnais automatisé :
 - Provisionnement automatique d'une base SQLite D1 dédiée et onboarding ICE complet en moins de 90 secondes.
 - Attribution séquentielle sans trou sous 50 requêtes simultanées, chaînage PIH SHA-256 et signature Loi 43-20 WebCrypto CSC v2 opérationnelle.

@@ -7,6 +7,14 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 15 — Constitution AGENTS.md
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 05 | Commandes réellement présentes (`verify:gate`, `test:xsd`, `enforce`, `bootstrap-sandbox.sh` et ses options) ; budgets = cibles | `package.json`, `scripts/` ; ERRATA B-08 |
+| 2026-11-14 | 10 | Garde de nom de branche (`feat/` ou `fix/`), mode orchestrateur pour les commits de fusion | `scripts/enforce-constitution.ts` |
+
 Ce document définit la constitution opératoire AGENTS.md placée à la racine du dépôt GitHub privé fisca, gouvernant l'ensemble des boucles autonomes Hyperagent.com ainsi que vos sessions locales Claude Code et ZCode pour Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes à être importées dans Hyperagent avec la portée Projet (Doc_15_AGENTS_MD).
 ## Section 01 — Rôle Constitutionnel & Compatibilité Multi-Harnais
 Le fichier AGENTS.md agit comme le contrat d'exécution déterministe lu automatiquement au démarrage de chaque machine virtuelle Linux avant toute lecture ou écriture de code.
@@ -44,6 +52,8 @@ Tout code soumis par un agent qui enfreint l'une de ces dix lois est automatique
 - Sécurité ERP & Intégrité Fisca POS (ADR-01, ADR-11) : Interdire toute écriture SQL directe dans Sage 100 (WITH (NOLOCK) en lecture, IPMEncoder ou .PNM 108 caractères en écriture) ; sur Fisca POS, signer chaque ticket hors-ligne par clé ECDSA P-256 non-extractible, masquer l'attendu au comptage aveugle et neutraliser l'assiette B2C lors d'une conversion QR post-Ticket Z.
 - Frontières Légales SYNAPTIC SYSTEMS (Doc 01) : Zéro encaissement de factures pour compte de tiers ni crédit sur bilan propre (Loi 103-12 BAM), zéro visa relevant du monopole OEC (Loi 15-89) et zéro revente des PDF officiels OMPIC.
 ## Section 05 — Commandes Canoniques du Sandbox & Budgets Temps
+**Amendé (2026-11-14).** Tous les budgets de temps et décomptes de tests de ce tableau sont des **cibles** (ERRATA B-08), jamais une condition de passage : la condition est le code de sortie 0, tous les tests verts et tous les scénarios nommés couverts. Mesures réelles : `pnpm verify:fast` ≈ 2 minutes à froid (72 tâches, bac à sable de 4 Go, `TURBO_CONCURRENCY=1` ou `2`) ; le total des tests dépasse 2 500. Toutes les commandes du tableau existent désormais : `scripts/bootstrap-sandbox.sh` (options `--java`, `--dotnet`, `--python`, `--postgres`, `--redis`, `--playwright`), `pnpm test:xsd`, `pnpm enforce`, `pnpm verify:gate` (`scripts/verify-gate.sh`, défini le 2026-11-14 : `verify:fast`, `test:xsd`, tests `ubl-xades` avec `FISCA_REQUIRE_PHIVE=1` ; option `--browser`). Java 21 est exigé par PHIVE ; Turbo ne transmet pas `JAVA_HOME`.
+
 Les agents utilisent exclusivement ce jeu standardisé de scripts pnpm définis à la racine du fichier package.json :
 
 | Commande Terminal | Portée d'Exécution | Budget Temps | Quand l'Exécuter |
@@ -107,6 +117,8 @@ Trois fichiers satellites courts complètent la racine pour guider les agents sp
 - Fichier containers/AGENTS.md : Impose le positionnement exact des balises sensibles des parseurs DGI (<prorata> entre <tx> et <mp> en SIMPL-TVA v4.0 ; <numPPR/> entre <numCE/> et <numCNSS> et <listSalariesCFC/> dans la racine en État 9421 ; omission des codes 11501–11504 en SIMPL-IS v2.0.3 ; journal AN équilibré en tête du FEC-MA à 24 colonnes).
 - Fichier apps/web-saas/AGENTS.md (partagé avec apps/pos-pwa) : Impose la double densité 44px / 28px sans saut visuel sous flux SSE (CLS == 0), le repli terminologique fiscal Darija vers Arabe DGI et Tamazight vers Français CGI / lexique IRCAM avec infobulle bilingue en Tifinagh, et les cibles tactiles minimales de 56x56px en caisse.
 ## Section 10 — Protection Automatique Pré-Commit & Intégrité Git
+**Amendé.** Le garde refuse une branche qui ne commence pas par `feat/` ou `fix/` (`ERR_BRANCH_NAMING` ; `audit/gate-N` est réservée aux branches locales de l'auditeur) et applique le périmètre de la session (`ERR_OUT_OF_SCOPE`, `ERR_SCOPE_UNDEFINED`). Les commits de fusion du pilote, qui touchent plusieurs périmètres, passent avec `FISCA_ORCHESTRATOR_MODE=1`. Les documents (`docs/`) se modifient depuis une branche `fix/…`.
+
 Pour qu'aucun agent ne puisse ignorer accidentellement AGENTS.md, la Session S0 câble un crochet Git local .githooks/pre-commit activé automatiquement par scripts/bootstrap-sandbox.sh (git config core.hooksPath .githooks) :
 - Contrôle de périmètre (FISCA_SCOPE_DIRS) : Si la variable de session définit une liste de répertoires autorisés (ex. packages/ui-mercury,apps/web-saas/src/pme), le commit avorte instantanément si git diff --cached --name-only touche un seul fichier hors de ces dossiers.
 - Protection anti-sabotage des gardiens : Interdit sur toute branche feat/* ou fix/* la modification de AGENTS.md, CLAUDE.md, scripts/harness-check.sh, scripts/enforce-constitution.ts et des suites de référence packages/qa-harness.

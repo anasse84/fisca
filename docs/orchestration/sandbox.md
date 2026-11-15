@@ -16,6 +16,18 @@
 
 Non vérifiable dans le bac à sable, à consigner comme tel et jamais comme acquis : construction d'images Docker, MinIO Object Lock réel, `Objets100cLib` (Windows), builds iOS et Android, appels réels à xHub, Barid eSign, Payzone, Infobip et Meta (simulés hors ligne, Doc 17 § 12).
 
+## Compléments vérifiés pendant les vagues 1 et 2 (2026-11-14)
+
+| Sujet | Constat | Conséquence |
+|---|---|---|
+| Java et Turbo | Turbo ne transmet pas `JAVA_HOME` ; Maven tourne en Java 17 par défaut si Java 21 n'est pas en tête | Exporter `JAVA_HOME` (Java 21) ; `scripts/verify-gate.sh` le fait ; `FISCA_REQUIRE_PHIVE=1` pour que PHIVE absent soit un échec |
+| Mémoire | 4 Go : un `typecheck` d'Astro en parallèle est tué (code 137) | `TURBO_CONCURRENCY=1` ou `2` ; ne pas lancer de tâche lourde pendant que d'autres agents travaillent |
+| Playwright | `bootstrap-sandbox.sh --playwright` installe Chromium (≈ 11 s) via le Playwright d'`apps/marketing-astro`, sinon `pnpm dlx` (PR n° 21) | Ne pas installer Chromium hors dépôt |
+| OPFS | La persistance SQLite WASM sur OPFS se prouve dans Chromium (`pnpm --filter @fisca/pos-pwa test:e2e`) | Test hors `verify:fast` |
+| veraPDF | Absent du bac à sable de l'auditeur ; veraPDF 1.30.4 tourne dans le conteneur Java de la voie | PDF/A : un seul validateur à G2 |
+| Docker | Absent | Le Dockerfile de `containers/fiscal-java` n'a jamais été construit : exécuter `mvn test` en CI avant tout build `-DskipTests` |
+| Nom de branche | Le garde exige `feat/` ou `fix/` | Les documents passent par une branche `fix/…` |
+
 ## PostgreSQL et `pnpm verify:fast` (ajout du 2026-11-13, MAIN_RED corrigé)
 
 Depuis la fusion de S1B, les tests de parité SQL de `packages/db-schema` et `apps/api-hono` exigent un PostgreSQL 16 sur `127.0.0.1:54329` (`postgres://fisca@127.0.0.1:54329/postgres`, ou l'URL de `FISCA_TEST_PG_URL`). Leur `globalSetup` de vitest appelle `scripts/ensure-postgres.sh` :

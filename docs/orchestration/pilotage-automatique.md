@@ -108,6 +108,17 @@ Le pilote reprend de trois façons, de la plus automatique à la plus manuelle. 
 
 Ne crée ni Schedule ni mode Live pour le pilotage : leurs exécutions sont limitées en écriture.
 
+## 6 bis. Pièges rencontrés (vagues 0 à 2)
+
+- Le script `pilot-status.mjs` affiche `round=1` même au tour 2 d'une barrière (il ignore le tour déjà rendu) : compte les tours toi-même. Options utiles : `--running` (voies en cours) et `--completed` (sessions closes).
+- Un fil ne peut transférer à un autre fil que ses propres fichiers : pour envoyer un patch de l'auditeur à une voie, enregistre-le d'abord (`FetchStoredFile` puis `SaveFile`) puis joins le nouvel identifiant.
+- Les sous-agents d'un tour partagent le clone du pilote : ne change jamais de branche pendant qu'ils travaillent, et remets le clone sur la bonne branche à la fin.
+- Un commit de fusion touchant plusieurs périmètres est refusé par le garde de périmètre : `FISCA_ORCHESTRATOR_MODE=1`. Un commit sur une branche `docs/…` est refusé : nomme-la `fix/…`.
+- Dans un document partagé, jamais de remplacement de section entière (une voie a vidé la section 02 par erreur) ; ajoute.
+- Un rapport de voie n'est pas une preuve : relis le code ou rejoue la commande (l'auditeur l'a démontré à G1 et G2).
+- Si les sous-agents échouent sur une erreur 402 (crédit prépayé du plan épuisé), le pilote poursuit le travail lui-même et le signale au propriétaire ; les voies (fils nommés) peuvent continuer de fonctionner.
+- `GetTable` du backlog est volumineux : le résultat est écrit dans `/agent/large_tool_results/` ; lis-le par script.
+
 ## 7. Arrêts et comptes rendus
 
 - **Ligne de fin de tour** : `ETAT PILOTE : <n>/132 DONE — vague <w> — voies en cours : <liste> — à trancher : <k>`.

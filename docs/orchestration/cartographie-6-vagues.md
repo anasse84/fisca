@@ -1,3 +1,5 @@
+> **ÉTAT AU 2026-11-14 :** vagues 0 à 2 terminées et fusionnées, 66 tickets sur 132 `DONE` (voir `README.md` et `prerequis-proprietaire.md`).
+>
 > **DOCUMENT PÉRIMÉ (2026-11-13).** Cette cartographie décrit le premier découpage (branches et périmètres d'origine). Elle est remplacée par [`README.md`](README.md) (matrice des 17 sessions, 132 tickets) et par [`protocole-boucle.md`](protocole-boucle.md). Conservée pour l'historique : ne pas s'en servir pour lancer une session.
 
 # Cartographie des 6 vagues (séquentielles et parallèles)

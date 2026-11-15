@@ -7,6 +7,13 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 12 — Spécifications SLA, DPA, PRA & Réversibilité
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 05 à 10 | Réalisé : coffre OAIS, Merkle quotidien global, ancrage RFC 3161 ; prévu : PRA, failover, failback, export décennal, escrow | T-P2A-07 ; ERRATA D-23 |
+
 Ce document formalise les engagements contractuels de disponibilité (SLA), l'accord de sous-traitance des données personnelles (DPA conforme à l'Article 23 de la Loi n° 09-08), le plan de reprise et de continuité d'activité à perte nulle (PRA / PCA avec bascule Multi-DNS et pont HTTP de retour) ainsi que le protocole de réversibilité décennale (ISO 14641 / Article 211 du CGI) de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (siège social à Rabat, Maroc). Ses 12 sections nommées sont prêtes à être importées dans Hyperagent avec la portée Projet (Doc_12_SLA_DPA_PRA_Reversibilite).
 ## Section 01 — Cadre Contractuel, Juridiction de Rabat & Hiérarchie Juridique
 Toute souscription aux services Fisca (en ligne par validation 2FA/Payzone ou par contrat annuel signé pour les Grands Comptes et Fiduciaires) emporte adhésion pleine et entière au corpus contractuel suivant, régi exclusivement par le droit marocain avec compétence expresse attribuée au Tribunal de Commerce de Rabat :
@@ -51,6 +58,8 @@ Conformément à l'Article 23 de la Loi n° 09-08 contrôlée par la CNDP, SYNAP
 - Coopération aux droits des personnes et contrôles CNDP : Fournir dans l'interface les outils permettant de répondre sous 48 heures aux demandes d'accès/rectification et générer en 1 clic le kit technique pré-rempli pour les déclarations F211 et F112 du client.
 - Notification de violation et droit d'audit : Alerter le client (et accompagner la notification au MA-CERT le cas échéant) sans délai et au plus tard dans les 24 heures suivant la découverte confirmée d'une violation de données, et mettre à disposition chaque année la synthèse d'audit sécurité PASSI ainsi qu'un droit d'audit dédié pour les contrats ENT_CORPORATE et ENT_SOUVERAIN (préavis de 15 jours ouvrés).
 ## Section 05 — Architecture PRA / PCA : Réplication Continue & Objectifs RPO Nul / RTO 60 s
+**État au 2026-11-14.** Réalisé (P2-A, T-P2A-07) : coffre OAIS (AIP), arbre de Merkle (RFC 6962), ancrage RFC 3161 et conservation à long terme, avec une racine par jour pour toute la plateforme (pas de colonne société ; preuve d'inclusion par pièce, ADR-16) ; non testés contre des ressources réelles (R2, Object Lock, Workflows). **Prévu : vague 4 (P4-B, P4-C) :** réplication, failover multi-DNS, failback à perte nulle, export décennal ISO 14641 (T-P4B-09, `GET /api/v1/reversibility/export-10y`), escrow, avoirs SLA (`packages/pra-reversibility`, squelette) et exercices de chaos.
+
 Pour garantir qu'aucune panne majeure d'un opérateur cloud ne paralyse les entreprises marocaines ni ne perde un seul centime d'écriture comptable, Fisca associe son contrat FiscaInfrastructureAdapter (Document 04) à une réplication continue vers son infrastructure miroir souveraine au Maroc :
 
 ```text

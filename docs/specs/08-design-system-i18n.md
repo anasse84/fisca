@@ -7,6 +7,16 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 08 — Design System Hybride Mercury & Architecture Multilingue i18n
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 03 | Polices : Noto Sans Arabic (Web) et IBM Plex Sans Arabic (PDF) ; `zgh-Tfng` en LTR | ERRATA D-23 |
+| 2026-11-14 | 02, 10 | Contraste de `--brand-indigo` en sombre (4,32:1) et du texte secondaire (6,9:1), traités | T-P2B-04 à 07, `packages/ui-mercury` |
+| 2026-11-14 | 05, 07, 09 | Composants, i18n et gabarit Factur-X réalisés | T-P2B-03, T-P2B-05, T-P2A-06 |
+| 2026-11-14 | 12 | Contrôles réellement faits, 1024 px non capturé | rapport G2 |
+
 Ce document codifie le système de design hybride (clair et sombre), l'ergonomie responsive multi-surfaces (Web, Mobile Capacitor et Caisse POS) ainsi que l'ingénierie multilingue à 6 et 3 langues de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_08_Design_i18n).
 ## Section 01 — Philosophie Visuelle : Fusion « Mercury » & « Registre Comptable »
 L'identité visuelle de Fisca fusionne la clarté bancaire minimaliste de Mercury.com (élévation fine par bordures d'un pixel, barre de commande universelle, courbes prévisionnelles épurées) avec la chaleur reposante du papier registre comptable marocain et un Mode Sombre haute précision.
@@ -15,6 +25,7 @@ L'identité visuelle de Fisca fusionne la clarté bancaire minimaliste de Mercur
 - Mode Sombre natif sans halo : Le thème sombre utilise des gris obsidienne profonds et désature légèrement les pastilles de statut pour préserver un contraste WCAG AAA de nuit comme en salle de restaurant sur Fisca POS.
 - Sobriété typographique : Les textes tout en majuscules agressifs sont bannis ; les références légales s'affichent sous forme de pastilles discrètes accompagnant chaque calcul.
 ## Section 02 — Tokens de Couleurs Sémantiques (Clair & Sombre)
+**Réalisé (P2-B, `packages/ui-mercury`).** Tokens clair et sombre livrés, linter CSS en propriétés logiques. **Écart de contraste connu :** `--brand-indigo` en sombre (`#6366F1`) mesure 4,32:1 sur le fond, sous 4,5:1 ; la couleur de la spécification est gardée mais réservée aux icônes et aux bordures (jamais au texte courant) ; le texte secondaire en clair mesure 6,9:1, sous les 7:1 exigés pour les libellés comptables, qui utilisent donc le token de texte principal (test de contraste dans `packages/ui-mercury`). Section 10 : le ratio de 7:1 s'applique aux montants et libellés comptables.
 Tous les composants de packages/ui-mercury et apps/marketing-astro consomment exclusivement ces variables CSS sémantiques (aucune couleur hexadécimale brute n'est tolérée dans les composants React) :
 
 | Token CSS | Mode Clair (Registre) | Mode Sombre (Obsidienne) | Usage Métier Exact |
@@ -35,8 +46,8 @@ Tous les composants de packages/ui-mercury et apps/marketing-astro consomment ex
 ## Section 03 — Typographie Multi-Scripts & Loi des Chiffres Tabulaires
 Pour respecter la Loi 09-08 (CNDP) sans requête externe vers des serveurs tiers et garantir le rendu hors-ligne de la caisse, les quatre familles de polices sont auto-hébergées en .woff2 :
 - Scripts latins (fr, en, zgh-Latn) : Police Geist pour l'interface et Geist Mono pour les identifiants techniques, incluant la plage Unicode latine étendue nécessaire à l'orthographe standard de l'IRCAM (ṣ, ḍ, ṭ, ẓ, ɛ, ɣ, ḥ, ṛ).
-- Scripts arabes (ar, ary Darija) : Police Noto Sans Arabic optimisée pour la lecture dense des libellés comptables et des aperçus Factur-X en orientation droite-à-gauche.
-- Script Tifinagh (zgh-Tfng) : Police Noto Sans Tifinagh conforme au codage Unicode officiel de l'IRCAM (U+2D30 à U+2D7F) avec hauteur d'œil harmonisée à 1,08 em pour s'aligner sur les badges latins.
+- Scripts arabes (ar, ary Darija) : Police Noto Sans Arabic optimisée pour la lecture dense des libellés comptables et des aperçus Factur-X en orientation droite-à-gauche. **Arbitrage du propriétaire (D-23) :** Noto Sans Arabic côté Web, IBM Plex Sans Arabic côté PDF (conteneur `fiscal-java`) ; les deux sont auto-hébergées sous licence OFL, sans appel tiers.
+- Script Tifinagh (zgh-Tfng) : Police Noto Sans Tifinagh conforme au codage Unicode officiel de l'IRCAM (U+2D30 à U+2D7F) avec hauteur d'œil harmonisée à 1,08 em pour s'aligner sur les badges latins. **Arbitrage (D-23) :** `zgh-Tfng` s'affiche en LTR ; le texte Tifinagh livré est une translittération mécanique du latin, à faire relire par des locuteurs natifs.
 - Loi absolue tabular-nums et chiffres occidentaux 0-9 : La règle CSS font-variant-numeric: tabular-nums lining-nums s'applique obligatoirement à tous les montants en MAD, taux, numéros d'ICE à 15 chiffres, clés RIB à 24 chiffres, comptes PCGE et dates. Conformément à l'usage bancaire et comptable marocain, les chiffres occidentaux (0-9) sont maintenus dans les 6 langues (y compris ar et ary).
 ## Section 04 — Densité Adaptative (44px vs 28px) & Stabilité sous Flux SSE
 Un dirigeant de PME sur ordinateur portable et un collaborateur comptable révisant un Grand Livre de 8 000 lignes n'ont pas le même besoin de densité visuelle :
@@ -44,6 +55,7 @@ Un dirigeant de PME sur ordinateur portable et un collaborateur comptable révis
 - Mode Haute Densité Comptable (28px en 1 clic) : Un commutateur persistant en haut des grilles réduit la hauteur de ligne à 28 pixels et la taille de police à 12,5 pixels, affichant plus de 30 écritures simultanément sans défilement vertical.
 - Virtualisation haute vitesse et zéro saut visuel : Les grilles s'appuient sur TanStack Table et TanStack Virtual pour maintenir 60 images par seconde jusqu'à 10 000 écritures, et réservent des squelettes de largeur fixe pendant le remplissage en direct via Server-Sent Events afin d'imposer un Cumulative Layout Shift égal à zéro.
 ## Section 05 — Composants Signature : Cmd+K, Split-Screen & Garde-Fous IA
+**Réalisé (T-P2B-05).** `FiscaCommandPalette`, `FiscaReviewDrawer` et `resolveCommandReviewLabels` dans `apps/web-saas/src/shared` ; clés i18n `ui.palette.*` et `ui.review.*` dans les 6 langues ; plus aucun libellé de repli en dur ; le tiroir s'ouvre à droite en LTR et à gauche en RTL.
 Cinq patrons ergonomiques distinguent Fisca des logiciels comptables traditionnels :
 - Palette de commande universelle (Cmd+K / Ctrl+K) : Permet en moins de 150 ms de basculer entre 200 dossiers clients d'une fiduciaire, rechercher un ICE national, créer une facture, exporter un ZIP SIMPL-TVA ou interroger le copilote.
 - Tiroir d'inspection côte-à-côte (Split-Screen Review Drawer) : Inspiré de Paperless-ngx, un clic sur une pièce ouvre à gauche le PDF ou la photo WhatsApp avec surbrillance interactive des zones extraites (ICE, Date, HT, TVA, TTC, cachet humide) et à droite l'écriture PCGE équilibrée proposée avec son score de confiance.
@@ -63,6 +75,7 @@ Une seule base de composants sert quatre contextes matériels grâce à des poin
 - Adaptation native Capacitor (iOS & Android) : Prise en compte systématique des encoches (safe-area-inset-top et bottom), retour haptique léger à la signature OTP ou au scan d'une facture, et verrouillage biométrique FaceID / empreinte à la reprise de session.
 - Ergonomie comptoir Fisca POS Tactile : Aucun menu déroulant dépendant d'une souris n'est autorisé ; un indicateur permanent en haut d'écran affiche l'état réseau (En ligne ou Autonomie Hors-Ligne SQLite — X tickets en attente de synchro) ainsi que le bouton d'impression thermique ESC/POS et de génération du QR Code B2B.
 ## Section 07 — Gouvernance Linguistique : 6 Langues PME/POS vs 3 Langues B2B
+**Réalisé (T-P2B-03).** 6 espaces de noms en 6 langues (`packages/i18n`), routeur 6 contre 3 langues (`resolveSafeLocale`). `ary`, `zgh-Latn` et `zgh-Tfng` restent à faire relire par des locuteurs natifs (T-S5-03). Les surfaces fiduciaire et grands comptes n'acceptent que fr, ar, en.
 Le routeur de langue applique matériellement la séparation décidée entre les surfaces grand public/commerçants et les portails d'audit institutionnels :
 
 | Code BCP-47 | Langue & Script | Dir. | Surfaces Autorisées | Chaîne de Repli Terminologique Fiscal |
@@ -82,6 +95,7 @@ Le passage instantané du Français ou du Tifinagh (LTR) vers l'Arabe classique 
 - Isolation bidirectionnelle des données structurées : Même lorsque document.documentElement.dir vaut "rtl", tous les montants monétaires (en particulier négatifs comme -1 200,00 MAD), numéros d'ICE, RIB, numéros séquentiels (FAC-2026-00042), téléphones (+212 6...) et formules fiscales sont encapsulés dans dir="ltr" avec unicode-bidi: isolate afin que le signe moins ou les barres obliques ne s'inversent jamais.
 - Symétrie directionnelle des icônes : Seules les icônes exprimant une progression ou un retour (ArrowRight, ChevronRight, Reply) portent la classe utilitaire rtl:-scale-x-100 ; les icônes universelles (coche de validation DGI, horloge Loi 69-21, cadenas E2EE, QR Code) ne sont jamais retournées.
 ## Section 09 — Gabarit Officiel Factur-X Bilingue (FR / AR) & Arrêté en Lettres
+**Réalisé (T-P2A-06).** Gabarit PDF/A-3b bilingue dans `containers/fiscal-java` (polices IBM Plex Sans Arabic, D-23) ; montants en lettres FR et AR : 70 vecteurs PROVISOIRES, relecture native requise ; veraPDF 1.30.4 : 0 violation au profil PDF/A-3B ; le Dockerfile n'a jamais été construit. Côté interface, l'éditeur de facture bilingue et l'arrêté en lettres arabe (23 vecteurs écrits à la main) sont dans `apps/web-saas/src/pme`.
 Indépendamment des 6 langues de l'interface, toute facture PDF/A-3 Factur-X générée par le conteneur Mustangproject respecte une mise en page bilingue symétrique Français / Arabe classique conforme à l'Article 145 du CGI et aux Lois 5-96 / 17-95 :
 - En-tête société et client en double colonne : Colonne gauche en Français (LTR) et colonne droite en Arabe classique (RTL) affichant la raison sociale dans les deux langues, la forme juridique exacte et le montant du capital social, l'adresse ADC450, l'ICE à 15 chiffres, l'IF, le RC + Tribunal, la Taxe Professionnelle et la CNSS.
 - Corps de lignes et tableau récapitulatif des taxes : Désignation bilingue par ligne, colonnes numériques alignées en tabular-nums, et bloc de liquidation ventilant HT par taux 2026 (20 %, 10 %, 0 % avec code motif légal), Débours hors TVA, Droit de timbre espèces (0,25 %), Retenue de garantie BTP, RAS-TVA (75 % ou 100 %) et Net à Payer Encaissable.
@@ -252,6 +266,7 @@ export function FiscalTerm({ locale, label, acronym, officialAr, officialFr }: F
 ```
 
 ## Section 12 — Harnais de Vérification Automatisée UI & i18n (Rubric R3)
+**Réalisé.** Contrôles Chromium de P2-B (caisse : 72 pages caissier et synchro, aucun débordement horizontal, cibles tactiles d'au moins 44 px, décalage de mise en page nul mesuré sur 8 scénarios SSE) et de P2-C. **Non couvert :** la largeur 1024 px (tablette POS) n'a pas été capturée à G2, à ajouter à G4.
 Lors des sessions P2-B, P2-C, P4-A et des Barrières QA associées, l'agent Fisca-QA-Security-Auditor exécute quatre contrôles automatisés bloquants :
 - Linter AST Anti-Classes Physiques & Anti-Hex : Échoue si un fichier .tsx ou .astro contient une classe directionnelle physique (ml-, mr-, pl-, pr-, text-left, text-right) ou une couleur hexadécimale hors de tokens.css.
 - Audit Matriciel des Langues par Surface : Un test Playwright parcourt les 6 locales sur / et /app/pme, vérifie que document.documentElement.dir passe à "rtl" sur ar et ary, puis vérifie que /app/fiduciary et /app/enterprise rejettent ary, zgh-Latn et zgh-Tfng au profit exclusif de fr, ar et en.

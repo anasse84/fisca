@@ -7,6 +7,17 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 11 — Registre des Traitements CNDP, DPIA & Souveraineté des Données
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 02 | Durées de conservation T-01 à T-04 arbitrées | ERRATA D-23 |
+| 2026-11-14 | 04 | Références de récépissé CNDP (F115, F211, F112, F118) à `null` : « en cours d'enregistrement » | ERRATA D-23 ; `apps/marketing-astro` |
+| 2026-11-14 | 06 | Indicateur `pii_restricted_flag` monotone 0 vers 1, y compris sur exercice CLOSED ; scrubber d'ICE et limites connues | ERRATA D-22 ; `tenant.ts` v6 ; `packages/crypto-e2ee` |
+| 2026-11-14 | 03, 11 | Liste des pays adéquats NON RECOUPÉE avec la Délibération 236-2015 | `packages/compliance-cndp` ; ERRATA section E |
+| 2026-11-14 | 10 | Site : télémétrie agrégée sans cookie ni pixel tiers réalisée, handoff signé | T-P2C-08 |
+
 Ce document établit le registre réglementaire des traitements de données à caractère personnel (Loi n° 09-08), l'analyse d'impact sur la vie privée (DPIA), le dossier de notifications CNDP (formulaires F211, F112, F115 et F118) ainsi que l'architecture d'homologation souveraine (Loi n° 05-20 et DNSSI de la DGSSI) de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (siège social à Rabat, Maroc). Ses 12 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_11_CNDP_Souverainete).
 ## Section 01 — Qualification Juridique des Acteurs (Loi n° 09-08)
 Conformément aux articles 1 et 23 de la Loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel, SYNAPTIC SYSTEMS SARL AU agit sous deux qualifications juridiques distinctes et cloisonnées :
@@ -30,6 +41,8 @@ Conformément aux articles 1 et 23 de la Loi n° 09-08 relative à la protection
 ```
 
 ## Section 02 — Cartographie des Données Personnelles (PII) & Registre des Traitements
+**Amendé (D-23, durées de conservation arbitrées par le propriétaire).** T-01 (comptes, OAuth, 2FA et journaux de sécurité) : durée du contrat actif + 12 mois après clôture du compte ; journaux de sécurité 12 mois glissants ; défis OTP et MFA 10 minutes. T-02 (KYB dirigeants, CNIE et Loi 43-20) : durée du contrat + 10 ans après clôture du dernier exercice concerné (Art. 211 CGI, Loi 9-88). T-03 (facturation SaaS et paiement) : factures 10 ans après clôture (Art. 211 CGI) ; jeton monétique Payzone purgé dès la résiliation soldée. T-04 (scoring IA KYB) : cache actif 30 jours + archive restreinte d'audit et de contestation 12 mois. T-05 et T-06 (traitements pour compte des clients) : non visés par D-23 ; la conservation décennale des pièces comptables relève de Doc_12.
+
 Le registre interne maintenu par SYNAPTIC SYSTEMS SARL AU recense six traitements structurés couvrant l'ensemble du périmètre fonctionnel de Fisca :
 
 | Réf. | Finalité du Traitement | Rôle SYNAPTIC | Catégories de PII Collectées | Régime CNDP |
@@ -58,6 +71,8 @@ Pour les offres standard PME, Fiduciaires et Corporate, l'hébergement primaire 
 - Verrouillage technique de juridiction : Dans wrangler.toml, le paramètre jurisdiction = "eu" sur R2 garantit contractuellement et matériellement que les objets chiffrés ne quittent jamais les centres de données de l'Union Européenne, tandis que la réplication asynchrone alimente le serveur miroir situé au Maroc.
 - Encadrement de l'option Google Sign-In : L'authentification OIDC Google ne transmet que l'identifiant technique de connexion (sub, email et nom) à l'initiative expresse de l'utilisateur (exception de l'Article 44 de la Loi 09-08 combinée au dossier F118).
 ## Section 04 — Dossier Prêt-à-Déposer auprès de la CNDP (F115, F211, F112 & F118)
+**Amendé (D-23).** Aucun numéro de récépissé n'est inventé : les références F115, F211, F112 et F118 restent `null` dans le code et le site avec la mention « Dossiers F115, F211, F112 et F118 en cours d'enregistrement auprès de la CNDP par SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma) » tant que les récépissés physiques ne sont pas délivrés.
+
 Avant l'ouverture commerciale publique de fisca.ma, SYNAPTIC SYSTEMS SARL AU dépose séquentiellement auprès de la CNDP (Hay Riad, Rabat) les quatre dossiers réglementaires suivants :
 - Étape 1 — Formulaire F115 (Registre Public & Désignation) : Déclaration de l'entité juridique SYNAPTIC SYSTEMS SARL AU (RC Rabat, ICE, IF) et désignation officielle du responsable de la conformité Loi 09-08.
 - Étape 2 — Formulaires F211 (Déclarations Normales T-01 et T-03) : Notification de la gestion des comptes abonnés, de la facturation SaaS et du support client accompagnée des mentions d'information bilingues Français/Arabe.
@@ -78,6 +93,8 @@ Une analyse d'impact complète évalue la gravité et la vraisemblance de chaque
 
 - Réexamen périodique de la DPIA : Toute modification du pipeline d'intelligence artificielle, ajout d'un sous-traitant ultérieur ou évolution réglementaire de la CNDP déclenche une révision versionnée de cette matrice.
 ## Section 06 — Articulation Légale : Droits Loi 09-08 vs Obligation Décennale Art. 211 CGI
+**Réalisé et arbitré (G1, ERRATA D-22).** `pii_restricted_flag` ne monte que de 0 à 1 (jamais de retour), y compris sur une pièce `POSTED` d'un exercice `CLOSED` : une opposition Loi 09-08 survient pendant les 10 ans de conservation (Art. 211 CGI) et n'altère ni les montants ni `entry_hash` (l'empreinte exclut les colonnes `_enc`). **Limites connues :** le scrubber d'ICE (`EphemeralRamPiiScrubber`) sur-masque les suites structurées de 15 chiffres (biais fail-safe accepté) et doit être durci avant P3-B (ICE collé à une lettre, retour à la ligne, tiret bas) ; le filtre d'injection est contournable par épellation ; `idempotency_records` stocke les réponses en base64 non chiffré (à traiter avant G3).
+
 Les personnes concernées disposent des droits d'information (Art. 5), d'accès (Art. 7), de rectification (Art. 8) et d'opposition pour motifs légitimes (Art. 9). Lorsqu'une demande porte sur des pièces comptables ou fiscales, le moteur applique l'arbitrage légal suivant :
 - Droit d'accès (Art. 7 — Délai cible inférieur à 15 jours) : L'interface génère une archive JSON et PDF signée récapitulant toutes les données personnelles détenues sur le demandeur ainsi que l'historique des accès.
 - Droit de rectification (Art. 8 vs Inaltérabilité Art. 145-I CGI) : Les coordonnées de la fiche tiers ou salarié sont mises à jour immédiatement pour l'avenir, mais les factures certifiées et écritures POSTED passées ne sont jamais réécrites ; le cas échéant, une pièce rectificative liée est émise afin de préserver la chaîne SHA-256.
@@ -106,6 +123,8 @@ En cas de suspicion d'incident de sécurité affectant la confidentialité ou l'
 - Moins de 24h (Alerte Client Sous-Traitant & MACERT DGSSI) : Notification circonstanciée au client Responsable de Traitement (conformément au contrat DPA) et, pour tout client relevant de la Loi n° 05-20, déclaration immédiate d'incident cyber auprès du MA-CERT (DGSSI).
 - Moins de 72h (Notification CNDP & Remédiation) : Dépôt de la notification d'incident auprès de la CNDP (par SYNAPTIC SYSTEMS pour les traitements T-01 à T-04, ou en appui direct du client pour T-05 et T-06) suivi d'un post-mortem correctif intégré au harnais de tests.
 ## Section 10 — Gouvernance des Cookies, Traceurs & Mentions Légales Multilingues
+**Réalisé (T-P2C-08).** Le site fisca.ma n'envoie aucun cookie ni pixel tiers : télémétrie agrégée côté Worker (`page_slug`, `locale`, `tool_id`, classe de provenance), aucune adresse IP ni identifiant individuel stocké ; un test échoue si le DOM ou les requêtes d'une page publique contiennent un script externe non hébergé sur fisca.ma ; CSP stricte sans hôte tiers.
+
 - Zéro traceur publicitaire tiers : Ni le site public fisca.ma (Astro) ni l'application métier app.fisca.ma n'intègrent de pixels publicitaires tiers (pas de Meta Pixel, Google Ads ni courtiers de données), éliminant toute fuite du comportement financier des dirigeants marocains.
 - Mesure d'audience respectueuse sans cookie intrusif : L'analyse de fréquentation du site vitrine repose sur une télémétrie agrégée sans suivi individuel inter-sites ; seuls les cookies techniques strictement nécessaires à la session authentifiée (HttpOnly, Secure, SameSite=Strict), à la langue choisie et à la protection anti-bot Turnstile sont déposés par défaut.
 - Mentions d'information Loi 09-08 dans les 6 langues : Chaque formulaire d'inscription, page de contact, portail QR Fisca POS et premier message du bot WhatsApp affiche clairement l'identité de SYNAPTIC SYSTEMS SARL AU, la finalité, le numéro de récépissé/autorisation CNDP dès attribution et les modalités d'exercice des droits sur dpo@fisca.ma.

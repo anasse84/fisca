@@ -7,6 +7,15 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 03 — Spécification des Entitlements & Pricing
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 04 | Prorata fiduciaire journalier exact en centimes, plancher d'un jour, **sans mois minimum** : remplace « durée minimale d'un mois complet » | ERRATA D-23 ; `apps/marketing-astro/src/content/billing-policy.ts` |
+| 2026-11-14 | 10, 11 | Moteur de metering et schéma d'entitlements : prévus (P4-B) ; `packages/billing-metering` ne contient que son point d'entrée | `backlog.json` (T-P4B-02 et suivants) |
+| 2026-11-14 | 02, 04 | Grille affichée sur le site en HT seulement (pas de TTC) ; une seule source de vérité du prorata dans le contenu | T-P2C-04 ; ERRATA D-23 |
+
 Ce document fige l'architecture de monétisation, les règles de facturation au compteur par dossier fiduciaire, les licences Fisca POS, les droits fonctionnels (Feature Flags), les quotas techniques (Rate Limiting) et la gestion des impayés (Dunning) de Fisca (domaine fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Il comporte 12 sections nommées prêtes à être importées dans Hyperagent avec la portée Project (Doc_03_Entitlements_Pricing).
 ## Section 01 — Philosophie de Monétisation & Invariants Financiers
 Le modèle économique de Fisca élimine tout compteur de crédits IA, tout devis préalable par clic et toute micro-facturation à la pièce comptable afin d'offrir une prévisibilité budgétaire totale.
@@ -42,6 +51,8 @@ La monétisation du point de vente distingue l'interfaçage des caisses existant
 - Périmètre d'un terminal POS_TACTILE : Chaque licence couvre un terminal d'encaissement physique identifié (device_fingerprint) avec caissiers illimités par rotation, mode hors-ligne SQLite WASM 72h, chaînage SHA-256 Art. 145 CGI, écran cuisine KDS associé, portail QR de conversion B2C vers B2B xHub et archivage WORM 10 ans des Tickets Z.
 - Avantage revendeur pour les Fiduciaires : Tout cabinet comptable abonné bénéficie dès la première caisse du tarif partenaire OEC à 99 MAD HT/mois (9900 centimes) pour équiper ses clients commerçants ou restaurateurs.
 ## Section 04 — Modèle Fiduciaire au Compteur par Dossier Actif (3 Langues)
+**Amendé (D-23).** Le prorata est journalier, sans mois minimum. L'implémentation d'affichage est `computeDailyProrataCents` dans `apps/marketing-astro/src/content/billing-policy.ts` (division demi supérieur en BigInt, bornes incluses, plancher `MIN_BILLED_DAYS = 1`, source unique du choix : `BILLING_POLICY`). Le moteur de facturation réel (`packages/billing-metering`) est prévu en vague 4 (P4-B) ; il devra reprendre cette règle et le vecteur de l'exemple « 16 novembre » ci-dessous, et aligner le ticket T-P4B-02.
+
 Inspiré du moteur open-source de facturation à l'usage Kill Bill, le modèle destiné aux experts-comptables (OEC) et fiduciaires associe un socle cabinet fixe à une facturation unitaire exacte par société cliente active :
 
 | Code Compteur | Composante Facturée | Mensuel HT | Centimes D1 | Remise dès 100 Dossiers |
@@ -53,7 +64,7 @@ Inspiré du moteur open-source de facturation à l'usage Kill Bill, le modèle d
 
 - Socle Cabinet (CABINET_BASE) : Inclut le sous-domaine SSL personnalisé en marque blanche via Cloudflare for SaaS, un nombre illimité de collaborateurs comptables, le workflow de visa à 3 niveaux, le serveur MCP cabinet et les connecteurs Sage 100 / Odoo.
 - Facturation automatique à la création d'un client : Dès que le cabinet provisionne la base D1 isolée d'un nouveau client en cours de mois, le système calcule le prorata temporis journalier sur les jours restants du mois civil : Montant_Prorata = Arrondi((Tarif_Centimes * Jours_Actifs_Restants) / Total_Jours_Mois).
-- Règles anti-abus de changement de profil ou d'archivage : La montée de gamme d'un dossier (DOSSIER_TPE → DOSSIER_PME_COMPLET) prend effet immédiatement au prorata de la différence ; la baisse de gamme prend effet le 1er du mois suivant. Tout dossier créé a une durée minimale de facturation d'un mois complet, et la réactivation d'un dossier archivé depuis moins de 90 jours rétablit son dernier palier actif afin d'empêcher l'activation éphémère d'une journée lors du dépôt annuel de la liasse SIMPL-IS.
+- Règles anti-abus de changement de profil ou d'archivage : La montée de gamme d'un dossier (DOSSIER_TPE → DOSSIER_PME_COMPLET) prend effet immédiatement au prorata de la différence ; la baisse de gamme prend effet le 1er du mois suivant. ~~Tout dossier créé a une durée minimale de facturation d'un mois complet~~ (**remplacé par l'arbitrage du propriétaire, D-23 : prorata journalier exact en centimes entiers, avec un plancher d'un jour si le dossier est activé et désactivé le même jour, sans mois minimum facturé**), et la réactivation d'un dossier archivé depuis moins de 90 jours rétablit son dernier palier actif afin d'empêcher l'activation éphémère d'une journée lors du dépôt annuel de la liasse SIMPL-IS.
 - Remise volume automatique à 100 dossiers : Dès que la somme des dossiers actifs (DOSSIER_SIMPLIFIE + DOSSIER_TPE + DOSSIER_PME_COMPLET) atteint ou dépasse 100 au moment de la clôture mensuelle, une remise globale de 15 % (1500 bps) s'applique sur l'ensemble des lignes dossiers.
 ## Section 05 — Contrats Annuels Grands Comptes & Secteur Public (3 Langues)
 Les entreprises réalisant un chiffre d'affaires supérieur à 200 millions MAD HT (ou détenues à plus de 25 % par un grand groupe) ne sont pas éligibles aux subventions Mowakaba et relèvent exclusivement de contrats annuels facturés d'avance par virement bancaire ou Payzone Corporate :
@@ -102,6 +113,8 @@ Au Maroc, couper brutalement l'accès au Grand Livre ou au coffre fiscal d'une e
 - Sanctuarisation des obligations légales à J+15 : En état RESTRICTED_READ_ONLY, l'entreprise ne peut plus émettre de nouvelles factures ni lancer les agents IA, mais continue de recevoir ses factures fournisseurs entrantes xHub (pour ne pas fausser ses délais Loi 69-21), consulte l'intégralité de sa comptabilité et conserve l'accès gratuit au bouton d'Export d'Archive Légale et de Réversibilité Complète (10 ans) (XML UBL, Factur-X, preuves Merkle et FEC-MA 24 colonnes).
 - Réactivation instantanée : Dès la régularisation du solde sur Payzone ou validation du virement SIMT, le webhook restaure l'état ACTIVE_PAID en moins de 2 secondes et purge le cache KV des droits.
 ## Section 10 — Schéma SQL du Moteur d'Entitlements & Metering (CONTROL_PLANE_DB)
+**Prévu : vague 4, P4-B.** Aucune de ces tables n'existe dans `packages/db-schema` au 2026-11-14 (le plan de contrôle livré couvre les sociétés, les mandats `company_cpa_mandates` et l'annuaire, voir Doc_06).
+
 Ce DDL SQLite s'exécute exclusivement dans la base maîtresse CONTROL_PLANE_DB :
 
 ```sql
@@ -193,6 +206,8 @@ CREATE TABLE prepaid_wallets (
 ```
 
 ## Section 11 — Moteur TypeScript Déterministe de Metering & Garde Hono
+**Prévu : vague 4, P4-B.** `packages/billing-metering/src/billing-engine.ts` n'existe pas encore ; le code ci-dessous est l'intention d'origine.
+
 Ce module de référence (packages/billing-metering/src/billing-engine.ts) exécute le calcul au centime près des factures mensuelles fiduciaires, des proratas journaliers et la vérification temps réel des droits :
 
 ```ts

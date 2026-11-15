@@ -7,8 +7,17 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 13 — Modèle FinOps & Coût Unitaire
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 01 à 11 | Aucun coût n'a été mesuré (aucune ressource Cloudflare créée) ; Merkle quotidien réalisé ; model tiering et gouverneur : prévus | T-P2A-07 ; `backlog.json` |
+
 Ce document établit l'architecture FinOps, la décomposition au centime du coût marginal d'infrastructure, les algorithmes d'optimisation Model Tiering IA et Arbre de Merkle, ainsi que les marges de contribution par offre de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_13_FinOps).
 ## Section 01 — Thèse d'Efficience FinOps & Seuil de Rentabilité
+**État au 2026-11-14.** Tous les chiffres de ce document sont des modèles : aucune ressource Cloudflare, Payzone, Infobip ou Amazon SES n'est créée (provisionnement : P4-C) et aucun coût réel n'a été mesuré. L'économie du Merkle quotidien (section 04) est réalisée dans le code (une racine et un seul jeton RFC 3161 par jour pour 500 archives, vérifié à G2) ; le model tiering (section 03), le gouverneur FinOps (section 11) et les canaux (section 06) sont prévus en vagues 3 et 4 (P3-B, P3-C, P4-B).
+
 Contrairement aux plateformes comptables traditionnelles qui exposent chaque facture à un grand modèle de langage coûteux et achètent un jeton d'horodatage unitaire par pièce, Fisca verrouille un coût marginal variable de 5,00 MAD HT par mois (500 centimes) par dossier TPE/PME actif traitant 150 pièces mensuelles.
 - Zéro compteur de crédits IA facturé au client : L'efficience interne absorbe l'intégralité de l'OCR et des 11 agents sans jamais brider l'usage quotidien des cabinets ni des PME.
 - Socle fixe minimaliste dès le jour 1 : L'infrastructure mutualisée (plan Workers Paid, serveur miroir chaud au Maroc, accès HSM Barid eSign et passerelles Infobip / Amazon SES) ne coûte que 2 400 MAD HT par mois.

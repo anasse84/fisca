@@ -55,9 +55,13 @@ Les budgets de temps et les décomptes de tests sont des **cibles** (B-08) : la 
 | `pnpm --filter @fisca/<nom> test` | Tests d'un paquet, avant chaque push |
 | `pnpm test` | Tests de tous les workspaces |
 | `pnpm gen:routes` | Régénère le manifeste de routes de `apps/api-hono` |
-| `bash scripts/harness-check.sh` | Vérification de gouvernance (écrit par un autre ticket) |
+| `bash scripts/harness-check.sh` | Vérification de gouvernance |
+| `pnpm enforce` | Gardien statique de la constitution (`scripts/enforce-constitution.ts`) |
+| `pnpm test:xsd` | Validation XSD des XML générés (`@fisca/ubl-xades`) |
+| `pnpm verify:gate` | Barrières QA et S5 : `verify:fast`, `test:xsd`, PHIVE obligatoire (Java 21) ; `--browser` ajoute la preuve OPFS et Lighthouse (`scripts/verify-gate.sh`) |
+| `bash scripts/bootstrap-sandbox.sh [--java] [--dotnet] [--python] [--postgres] [--redis] [--playwright]` | Outils du bac à sable, selon la session |
 
-Commandes citées par les spécifications et **pas encore présentes** dans `package.json` ou `scripts/` (autres tickets) : `bash scripts/bootstrap-sandbox.sh`, `pnpm test:xsd`, `pnpm verify:gate`, `scripts/enforce-constitution.ts`. Ne pas en inventer la sortie ; si l'une manque encore à l'exécution, note-le au lieu de la simuler.
+Toutes les commandes citées par les spécifications existent désormais (`bootstrap-sandbox.sh`, `pnpm test:xsd`, `pnpm verify:gate`, `scripts/enforce-constitution.ts`). `pnpm verify:fast` dure environ 2 minutes à froid (72 tâches) : la cible de 5 s est une cible (B-08) ; `TURBO_CONCURRENCY=1` ou `2` dans le bac à sable de 4 Go ; Turbo ne transmet pas `JAVA_HOME` (Java 21 pour PHIVE).
 
 Sandbox (B-07) : Amazon Linux 2023, `dnf` et non `apt-get`, pas de Docker. Les conteneurs se testent par leur code (Maven, pytest, xUnit), pas par `docker build`.
 

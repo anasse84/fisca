@@ -14,6 +14,10 @@ Précise la constitution racine (`/AGENTS.md`). Lire aussi `docs/specs/ERRATA.md
 - **PII** : aucune donnée personnelle en clair dans les journaux ; anonymiseur avec motifs CIN, IF et CNSS (D-12).
 - **Registre d'images** : paramètre `FISCA_IMAGE_REGISTRY`, jamais un registre en dur (D-15).
 
+- **Java 21 et PHIVE (vagues 0 à 2)** : `JAVA_HOME` sur Java 21 (Turbo ne le transmet pas) ; `FISCA_REQUIRE_PHIVE=1` à une barrière ; le contrôle croisé affirme exactement `KNOWN_PHIVE_DEVIATIONS` (BR-CL-10, BR-CL-11, BR-CO-09, BR-CL-24), jamais « conforme EN 16931 ».
+- **Factur-X** : Mustang n'accepte que du CII ; l'UBL est embarqué en `ubl-invoice.xml` avec `fx:ConformanceLevel=UBL21-PROVISIONAL`. PDF/A-3b validé par veraPDF dans le conteneur. Police arabe du PDF : IBM Plex Sans Arabic (D-23). Le Dockerfile n'a jamais été construit (pas de Docker) : `mvn test` en CI avant tout build `-DskipTests`.
+- **Signature** : clés de test seulement ; `SigningCertificate` V1 par défaut ; jeton RFC 3161 au contrôle partiel (jamais « qualifié ») ; numéros de série de certificat longs (jusqu'à 48 chiffres chez Barid eSign) à surveiller.
+
 ## Vérifier
 
 `mvn test`, `pytest`, `dotnet test` selon le conteneur, puis `pnpm verify:fast`. Un test XML nomme le schéma utilisé, officiel ou provisoire.

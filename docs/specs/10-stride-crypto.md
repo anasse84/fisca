@@ -7,6 +7,15 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 10 — Modèle de Menaces STRIDE & Architecture Cryptographique Zero-Trust
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 02 | Registre des menaces : état réel par catégorie STRIDE | G1, G2 ; code de `main` |
+| 2026-11-14 | 05 à 07 | Limites connues du séquestre, du scrubber d'ICE et du filtre d'injection ; PBKDF2 de test | ERRATA D-22 ; section 01 du document d'état |
+| 2026-11-14 | 08 | Caisse : ECDSA P-256 non extractible, comptage aveugle ; réserve du montant attendu en clair | T-P2B-10, T-P2B-12 ; rapport G2 |
+
 Ce document spécifie le modèle de menaces STRIDE, l'architecture de chiffrement Zero-Knowledge E2EE, la défense anti-injection de prompt documentaire et la préparation post-quantique de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_10_STRIDE_Crypto).
 ## Section 01 — Surface d'Attaque & Frontières de Confiance Zero-Trust
 Fisca traite des flux régaliens et financiers critiques (factures certifiées DGI, Grand Livre immuable, paie nominative État 9421, virements ISO 20022 et escompte 48h) sous l'hypothèse qu'aucun réseau ni document entrant n'est digne de confiance par défaut.
@@ -33,6 +42,17 @@ Fisca traite des flux régaliens et financiers critiques (factures certifiées D
 - Zéro confiance envers le modèle IA : Les LLM extraient et proposent mais ne reçoivent ni clés secrètes, ni données personnelles brutes, ni droit d'écriture comptable directe.
 - Vérifiabilité mathématique externe : L'intégrité d'une écriture POSTED ou d'une archive décennale repose sur des chaînes SHA-256 et jetons RFC 3161 auditables hors de Fisca.
 ## Section 02 — Matrice Complète d'Analyse des Menaces (Méthode STRIDE)
+**État réel des parades au 2026-11-14.**
+
+| Catégorie | État | Détail |
+|---|---|---|
+| S — Spoofing | Partiel | `assertCertificateMatchesEmitter` (préfixes eIDAS `NTRMA-`, `ICEMA-`, `VATMA-`, `IFMA-`, CN exclu) et `verifySignedWebhookPayload` réalisés ; routes de webhooks : vague 3 (P3-C) |
+| T — Tampering | Atténué | Déclencheurs v3 à v11, chaînes SHA-256, tests adverses de G1 et G2 ; réserve : suppression d'un exercice `CLOSED` vide acceptée |
+| R — Repudiation | Partiel | Step-up MFA de 300 s réalisé ; signature avec clés de test seulement, jeton RFC 3161 au contrôle partiel (jamais « qualifié ») |
+| I — Disclosure | Partiel | Base par société et mandats réalisés ; E2EE (`packages/crypto-e2ee`) réalisé ; ouvertes : réponses d'idempotence en base64 non chiffré (avant G3), montant attendu de la caisse en clair dans l'OPFS (avant G4) |
+| D — Denial of Service | Ouvert | Caisse autonome 72 h réalisée ; files bornées, DLQ, bascule : vagues 3 et 4 |
+| E — Elevation | Atténué | RBAC, ABAC et séparation des tâches réalisés et audités ; `@fisca/auth-rbac/testing` (fabrique de test à coût PBKDF2 injectable) est un sous-chemin public : réserve |
+
 Chaque famille de menaces STRIDE est neutralisée par au moins deux contrôles déterministes indépendants (applicatif et cryptographique ou base de données) :
 
 | Catégorie STRIDE | Scénario d'Attaque Critique sur Fisca | Impact Métier / Légal | Parade Déterministe & Cryptographique |
@@ -57,20 +77,28 @@ Chiffrer une colonne SQLite sans lier son emplacement ouvre la porte aux attaque
 - Liaison contextuelle obligatoire (AAD) : L'appel AES-256-GCM injecte systématiquement en donnée authentifiée additionnelle la chaîne UTF-8 {companyId}|{tableName}|{recordId}|{columnName}. Déplacer le chiffré d'un RIB ou d'un salaire vers un autre enregistrement provoque immédiatement une exception cryptographique au déchiffrement.
 - Recherche exacte par Blind Indexing (_bidx) : Pour rechercher un tiers par ICE, vérifier un CIN dans l'État 9421 ou bloquer un doublon d'achat (IF + NumFacture) sans déchiffrer la base, le moteur normalise la chaîne (majuscules, suppression des espaces et tirets) et calcule HMAC-SHA256(Tenant_BIDX_Key, normalized) tronqué à 128 bits (32 caractères hexadécimaux).
 ## Section 05 — Séquestre Fiscal Art. 211 CGI : Partage de Secret de Shamir (2-sur-3)
+**Arbitré (D-22).** Tables GF(256) du partage de Shamir acceptées (cérémonie ponctuelle, hors oracle réseau temps réel). Réalisé dans `packages/crypto-e2ee`.
+
 Sur un dossier en mode ZERO_KNOWLEDGE_E2EE, la perte définitive du Code PIN Coffre ou le décès du gérant ne doit jamais empêcher l'entreprise de présenter sa comptabilité déchiffrée à l'administration fiscale (Article 211 du CGI) :
 - Fractionnement mathématique sur GF(2^8) : À l'initialisation E2EE du dossier, le navigateur évalue un polynôme aléatoire de degré 1 octet par octet sur le corps fini de Galois GF(256) (polynôme irréductible 0x11b) pour scinder la clé de recouvrement en 3 parts (x \in \{1, 2, 3\}) dont 1 seule part ne révèle mathématiquement aucun bit d'information.
 - Distribution souveraine des 3 parts : La Part 1 est chiffrée pour le mandataire désigné par l'entreprise (ex. son Expert-Comptable OEC ou co-associé), la Part 2 est scellée par la clé publique du HSM hors-ligne de SYNAPTIC SYSTEMS SARL AU, et la Part 3 est confiée au tiers séquestre / coffre de récupération papier scellé du client.
 - Cérémonie de restitution auditée : La reconstruction par interpolation de Lagrange en x = 0 exige la réunion explicite d'au moins 2 parts sur 3 après vérification formelle d'identité et inscrit un événement irrévocable dans state_transition_audit.
 ## Section 06 — Défense Anti-Prompt Injection Documentaire & Standard SAFE
+**Limites connues (G1).** Le filtre d'injection reste contournable par épellation ; à durcir avant P3-B (agents IA).
+
 Les factures fournisseurs reçues par email (@ingest.fisca.ma) ou WhatsApp proviennent de tiers externes et peuvent contenir des instructions malveillantes dissimulées (texte blanc de taille 1pt, métadonnées PDF, commentaires XML UBL) visant à détourner un agent comptable :
 - Barrière 1 — Découplage Extraction / Exécution : Les extracteurs de premier niveau (Docling, Clairic, Nanonets-OCR-s) tournent dans un pipeline dépourvu de tout accès aux outils MCP, au réseau ou à la base SQL ; leur sortie est filtrée par un parseur Zod rejetant tout champ non conforme aux types primitifs attendus.
 - Barrière 2 — Sanitisation Unicode & Spotlighting : Avant d'être présenté à un agent de qualification, tout libellé extrait est nettoyé des caractères de contrôle invisibles (notamment les caractères furtifs Tag Unicode U+E0000–U+E007F et inversions bidirectionnelles abusives RLO) et encapsulé dans des délimiteurs de données non exécutables.
 - Barrière 3 — Verrou matériel RIB, Grand Livre & Paiements : Aucun agent IA ni outil MCP ne possède de fonction permettant de modifier rib_24_verified_enc, de lever une ALERTE_RIB_DAF, de passer une écriture en POSTED ou de signer un lot pain.001 ; même si un texte injecté trompait la suggestion textuelle d'un modèle, le moteur déterministe bloque toute incidence financière.
 ## Section 07 — Anonymisation PII Réversible en RAM (Conformité Loi 09-08 CNDP)
+**Limites connues (G1, D-22).** `EphemeralRamPiiScrubber` sur-masque les suites structurées de 15 chiffres (biais fail-safe accepté, aucune perte : réhydratation en RAM) ; à durcir avant P3-B : ICE collé à une lettre, retour à la ligne, tiret bas.
+
 Afin qu'aucune donnée personnelle ou secret d'affaires marocain ne soit exposé lors d'une escalade vers un modèle de raisonnement de Niveau 2 (ex. commentaire de variations N/N-1 de clôture ou analyse de contrat BPU) :
 - Pseudonymisation déterministe avant appel IA : Un filtre en mémoire vive remplace à la volée les raisons sociales, noms de salariés, numéros d'ICE (15 chiffres), IF, RIB (24 chiffres), CIN, CNSS, emails et numéros +212 par des jetons neutres indexés ([TIERS_01], [ICE_01], [RIB_01]) tout en conservant les montants et comptes CGNC nécessaires au raisonnement.
 - Réhydratation locale et destruction immédiate : Dès réception de la réponse structurée du modèle via Cloudflare AI Gateway (configurée en mode Zero Data Retention sans journalisation des prompts), le Worker restaure les valeurs d'origine à partir de la table de correspondance en RAM puis détruit cette table.
 ## Section 08 — Forensique Documentaire Anti-Falsification & Sécurité Fisca POS
+**Réalisé (P2-B, P2-A).** Ticket signé en ECDSA P-256 par une clé non extractible (`extractable = false`, prouvé dans un vrai Chromium) ; comptage aveugle : le montant attendu n'est ni affiché au caissier ni calculé avant le dépôt du comptage. **Réserve ouverte :** `expected_closing_cash_cents` est écrit en clair dans le SQLite local au verrouillage du comptage (à traiter avant G4 : ne pas le persister, ou le chiffrer ; décision du propriétaire attendue, car cela change l'échange avec le serveur).
+
 Deux vecteurs de fraude physique propres au terrain marocain font l'objet de contrôles cryptographiques et binaires dédiés :
 - Détection des PDF d'attestations falsifiés : Lors du dépôt d'une attestation de régularité fiscale (déterminant la RAS-TVA à 75 % contre 100 %), d'une attestation CNSS ou d'un relevé d'identité bancaire, un analyseur inspecte les révisions incrémentales %%EOF / xref, les balises Producer/Creator XMP (signalant Adobe Photoshop, Illustrator, Canva ou éditeurs web) et les incohérences de sous-ensembles de polices pour placer tout document suspect en quarantaine PIECE_A_CONTROLER.
 - Inviolabilité hors-ligne de Fisca POS Tactile : À l'appairage d'une tablette Fisca POS, WebCrypto génère dans le stockage sécurisé du terminal une paire de clés ECDSA P-256 marquée extractable: false. Chaque ticket encaissé hors-ligne scelle non seulement prev_ticket_sha256, mais est signé par cette clé matérielle non-exportable : toute tentative de modifier le fichier SQLite OPFS local sur la tablette avant reconnexion est mathématiquement détectée et rejetée par /api/v1/pos/sync-batch.

@@ -7,6 +7,17 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 18 — Stratégie de Croissance SEO, GEO, AIO & AEO
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 02 à 03 | Site `apps/marketing-astro` réalisé (Astro 5 SSR, 6 langues, `llms.txt`, miroirs `.md`, `mcp.json` PROVISIONAL sans portées OAuth) ; hreflang limités aux langues indexables ; en-têtes de sécurité et CSP | P2-C, PR n° 14 ; ERRATA D-23 ; `apps/marketing-astro` |
+| 2026-11-14 | 05 | Silo 3 : 61 fiches de comptes (58 de la base CGNC + 3 subdivisions analytiques Fisca), 183 URL (fr, ar, en), à la place des 250 pages promises ; 190 sous-comptes à enrichir après G4 ; `codeEdi` à null ; 20 routes en `noindex` faute de source | ERRATA D-23 ; `registre-contrats.json` (`MKT-SILO3-CGNC`) ; rapport G2 |
+| 2026-11-14 | 06 | Six outils réalisés (le validateur UBL et FEC en profil provisoire, contrôle de structure indicatif) | `apps/marketing-astro`, `e2e/tools-check.ts` |
+| 2026-11-14 | 08 à 09 | Invalidation du cache Wiki, IndexNow, télémétrie sans cookie ni pixel tiers, handoff signé réalisés ; Turnstile non livré (P4) | T-P2C-08 ; ERRATA D-23 |
+| 2026-11-14 | 12 | Contrôles réellement exécutés à G2 (Lighthouse 100 sur 11 pages, `tools-check` 403/403, `csp-check`, `cgnc-check`) | rapport G2, section 05 du document d'état |
+
 Ce document spécifie l'ingénierie d'acquisition organique, le référencement sur les moteurs génératifs et de réponse (SEO, AEO, GEO & AIO), l'architecture Astro 5 SSR en 6 langues et les 6 outils viraux gratuits de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes à être importées dans Hyperagent avec la portée Projet (Doc_18_SEO_GEO_AEO).
 ## Section 01 — Vision d'Acquisition : Convergence SEO, AEO, GEO & AIO
 L'acquisition de Fisca vise un coût marginal d'acquisition client tendant vers zéro en faisant de fisca.ma la source technique et fiscale marocaine de référence à la fois pour les moteurs classiques et pour les intelligences artificielles.
@@ -21,12 +32,16 @@ L'acquisition de Fisca vise un coût marginal d'acquisition client tendant vers 
 - Zéro budget publicitaire intrusif requis au démarrage : Chaque obligation fiscale marocaine (xHub DGI, Loi 69-21, SIMPL-TVA, État 9421, POS Art. 145) génère un flux permanent de recherches urgentes à haute intention d'achat.
 - Autorité par la preuve mathématique : Contrairement aux blogs généralistes approximatifs, chaque page de fisca.ma expose les formules exactes du CGI au centime près, adossées à un calculateur gratuit immédiat.
 ## Section 02 — Architecture Astro 5 SSR, Web Vitals & Routage 6 Langues
+**Réalisé (P2-C, PR n° 14 ; état au 2026-11-14).** `apps/marketing-astro` est construit en Astro 5 SSR sur le runtime Cloudflare Workers (workerd), 6 langues, sans ressource tierce (621 pages au sitemap selon l'audit G2 : 438 pages multilingues et 183 fiches de compte). Lighthouse (médiane de 3 passes, `pnpm lighthouse:check`) donne 100 sur les quatre catégories sur les 11 pages mesurées à G2 ; `astro check` est branché sur `typecheck`. **Hreflang :** les pages multilingues déclarent leurs 6 équivalents ; les 183 fiches de compte ne déclarent que fr, ar, en et x-default (les langues `ary`, `zgh-Latn` et `zgh-Tfng` sont en `noindex`, hors sitemap, donc jamais référencées par une page indexable ; un test le garantit). **En-têtes de sécurité :** CSP fermée par défaut (`script-src 'self'`, aucun hôte tiers), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` minimale, posés par middleware ; réserve : `style-src 'unsafe-inline'` (feuilles courtes insérées par Astro) et `public/_headers` non testé sous wrangler.
+
 Le conteneur apps/marketing-astro est totalement séparé du bundle applicatif React afin de livrer du HTML pur mis en cache dans les points de présence Cloudflare de Casablanca et Rabat.
 - Performance réseau mobile Maroc : Temps de réponse serveur TTFB inférieur à 40 ms, LCP inférieur à 1,0 seconde sur 4G marocaine, INP inférieur à 50 ms, CLS égal à 0.00 et score Lighthouse minimal de 98 sur 100.
 - Hydratation sélective par îlots (Astro Islands) : Les pages de contenu expédient zéro JavaScript client par défaut ; seuls les calculateurs interactifs s'hydratent à la visibilité avec un budget compressé inférieur à 25 Ko.
 - Arborescence URL canonique à 6 langues : Conformément au Document 08, fisca.ma sert /fr/ (x-default), /ar/ (Arabe classique RTL), /ary/ (Darija arabe RTL), /zgh/ (zgh-Latn IRCAM), /zgh-tfng/ (zgh-Tfng IRCAM) et /en/.
 - Maillage hreflang réciproque et Sitemaps segmentés : Chaque page déclare ses 6 équivalents linguistiques exacts dans l'en-tête et regroupe ses URL dans des sitemaps dédiés par langue et par silo (sitemap-index.xml).
 ## Section 03 — Protocole GEO & AIO : llms.txt, Miroirs Markdown & Bots IA
+**Réalisé (P2-C).** `llms.txt`, `llms-full.txt` et les miroirs Markdown sont générés ; toute route en `noindex` est absente du sitemap et de `llms.txt` (test `tests/silos-seo.test.ts`). `/.well-known/mcp.json` est publié **sans portées OAuth** et reste PROVISIONAL (le serveur MCP est prévu en vague 3, T-P3B-10). Le `robots.txt` de fisca.ma ne couvre que son hôte : `app.`, `pos.` et `api.` servent `buildHostDisallowAllRobotsTxt()` depuis d'autres paquets (ERRATA D-23, à vérifier à G2 puis G4).
+
 Les moteurs de recherche IA (ChatGPT Search, Perplexity, Gemini, Claude, Copilot) pénalisent les pages saturées de balises DOM inutiles et privilégient les sources structurées denses en faits vérifiables.
 - Index standardisé /llms.txt et /llms-full.txt : Générés automatiquement à chaque build depuis le référentiel fiscal certifié, ils exposent en Markdown épuré l'identité de SYNAPTIC SYSTEMS SARL AU, la grille tarifaire transparente, les barèmes CGI 2026 et l'arbre complet des guides.
 - Miroirs Markdown directs (/*.md) & Négociation HTTP : Chaque URL éditoriale (ex. /fr/guides/loi-69-21) possède son jumeau texte pur /fr/guides/loi-69-21.md et sert directement text/markdown; charset=utf-8 lorsqu'un robot d'indexation envoie Accept: text/markdown, réduisant de 85 % le bruit en tokens.
@@ -39,6 +54,8 @@ Pour décrocher simultanément la position zéro sur Google et la citation de r�
 - Cas chiffré résolu au centime : Démontre le calcul complet sur une facture marocaine réaliste (ex. facture de 14 400,00 MAD TTC avec RAS-TVA ou retard Loi 69-21) avant d'inviter à tester son propre montant dans l'îlot calculateur.
 - Graphe JSON-LD interconnecté (@graph Schema.org) : Injecte sur chaque page les entités liées Organization (SYNAPTIC SYSTEMS SARL AU, Rabat), SoftwareApplication (tarifs exacts en MAD), Legislation (référence CGI / Bulletin Officiel), HowTo et FAQPage.
 ## Section 05 — Les 6 Silos Sémantiques & SEO Programmatique Maroc (1 302 URL)
+**Réalisé et amendé (T-P2C-04, T-P2C-05, D-23).** Les 1 302 URL du titre sont l'intention d'origine. Au 2026-11-14 : 78 routes canoniques en 6 langues pour les silos 1, 2, 4, 5 et 6, dont **20 en `noindex`, hors sitemap et hors `llms.txt`** faute de vecteur chiffré ou de source primaire dans les spécifications (liste et sources manquantes : section 04 du document d'état) ; le **silo 3 compte 61 fiches de comptes piliers** (jeu `FISCA_CGNC_CORE_V2` fourni par le propriétaire, non recoupé avec le texte officiel : 58 comptes de la base CGNC et 3 subdivisions analytiques Fisca `34558`, `44551`, `44558`), soit **183 URL indexables** (61 × fr, ar, en), et non 250 pages ; **190 sous-comptes sectoriels et l'injection des `codeEdi` SIMPL-IS sont reportés après G4**. `codeEdi` vaut null : les pages affichent « codeEdi SIMPL-IS : en attente d'import du référentiel XSD officiel DGI ». `34551` est la TVA récupérable sur immobilisations et `34552` sur charges ; les comptes analytiques affichent « Subdivision analytique Fisca du compte … », jamais « officiel ». Les prix sont en HT seulement. Le prorata fiduciaire est journalier avec un plancher d'un jour (`src/content/billing-policy.ts`).
+
 L'architecture éditoriale et programmatique couvre 342 routes canoniques (déclinées en 1 302 URL multilingues sans aucun contenu mince) alimentées directement par les tables métier de Fisca :
 
 | Silo Sémantique | Routes Canoniques | Langues | Requêtes Cibles Maroc | Donnée Propriétaire Injectée |
@@ -52,6 +69,8 @@ L'architecture éditoriale et programmatique couvre 342 routes canoniques (décl
 
 - Puissance de l'explorateur programmatique PCGE (Silo 3) : Génère pour les 250 comptes majeurs des Classes 1 à 8 une fiche technique complète en Français, Arabe et Anglais reliant le compte CGNC à son codeEdi de la liasse SIMPL-IS v2.0.3 et à une écriture comptable équilibrée prête à l'emploi.
 ## Section 06 — Les 6 Outils Viraux Gratuits (« Engineering-as-Marketing »)
+**Réalisé (T-P2C-06, T-P2C-07).** Les six outils sont livrés : auditeur d'ICE (modulo 97), loi 69-21, RAS-TVA et espèces, validateur UBL et FEC, simulateur auto-entrepreneur, subvention Mowakaba ; le traitement est local au navigateur (aucun envoi serveur, CNDP). Le validateur UBL et FEC est un **contrôle de structure indicatif** (profil provisoire `FEC_MA_PROVISIONAL_PROFILE` : 18 colonnes standard + 6 extensions marocaines, « NON RECOUPÉ avec le texte marocain », ordre confirmé par le propriétaire) : il n'est jamais une validation DGI et ne vérifie pas la continuité des empreintes. Chaque convention de calcul est rattachée à son texte de loi (seul l'article 117 du CGI est nommé ; le reste : « à confirmer par l'expert-comptable »). Contrôle `e2e/tools-check.ts` : 403 contrôles sur 403 à G2. Turnstile : non livré, à brancher en P4 (secret côté serveur).
+
 Ces six outils publics fonctionnent sans création de compte préalable (protégés contre les robots abusifs par Cloudflare Turnstile invisible) afin d'attirer les liens entrants naturels des experts-comptables, médias économiques et réponses d'IA :
 - Auditeur & Réparateur Excel d'ICE en Masse (/outils/audit-ice-excel) : Analyse dans le navigateur en moins d'une seconde un fichier .xlsx ou .csv de milliers de tiers, vérifie la divisibilité Modulo 97 des 15 chiffres et répare automatiquement les ICE de 13 ou 14 chiffres dont Microsoft Excel a tronqué les zéros initiaux (00), avant de proposer l'enrichissement IF/RC complet dans l'essai gratuit 14 jours.
 - Simulateur d'Amendes Loi 69-21 (/outils/simulateur-loi-69-21) : Calcule au dirham supérieur (Math.ceil) la pénalité légale depuis la date de livraison (60, 120 ou 180 jours, taux directeur BAM + 0,85 % par mois entamé), affiche l'impact de réintégration fiscale au Tableau 3 de l'IS et exporte une note justificative PDF.
@@ -65,6 +84,8 @@ Au-delà des moteurs de recherche, l'usage quotidien du logiciel transforme chaq
 - Boucle 2 — Portail QR imprimé sur chaque ticket Fisca POS : Lorsqu'un professionnel scanne le QR Code de son ticket de café, restaurant ou commerce pour obtenir sa facture B2B avec son ICE en 10 secondes, la page de téléchargement lui propose d'archiver gratuitement ses factures reçues sur Fisca.
 - Boucle 3 — Effet démultiplicateur des Fiduciaires OEC : Un seul cabinet comptable adoptant Fisca déploie le portail collaboratif et le bot WhatsApp auprès de 60 à 150 dirigeants de TPE/PME, qui recommandent à leur tour la caisse Fisca POS et la facturation à leur écosystème.
 ## Section 08 — Synchronisation Temps Réel LLM Wiki vers SEO, GEO & IndexNow
+**Réalisé (T-P2C-08) :** invalidation du cache Wiki et IndexNow par secrets du Worker (`MARKETING_WIKI_WEBHOOK_SECRET`, `MARKETING_INDEXNOW_KEY`, jamais dans le dépôt, à créer en P4) ; contrats `MKT-KV` et `MKT-SECRETS` PROVISIONAL au registre.
+
 La fraîcheur réglementaire est un critère décisif de classement pour Google comme pour les moteurs RAG (Perplexity et ChatGPT Search) lors du vote annuel de la Loi de Finances au Maroc :
 
 ```text
@@ -78,6 +99,8 @@ La fraîcheur réglementaire est un critère décisif de classement pour Google 
 
 - Zéro chiffre obsolète oublié dans un article : Les taux, plafonds et dates limites affichés dans les guides Astro ne sont pas écrits en texte statique figé mais injectés par composants serveur lisant les paramètres certifiés du moteur fiscal.
 ## Section 09 — Attribution Privacy-First Conforme Loi 09-08 CNDP (Zéro Pixel Tiers)
+**Réalisé (T-P2C-08) :** télémétrie sans cookie ni pixel tiers ; handoff signé vers `app.fisca.ma` (durée de vie `MARKETING_HANDOFF_TTL_SECONDS`, 10 à 900 s, défaut 120 s) ; lien d'essai gratuit `https://app.fisca.ma/` tant qu'aucune route d'inscription n'est spécifiée. Références CNDP (F115, F211, F112, F118) à `null` avec la mention « en cours d'enregistrement auprès de la CNDP par SYNAPTIC SYSTEMS SARL AU (dpo@fisca.ma) » ; durées de conservation T-01 à T-04 : voir Doc_11.
+
 En stricte conformité avec le Document 11, fisca.ma bannit tout traceur publicitaire tiers (aucun Meta Pixel, Google Tag Manager tiers ni cookie de profilage) tout en mesurant précisément le retour sur investissement de chaque page et de chaque moteur IA :
 - Télémétrie interne sans cookie ni donnée personnelle : Un middleware léger côté Worker incrémente des compteurs quotidiens agrégés (page_slug, locale, tool_id, referring_class) sans jamais stocker d'adresse IP ni d'identifiant individuel.
 - Suivi dédié de la part de voix IA (Share of AI Citations) : Le classifieur de provenance distingue nativement le trafic issu des moteurs génératifs (chatgpt.com, perplexity.ai, gemini.google.com, claude.ai, copilot.microsoft.com) du trafic organique Google/Bing.
@@ -290,6 +313,8 @@ export function auditAndRepairMoroccanIce(rawCell: string): IceAuditRowResult {
 ```
 
 ## Section 12 — Harnais de Vérification SEO, GEO & Lighthouse (Session P2-C & Rubric R3)
+**Réalisé (G2, tour 2, FAVORABLE).** Contrôles réellement exécutés : Lighthouse (médiane de 3 passes) 100 sur 11 pages ; `tools-check` 403/403 ; `csp-check` (7 pages, aucune erreur console ni violation de CSP, aucune requête tierce) ; `cgnc-check` (32 pages, 0 échec) ; hreflang 0 anomalie sur 621 pages ; JSON-LD valide, 0 ressource tierce. Non couvert : largeur 1024 px non capturée ; veraPDF absent du bac à sable ; 9 écritures d'exemple citent 6 comptes hors du jeu de 61 (4481, 6114, 6193, 6195, 6701, 8600), affichés sans lien ni intitulé inventé.
+
 Lors de la Session parallèle P2-C (feat/w2-astro-growth) et de la Barrière QA G2, l'agent Fisca-QA-Security-Auditor exécute six contrôles automatisés bloquants avant d'autoriser la fusion sur main :
 - Audit Lighthouse CI Headless (Score >= 98) : Exécute Lighthouse sur la page d'accueil, un guide fiscal, une fiche compte PCGE et un simulateur interactif en exigeant au minimum 98/100 en Performance, SEO et Accessibilité et un CLS strictement égal à 0.00.
 - Contrôle des Endpoints IA (/llms.txt, /llms-full.txt & Miroirs .md) : Vérifie que /llms.txt et /robots.txt répondent en HTTP 200, autorisent GPTBot / PerplexityBot / ClaudeBot sur fisca.ma, et que chaque route de guide sert une version .md propre dépourvue de balises HTML.

@@ -7,6 +7,17 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 09 — Matrice d'Authentification, d'Autorisation & Séparation des Tâches
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 02 | Appairage POS : route `POST /api/v1/pos/terminals/pair` décidée, non construite ; PIN local et certificat matériel : voir Doc_07 et T-P2B-09 | ERRATA D-23 ; `apps/pos-pwa/src/pairing` (port `PairingGateway`) |
+| 2026-11-14 | 06 | `LEDGER_VISA_CYCLE` accordé à `OWNER_GERANT` et `DAF_TRESORIER` ; `LEDGER_READ_PROOF` ajouté pour six rôles ; `PAYROLL_9421_READ_EXPORT` pour aide-comptable et chef de mission sous attribut PII ; `permissionsOfRole` exporté | PR n° 22 (`386fbb1`), ERRATA D-22 et D-23 ; `packages/auth-rbac/src/policy-engine.ts` |
+| 2026-11-14 | 09 | Visa implicite du mode direct : scellement depuis `DRAFT` en deux transitions et deux lignes d'audit dans un seul lot atomique ; route de visa unitaire réalisée, route de lot spécifiée en D-23 | ERRATA D-22, D-23 ; `apps/api-hono/src/core/immutable-cgnc-ledger-engine.ts`, migration v11 |
+| 2026-11-14 | 11 | Le code réel de `policy-engine.ts` prime sur le code de référence (permissions, `LEDGER_READ_PROOF`, `permissionsOfRole`) | `packages/auth-rbac/src/policy-engine.ts`, `tests/permissions-of-role.test.ts` |
+| 2026-11-14 | 12 | Statut réel des six tests d'intrusion : réalisés à G1 par l'auditeur (patchs adverses `g1-r2-adversarial.patch`) ; réserves ouvertes listées | `.meta`, section 05 du document d'état |
+
 Ce document définit l'architecture Zero-Trust d'identité, les parcours d'authentification forte (Passkeys WebAuthn, OTP Infobip et SSO), le contrôle d'accès hybride RBAC / ABAC, le visa cabinet à 3 niveaux et la séparation des tâches (SoD) de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_09_RBAC_SoD).
 ## Section 01 — Architecture Zero-Trust d'Identité & Principes Directeurs
 Dans Fisca, aucune requête humaine, caisse tactile, passerelle ERP ni agent IA n'accède à une base locataire sans franchir une chaîne de vérification cryptographique et contextuelle côté serveur.
@@ -38,7 +49,7 @@ L'authentification offre dès l'écran d'accueil le choix entre **Continuer avec
 
 - Politique d'obligation du 2FA : Facultatif mais fortement encouragé avec bannière d'incitation pour SOLO_AE et CAISSIER_POS ; obligatoire dès la fin de l'onboarding pour les rôles EXPERT_COMPTABLE_OEC, CHEF_MISSION, DAF_TRESORIER, et pour tout OWNER_GERANT dès l'activation de la signature fiscale Loi 43-20 ou des virements pain.001.
 - Appareil de confiance 30 jours vs Step-Up 5 minutes : Cocher « Se souvenir de cet appareil pendant 30 jours » évite la ressaisie du 2FA au login matinal, mais toute action sensible (PARTNER_APPROVE_RIB_CHANGE, PAYMENT_SIGN_PAIN001, LEDGER_POST_IMMUTABLE, E2EE_REVOKE_CPA_GRANT) exige toujours une validation 2FA ou Passkey datant de moins de 300 secondes.
-- Continuité hors-ligne Fisca POS : L'appairage initial de la tablette POS requiert un login complet (Google ou Email + 2FA) du OWNER_GERANT ; ensuite, les caissiers opèrent hors-ligne par code PIN local à 6 chiffres.
+- Continuité hors-ligne Fisca POS : L'appairage initial de la tablette POS requiert un login complet (Google ou Email + 2FA) du OWNER_GERANT ; ensuite, les caissiers opèrent hors-ligne par code PIN local à 6 chiffres. **État au 2026-11-14 :** côté caisse, l'appairage passe par un port injectable (`PairingGateway`, `apps/pos-pwa`, T-P2B-09) ; la route serveur `POST /api/v1/pos/terminals/pair` est décidée (ERRATA D-23) mais non construite, son corps est à spécifier (NON RECOUPÉ).
 
 ### Module TypeScript de Référence : Mot de Passe Pepper, Google PKCE & Vérificateur TOTP RFC 6238 (packages/auth-rbac/src/auth-2fa.ts)
 
@@ -213,12 +224,13 @@ Les deux tableaux ci-dessous synthétisent les permissions maximales accordées 
 | Ressource & Action | Aide-Comptable | Chef Mission | Expert OEC | Auditeur CAC/DGI | Gérant PME |
 |---|---|---|---|---|---|
 | Écritures Statut DRAFT | Crée + Modifie | Crée + Modifie | Complet | Lecture Post-Clôture | Lecture |
-| Visa des 5 Cycles | Soumet | Appose Visa | Appose + Scelle | Lecture Preuves | Lecture |
+| Visa des 5 Cycles | Soumet | Appose Visa | Appose + Scelle | Lecture Preuves | Appose le visa (arbitrage du propriétaire, Loi 9-88 : le dirigeant arrête les comptes de sa société) |
 | Scellement POSTED & Clôture | Interdit | Pré-contrôle | Autorisé | Interdit | Autorisé (Direct) |
 | Exports EDI SIMPL & FEC | Prépare brouillon | Vérifie XSD | Valide archive | Télécharge FEC | Valide (Direct) |
 | Paie 9421 & Mandats E2EE | Si attribut PII | Si attribut PII | Selon mandat | Si contrôle 9421 | Gère clés & Révoc. |
 
 - Étanchéité du scellement comptable : Ni l'aide-comptable ni le chef de mission ne peuvent basculer seuls une pièce au statut irréversible POSTED dans un dossier géré par un cabinet OEC.
+- **Réalisé (état de `packages/auth-rbac/src/policy-engine.ts`, `main` `386fbb1`).** `LEDGER_VISA_CYCLE` est accordé à `OWNER_GERANT` et `DAF_TRESORIER` (PR n° 22, arbitrage du propriétaire : le monopole OEC de la Loi 15-89 ne vise que la révision pour compte de tiers, protégée car les rôles internes ne sont pas délégables dans `company_cpa_mandates`) ; la machine à états REVISEE_CYCLE → POSTED est inchangée. `LEDGER_READ_PROOF` (lecture de `/api/v1/ledger/verify-chain`, CTR-COD-21 LOCKED) est accordé à six rôles : `OWNER_GERANT`, `DAF_TRESORIER`, `AIDE_COMPTABLE`, `CHEF_MISSION`, `EXPERT_COMPTABLE_OEC`, `AUDITEUR_CAC_DGI`. `PAYROLL_9421_READ_EXPORT` pour `AIDE_COMPTABLE` et `CHEF_MISSION` est accordé sous l'attribut `canAccessPayrollPii` seulement (ABAC). `permissionsOfRole(role)` est exporté (copie fraîche à chaque appel). `AUDITEUR_CAC_DGI` détient `LEDGER_READ_PROOF` et `REVERSIBILITY_EXPORT_10Y`, rien d'autre.
 ## Section 07 — Règles ABAC Contextuelles & Step-Up Authentication
 Après vérification du rôle RBAC, le moteur évalue six attributs contextuels obligatoires avant d'autoriser l'exécution :
 - Assignation nominative de portefeuille : Dans une fiduciaire comptant 150 sociétés, un AIDE_COMPTABLE ou CHEF_MISSION ne peut ouvrir que les bases TENANT_DB présentes dans sa liste d'affectation active.
@@ -236,6 +248,7 @@ Pour répondre aux exigences d'audit interne des ETI, banques et filiales de gro
 ## Section 09 — Workflow Hiérarchique OEC & Délégation E2EE Révocable
 La collaboration entre une PME et son cabinet d'expertise comptable marocain respecte à la fois la hiérarchie interne du cabinet et la souveraineté cryptographique du client :
 - Circuit de révision à 3 niveaux par cycles : Les écritures préparées par les agents IA (IA_PROPOSITION) sont vérifiées par l'Aide-Comptable (DRAFT), contrôlées et visées cycle par cycle (TRESORERIE, ACHATS, VENTES, PAIE_SOCIAL, FISCAL) par le Chef de Mission (REVISEE_CYCLE), puis scellées définitivement en POSTED par l'Expert-Comptable Signataire avant génération de la liasse SIMPL-IS.
+- **Visa implicite du mode direct (réalisé, ERRATA D-22).** Réconciliation de Doc_09 § 06B et de Doc_02 : dans un dossier sans mandat cabinet actif (`DIRECT_PME`, gérant seul), `OWNER_GERANT` scelle une pièce depuis `DRAFT` en deux transitions (`DRAFT` → `REVISEE_CYCLE` par un acteur système au nom du gérant, puis `REVISEE_CYCLE` → `POSTED` par le gérant, step-up MFA de 300 s) dans un seul lot atomique, avec deux lignes de `state_transition_audit`. Avec un mandat cabinet actif, ou si l'information est inconnue, ou hors plan direct, le scellement du gérant depuis `DRAFT` est refusé (`LEDGER_ENTRY_NOT_IN_EXPECTED_STATE`) : il faut le visa du chef de mission. Le déclencheur de la migration v11 n'admet que `REVISEE_CYCLE` → `POSTED`. Routes : `POST /api/v1/ledger/entries/:id/visa` (visa unitaire, réalisé) ; `POST /api/v1/ledger/cycles/:cycleCode/visa` (visa de lot, spécifiée en D-23, non construite, voir Doc_07 section 02).
 - Mandat E2EE sans partage de mot de passe : Lorsque le OWNER_GERANT invite un cabinet OEC sur son dossier, son navigateur enveloppe la clé symétrique Tenant_DEK et la clé d'index aveugle Tenant_BIDX_Key avec la clé publique RSA-OAEP-256 du cabinet dans la table tenant_key_grants (grantee_role = EXTERNAL_CPA).
 - Révocation instantanée en cas de changement de fiduciaire : Si la PME change d'expert-comptable, le gérant clique sur Révoquer le mandat ; la colonne revoked_at est renseignée immédiatement, bloquant à la milliseconde suivante toute requête API et tout déchiffrement par l'ancien cabinet sans avoir à rechiffrer les archives décennales stockées dans Cloudflare R2.
 ## Section 10 — Gouvernance des Accès Machines, MCP & Séquestre Art. 211 CGI
@@ -244,7 +257,7 @@ Les identités non-humaines et les réquisitions légales obéissent à des gard
 - Clés d'agents ERP à périmètre unique : Le certificat client mTLS du service Windows Sage100EdgeAgent et le secret HMAC du module Odoo l10n_ma_edi_clearance ne donnent accès qu'aux deux endpoints de synchronisation d'une seule société et tournent tous les 12 mois sans coupure.
 - Procédure de Séquestre Réglementaire (DGI_AUDIT_ESCROW — Shamir 2-sur-3) : Sur les dossiers en mode Zero-Knowledge E2EE, lors d'un contrôle fiscal au titre de l'Article 211 du CGI où le dirigeant serait décédé ou injoignable, la clé de secours découpée via le Partage de Secret de Shamir exige la réunion cryptographique d'au moins 2 parts sur 3 (1 part détenue par le mandataire désigné par le client / OEC, 1 part en HSM froid SYNAPTIC SYSTEMS, 1 part tiers de confiance / séquestre légal) pour restituer le FEC-MA déchiffré avec procès-verbal horodaté.
 ## Section 11 — Code de Référence : Moteur RBAC, ABAC & SoD
-Ce module TypeScript pur sans aucun type any (packages/auth-rbac/src/policy-engine.ts) s'exécute dans le middleware Hono avant toute mutation métier :
+**Le code réel de `packages/auth-rbac/src/policy-engine.ts` prime sur l'illustration ci-dessous** (voir la section 06 pour la matrice réellement codée : `LEDGER_VISA_CYCLE` pour le gérant et le DAF, `LEDGER_READ_PROOF`, `permissionsOfRole`, accès à la paie sous attribut). Ce module TypeScript pur sans aucun type any (packages/auth-rbac/src/policy-engine.ts) s'exécute dans le middleware Hono avant toute mutation métier (code de référence d'origine, non maintenu) :
 
 ```ts
 import { z } from "zod";
@@ -410,7 +423,7 @@ export function evaluateAccessPolicy(
 ```
 
 ## Section 12 — Harnais de Vérification Sécuritaire (Rubric R2 & Tests QA)
-Lors de la Session S1A et des Barrières QA G1 et G4, l'agent Fisca-QA-Security-Auditor exécute six tests d'intrusion automatisés dont l'échec bloque immédiatement toute fusion sur main :
+Lors de la Session S1A et des Barrières QA G1 et G4, l'agent Fisca-QA-Security-Auditor exécute six tests d'intrusion automatisés dont l'échec bloque immédiatement toute fusion sur main (réalisés à G1 par l'auditeur, qui a versé ses tests adverses ; à G2 la parité des empreintes client et serveur et la fusion à blanc ont été ajoutées ; réserves ouvertes au 2026-11-14 : réponses d'idempotence en base64 non chiffré, à traiter avant G3 ; montant attendu de la caisse en clair dans le stockage local, à traiter avant G4) :
 - Test Anti-IDOR Inter-Sociétés : Un jeton valide d'un AIDE_COMPTABLE envoyé avec l'en-tête X-Fisca-Company-Id d'une société non attribuée reçoit systématiquement 403 ABAC_TENANT_OUT_OF_SCOPE sans fuite d'existence.
 - Test SoD Anti-Fraude RIB : Un DAF_TRESORIER dans une organisation ENTERPRISE qui tente d'approuver un changement de RIB 24 chiffres qu'il a lui-même saisi (sodMakerActorId === actorId) est bloqué par SOD_DUAL_CONTROL_VIOLATION.
 - Test Immuabilité & Hiérarchie OEC : Toute tentative d'appeler LEDGER_POST_IMMUTABLE avec un rôle AIDE_COMPTABLE, CHEF_MISSION ou AI_MCP_ACTOR échoue à 100 %.

@@ -7,6 +7,17 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 04 — Blueprint d'Architecture Technique TDD
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 02 | État réel du monorepo : conteneurs et paquets construits, squelettes et sessions qui les construisent | `main` `3496824`, `backlog.json` |
+| 2026-11-14 | 03 | Liste réelle des paquets ; validateur de RIB marocain et `ProblemDetails` | `packages/shared-types`, ERRATA D-22 |
+| 2026-11-14 | 06 | Idempotence réalisée dans `TENANT_DB` (`idempotency_records`) | ERRATA D-22 |
+| 2026-11-14 | 11 | `wrangler.toml` réel : la classe `FiscalJavaContainerDO` n'existe pas encore dans le code ; export des Durable Objects et file `fisca-xhub-clearance` en jonction | `apps/api-hono/wrangler.toml`, `etat-04` |
+| 2026-11-14 | 12 | `pnpm verify:fast` (72 tâches, ~2 minutes à froid, démarre PostgreSQL) et `pnpm verify:gate` | `package.json`, `scripts/` |
+
 Ce document constitue le dossier de conception technique (Technical Design Document) de Fisca (domaine fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Il modélise le système selon le standard C4 (Contexte, Conteneurs, Composants) et fixe la stratégie multi-tenant, l'architecture hors-ligne du POS, l'orchestration asynchrone et l'adaptateur de portabilité souveraine en 12 sections nommées prêtes pour Hyperagent (Doc_04_TDD).
 ## Section 01 — Vue de Contexte Système (C4 Niveau 1) & Invariants
 Fisca opère comme un nœud régalien et financier reliant en temps réel les entreprises marocaines, les cabinets d'expertise comptable, l'administration fiscale et l'écosystème bancaire.
@@ -32,6 +43,21 @@ Fisca opère comme un nœud régalien et financier reliant en temps réel les en
 - Loi séparée du moteur : Aucune règle fiscale ni cellule EDI n'est codée en dur ; tout est évalué depuis des tables déclaratives alimentées par le LLM Wiki.
 - Souveraineté et réversibilité : Les données résident sous juridiction européenne reconnue par la CNDP avec réplication vers un miroir souverain au Maroc.
 ## Section 02 — Cartographie des Conteneurs & Monorepo (C4 Niveau 2)
+**État réel au 2026-11-14 (`main` `3496824`, vagues 0 à 2 fusionnées).**
+
+| Élément | État | Session |
+|---|---|---|
+| `apps/api-hono` (cœur : grand livre, rapprochement, authentification, factures, POS) | Construit en routeurs à ports injectables ; pas de gestionnaire `fetch` de production | S1A, S1B, P2-A ; câblage P4-C |
+| `apps/marketing-astro` | Construit (8 tickets) | P2-C |
+| `apps/pos-pwa` | Construit (caisse, OPFS, Ticket Z, synchronisation) | P2-B |
+| `apps/web-saas` (`shared`, `pme`) | Construit ; `fiduciary` et `enterprise` prévus | P2-B ; P4-A |
+| `apps/mobile-capacitor`, `apps/standby-vps` | Squelettes (7 fichiers) | P4-A, P4-C |
+| `containers/fiscal-java` | Construit (PHIVE, Factur-X) ; Dockerfile jamais construit (pas de Docker dans le bac à sable) | P2-A |
+| `containers/docling-python`, `containers/camel-bridge`, `connectors/*` | Un seul fichier chacun : prévus | P3-B, P3-C |
+| `packages/shared-types`, `db-schema`, `auth-rbac`, `crypto-e2ee`, `compliance-cndp`, `fiscal-ast`, `qa-harness`, `i18n`, `ui-mercury`, `ubl-xades`, `vault-merkle` | Construits | S0 à P2-B |
+| `packages/edi-simpl`, `fec-auditor`, `ai-agents`, `external-integrations` | Squelettes : prévus | P3-A, P3-B, P3-C |
+| `packages/billing-metering`, `factorflow`, `pra-reversibility` | Squelettes : prévus | P4-B |
+
 Le dépôt GitHub privé fisca est structuré en Monorepo pnpm + Turborepo regroupant six conteneurs d'exécution distincts reliés par des contrats TypeScript partagés :
 
 | Conteneur Monorepo | Technologie & Runtime | Domaine / Entrée | Langues Actives | Rôle Principal |
@@ -47,6 +73,8 @@ Le dépôt GitHub privé fisca est structuré en Monorepo pnpm + Turborepo regro
 - Mutualisation UI et Mobile : L'application web-saas et la caisse pos-pwa partagent la bibliothèque packages/ui-mercury et sont compilées en applications natives iOS/Android via Capacitor.
 - Isolation des conteneurs lourds : Les bibliothèques Java et Python s'exécutent dans des microVMs Cloudflare Containers appelées uniquement par RPC privé depuis les Workers.
 ## Section 03 — Architecture des Composants Cœur (C4 Niveau 3)
+**Amendé.** Les paquets internes réels sont listés dans la section 02 ; le validateur de RIB marocain (`packages/shared-types/src/rib.ts`, clé = 97 − ((base22 × 100) mod 97), décision du propriétaire) et `ProblemDetailsSchema` (avec `instance` et `issues[]`) y vivent. Le test « en moins de 5 secondes » est une cible, pas une exigence (ERRATA B-08).
+
 L'application apps/api-hono délègue toute sa logique métier à dix packages internes purs (testables hors-ligne en moins de 5 secondes via Vitest) :
 - packages/shared-types : Définit les types entiers (Centimes, Bps, Milli), les validateurs Modulo 97 (ICE 15 chiffres et RIB 24 chiffres), le moteur FSM et le contrat StorageAdapter.
 - packages/db-schema : Contient les schémas Drizzle ORM séparés pour CONTROL_PLANE_DB et TENANT_DB, incluant les triggers d'inaltérabilité PAF du Grand Livre.
@@ -86,6 +114,8 @@ Un commerce ou restaurant marocain ne peut jamais bloquer sa file d'attente en c
 - Périphériques matériels universels : Le pilote TypeScript génère directement la séquence d'octets ESC/POS (bilingue FR/AR + QR Code TLV de conversion facture + ouverture tiroir-caisse RJ11) via WebUSB, WebBluetooth ou passerelle réseau locale pour les imprimantes Ethernet de cuisine.
 - Neutralisation atomique B2C vers B2B : Lorsqu'un client professionnel scanne le QR Code de son ticket pour demander une facture avec son ICE à 15 chiffres, le backend vérifie UNIQUE(pos_ticket_id) : si le Ticket Z du jour est déjà clôturé en comptabilité, une écriture d'extourne B2C du même montant HT/TVA est passée dans la même transaction D1 que la facture B2B xHub afin d'interdire toute double taxation sur SIMPL-TVA et le CPC.
 ## Section 06 — Traitements Asynchrones, Files, Idempotence & DLQ
+**Réalisé (idempotence).** Table `idempotency_records` dans `TENANT_DB`, écrite dans le même lot atomique que l'écriture, fenêtre de 72 h (`apps/api-hono/src/core/idempotency.ts`, migration v10) ; réserve : réponses en base64 non chiffré, à traiter avant G3. **Prévu :** files et DLQ (la file `fisca-xhub-clearance` est à déclarer dans `wrangler.toml` lors de la jonction après G2).
+
 L'architecture répartit la charge asynchrone entre trois primitives complémentaires selon le besoin de cohérence transactionnelle :
 
 | Primitive Cloudflare | Usage Métier dans Fisca | Garantie d'Exécution | Mécanisme d'Idempotence |
@@ -180,6 +210,8 @@ export interface SignedReplicationDelta {
 
 - Protocole de retour sans perte (Failback Bridge RPO = 0) : Si le trafic a basculé temporairement sur SOVEREIGN_MOROCCO_VPS, le retour vers CLOUDFLARE_EDGE active un verrou de lecture seule de 5 secondes, transmet tous les paquets SignedReplicationDelta accumulés vers l'API d'ingestion Cloudflare, vérifie l'égalité bit-à-bit des derniers entry_hash de chaque journal CGNC et des racines de Merkle, puis rouvre le trafic nominal.
 ## Section 11 — Configuration Maître Multi-Services (wrangler.toml)
+**Amendé.** Le `wrangler.toml` réel (`apps/api-hono/wrangler.toml`) déclare `CONTROL_PLANE_DB`, `R2_LEGAL_VAULT`, `FISCA_FAST_KV` et les Durable Objects `InvoiceSequencerDO` et `AgentHindsightMemoryDO` (exportés par la jonction post-G1) ; les classes `FiscalJavaContainerDO` et `DoclingPythonContainerDO` sont déclarées mais **n'existent pas dans le code** (CTR-BND-06 et CTR-BND-08 restent DRAFT). Les identifiants de ressources sont des zéros : à créer en P4-C. Jonction après G2 non faite : ré-export de `DgiClearanceWorkflow`, `env.resolveClearancePorts`, file `fisca-xhub-clearance`.
+
 Ce fichier configure l'application apps/api-hono en forçant la juridiction Union Européenne sur le stockage conformément à l'Article 43 de la Loi 09-08 (CNDP) :
 
 ```toml
@@ -258,6 +290,8 @@ index_name = "fisca-maroc-cgnc-cgi-v1"
 ```
 
 ## Section 12 — Observabilité, Sécurité Réseau & Validation du Harnais
+**Amendé.** `pnpm verify:fast` exécute 72 tâches Turbo (typage, lint, tests unitaires, gardes statiques `enforce`) en environ 2 minutes à froid dans le bac à sable de 4 Go ; il démarre lui-même PostgreSQL (`scripts/ensure-postgres.sh`, verrou `flock`). `pnpm verify:gate` (`scripts/verify-gate.sh`) ajoute `test:xsd` et PHIVE obligatoire (Java 21) pour les barrières. Le gestionnaire `fetch` de production de `apps/api-hono/src/index.ts` (ouverture D1 par identifiant) dépend de P4-C ; les routes sont donc testées par leurs routeurs et leurs ports.
+
 - Sécurité périmétrique et chiffrement : Tous les échanges externes imposent TLS 1.3 (et authentification mutuelle mTLS vers xHub DGI, les passerelles ERP et le miroir souverain), complétés par des enclaves RAM sans disque pour le déchiffrement éphémère E2EE via HPKE (RFC 9180).
 - Traçabilité OpenTelemetry bout-en-bout : Chaque requête HTTP, message Queue et décision d'agent IA émet un trace_id W3C normalisé (OpenTelemetry GenAI) corrélant l'écriture SQL, le coût en tokens et la pièce justificative R2 sans jamais journaliser de secret ni de donnée personnelle en clair.
 - Critères d'acceptation TDD pour Hyperagent (Sessions S0 et Vague 1) : Le harnais automatisé doit prouver par tests d'intégration que le même jeu de 50 écritures comptables et de scellement AIP produit exactement les mêmes empreintes SHA-256 lorsqu'il est exécuté sur le pilote CLOUDFLARE_EDGE (Miniflare/Wrangler local) et sur le pilote SOVEREIGN_MOROCCO_VPS (SQLite/Postgres en mémoire).
