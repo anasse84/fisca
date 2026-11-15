@@ -1,6 +1,6 @@
 # Spécifications Fisca
 
-Les 18 documents de spécification, convertis en Markdown le 2026-11-13. `ERRATA.md` prime sur eux : lis-le d'abord.
+Les 18 documents de spécification, convertis en Markdown le 2026-11-13 et **alignés le 2026-11-14 sur ce que les vagues 0 à 2 ont construit** (chaque document porte un « Journal des amendements » ; mentions « Réalisé », « Réalisé autrement », « Prévu : vague N, ticket T-… »). `ERRATA.md` prime sur eux : lis-le d'abord ; sa section F donne l'état d'intégration par document. Les DOCX d'origine du propriétaire ne sont pas modifiés : la référence est ce Markdown.
 
 | N° | ID canonique | Fichier |
 |---|---|---|

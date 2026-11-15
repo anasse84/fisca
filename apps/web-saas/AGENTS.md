@@ -15,6 +15,11 @@ Précise la constitution racine (`/AGENTS.md`). Vaut aussi pour `apps/pos-pwa` e
 - **POS** : clé ECDSA P-256 non extractible ; comptage aveugle (l'attendu est masqué) ; hors ligne en OPFS.
 - **Jamais** de `tenantId` ni `companyId` envoyé comme argument : l'en-tête `X-Fisca-Company-Id` sélectionne, le serveur vérifie (D-16).
 
+- **Contraste (vagues 0 à 2)** : `--brand-indigo` en sombre mesure 4,32:1 : icônes et bordures seulement, jamais du texte courant ; libellés comptables au token de texte principal (7:1, Doc_08 § 10).
+- **Routes absentes** : une route qui n'existe pas au registre reste un port injectable (`apps/web-saas/src/pme/pme-api.ts`, `PairingGateway`) ; ne jamais inventer un chemin ni un corps (D-23 liste celles à monter en vague 3 ou 4).
+- **Preuves en navigateur** : contrôle en vrai Chromium (`bootstrap-sandbox.sh --playwright`) ; OPFS : écrire, recharger, relire (`pnpm --filter @fisca/pos-pwa test:e2e`) ; captures légères seulement dans le dépôt (PNG de 150 Ko au plus, 10 au plus).
+- **Tuple de ticket POS** : libellé `SALE` pour `SALE_B2C` (table recopiée de `ubl-xades`, comparée par un test) ; client et serveur donnent la même empreinte sur le vecteur d'or (G2).
+
 ## Vérifier
 
 `pnpm --filter @fisca/web-saas test`, `pnpm verify:fast`, et pour toute interface un contrôle en vrai navigateur à 375 px et 1440 px, clair et sombre, LTR et RTL.

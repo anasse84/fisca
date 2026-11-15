@@ -79,6 +79,17 @@ Deux cas, selon l'origine du message qui a ouvert ton tour.
 - N'ouvre pas de fil neuf pour continuer : il n'aurait ni l'accord npm ni ton clone.
 - Ne compte pas sur un Schedule : ses écritures sont limitées pour les agents constructeurs.
 
+## 5 bis. Leçons des vagues 0 à 2
+
+- **Preuve avant statut** : un ticket n'est `IN_REVIEW` que si tu as rejoué toi-même `pnpm verify:fast` et la commande du ticket ; la sortie d'un sous-agent ne suffit pas. Écris le résultat dans les `review_notes`.
+- **Donnée absente** : ne rien inventer (`MISSING_INPUT`, ticket `BLOCKED`, question précise) ; si le propriétaire a fourni un sous-ensemble documenté, livre ce sous-ensemble et dis ce qui reste.
+- **Parité** : si ton code construit une entrée qu'un autre paquet vérifie (empreinte, tuple, signature), rejoue le vecteur d'or des deux côtés avant de rendre la main.
+- **Périmètre** : un besoin hors périmètre est un `SEAM_REQUEST` (fichier, symbole, signature attendue), jamais une écriture ; le pilote le traite dans une jonction.
+- **Documents partagés** : n'utilise jamais `replace` sur une section partagée du document d'état ; ajoute, ou remplace seulement ton propre bloc après relecture de la version courante.
+- **Mémoire** : 4 Go dans le bac à sable ; `TURBO_CONCURRENCY=1` ou `2` pour `verify:fast` ; ne modifie pas les scripts racine pour cela.
+- **Navigateur** : tout écran livré est contrôlé dans un vrai Chromium (`bootstrap-sandbox.sh --playwright`) à 375 et 1440 px, clair et sombre ; une persistance annoncée (OPFS) se prouve par écrire, recharger, relire.
+- **Spécifications** : quand tu construis une route, une table ou un comportement que la spécification décrit autrement, consigne l'écart dans les `review_notes` et la section 04 du document d'état : le pilote l'intègre au « Journal des amendements » (ERRATA F).
+
 ## 6. Clôture de session
 
 Quand il ne reste aucun ticket `TODO` ou `IN_PROGRESS` de la session :

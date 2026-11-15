@@ -2,6 +2,10 @@
 
 Ce dossier reçoit les fichiers officiels, tels que publiés, sans aucune modification. Il peut rester vide : **aucun ticket n'attend ces fichiers** (`docs/specs/ERRATA.md`, B-13 révisé).
 
+## État au 2026-11-14
+
+Rien n'a été déposé dans ce dossier. Les XSD OASIS UBL 2.1 sont vendorisés dans `packages/ubl-xades/xsd/` (`SOURCE.md` : provenance). Le propriétaire a indiqué le 2026-11-14 avoir joint les cahiers des charges EDI de la DGI (SIMPL-TVA, SIMPL-IS, état 9421, DRVT, Loi 69-21) : **ils ne sont pas arrivés dans le fil du pilote** (seuls deux fichiers de comptes CGNC l'ont été) ; à déposer ici avec leur `SOURCE.md`. En leur absence, la session P3-A ne s'arrête pas : elle écrit des XSD structurels stricts dérivés de Doc_07 §§ 08 à 10, marqués `PROVISIONAL_STRUCTURAL_XSD_PENDING_OFFICIAL_DGI_PACK` (ERRATA D-23).
+
 ## État au 2026-11-13
 
 | Sujet | Publié officiellement ? | Ce que fait Fisca en attendant |

@@ -1,6 +1,6 @@
 # Usine logicielle Fisca — guide d'exécution (v2.1, 2026-11-13)
 
-Ce dossier décrit comment les agents Hyperagent construisent Fisca sans intervention entre deux barrières. Il remplace `cartographie-6-vagues.md` (périmée). Les écarts par rapport aux documents d'origine sont justifiés dans `docs/specs/ERRATA.md`.
+**État au 2026-11-14.** Vagues 0, 1 et 2 terminées, auditées (pont S0, G1, G2 favorables) et fusionnées : 66 tickets sur 132 sont `DONE`, `main` est à `3496824`. Prochaines étapes : un ticket de jonction (migration v12 de `clearance_state`, `ESC_POS_TCP_IP`, genèse de 45 caractères dans `InvoiceSequencerDO`, demandes de jonction de P2-A), puis la vague 3. Les dossiers `preparation-vague-3.md`, `preparation-vague-4.md`, `preparation-s5-release.md` et `prerequis-proprietaire.md` rassemblent, par session, ce qu'il faut réutiliser, les décisions déjà prises, les pièges appris, les manques détectés et ce que le propriétaire doit fournir. Ce dossier décrit comment les agents Hyperagent construisent Fisca sans intervention entre deux barrières. Il remplace `cartographie-6-vagues.md` (périmée). Les écarts par rapport aux documents d'origine sont justifiés dans `docs/specs/ERRATA.md`.
 
 | Fichier | Contenu |
 |---|---|
@@ -8,6 +8,8 @@ Ce dossier décrit comment les agents Hyperagent construisent Fisca sans interve
 | `pilotage-automatique.md` | **Lancement unique** : procédure du pilote qui enchaîne sessions, barrières et fusions |
 | `protocole-boucle.md` | Protocole de boucle des sessions de construction |
 | `sandbox.md` | Bac à sable : outils, réseau, ce qui ne peut pas y être testé |
+| `preparation-vague-3.md`, `preparation-vague-4.md`, `preparation-s5-release.md` | Dossiers de préparation des vagues suivantes : réutilisations, décisions, pièges, manques, entrées externes |
+| `prerequis-proprietaire.md` | Tout ce que le propriétaire doit fournir ou décider, par vague et par échéance |
 | `reference/` | Scripts de garde corrigés et testés, à installer par S0 (T-S0-03), et `pilot-status.mjs` (calcul des actions du pilote) |
 | `../../.meta/session-scopes.json` | La matrice, lisible par les scripts |
 
@@ -91,7 +93,7 @@ vague. Rends ton verdict par rubric, consigne-le, et termine par la ligne VERDIC
 1. Préalable : tous les tickets des sessions auditées sont `IN_REVIEW`. S'il reste un `TODO`, un `IN_PROGRESS` ou un `BLOCKED`, la barrière ne s'ouvre pas : dis-le dans ton rapport et termine par `VERDICT <ID> : DÉFAVORABLE (barrière non ouverte)`.
 2. Clone, `bash scripts/bootstrap-sandbox.sh` avec les options de la vague, puis branche locale `audit/gate-N` depuis `origin/main`. Fusionne-y sans avance rapide les branches candidates, dans l'ordre de la matrice (S1A avant S1B). Sur conflit de `pnpm-lock.yaml` : `git checkout --theirs pnpm-lock.yaml && pnpm install`. Tout autre conflit est un défaut de périmètre : refus.
 3. Intégrité : `git diff origin/main -- AGENTS.md CLAUDE.md scripts/ docs/specs/ packages/qa-harness/src/fiscal-golden-suite.ts` ne montre aucun changement venu d'une branche de construction, et `node scripts/enforce-constitution.ts --range origin/main`, lancé sur chaque branche candidate avec son périmètre, ne signale rien.
-4. Harnais complet : `pnpm verify:gate` (et `pnpm test:xsd`). Puis les tickets de barrière T-Gx-01 et T-Gx-02 du backlog, avec les scénarios détaillés dans `docs/orchestration/barrieres-qa.md`. Tes tests adverses vont dans `packages/qa-harness/src/adversarial/`, sur ta branche locale.
+4. Harnais complet : `pnpm verify:gate` (défini par `scripts/verify-gate.sh` : `verify:fast`, `test:xsd`, tests `ubl-xades` avec `FISCA_REQUIRE_PHIVE=1` ; Java 21 exigé, `bash scripts/bootstrap-sandbox.sh --java` ; option `--browser` pour la preuve OPFS et Lighthouse). Rejoue toujours client et serveur sur les mêmes vecteurs d'or (parité des empreintes) : à G2, un client qui n'utilisait pas le même libellé de type de ticket que le serveur a fait rejeter 600 tickets sur 600. Vérifie aussi que le « Journal des amendements » de chaque spécification concernée a été complété pour ce qui vient d'être construit (ERRATA F). Puis les tickets de barrière T-Gx-01 et T-Gx-02 du backlog, avec les scénarios détaillés dans `docs/orchestration/barrieres-qa.md`. Tes tests adverses vont dans `packages/qa-harness/src/adversarial/`, sur ta branche locale.
 5. Note chaque rubric engagée, critère par critère, sur preuve observée (fichier et ligne, sortie de commande, capture). Une clause éliminatoire met la rubric à 0. Seuil : 95/100 sur chaque rubric.
 6. Verdict favorable : pour chaque ticket audité, `status = DONE`, `tests_green = true`, `rubric_score` ; verdict daté dans `05_QA_Gate_Verdicts` ; contrats de la vague passés à `LOCKED` dans le registre (un contrat `PROVISIONAL` garde ce statut : ERRATA B-13). Ton rapport final porte les branches, les PR, les scores, les sorties du harnais et, s'il y en a, le correctif de tes tests adverses (`git format-patch --stdout`), puis la ligne `VERDICT <ID> : FAVORABLE`. Tu ne délègues rien : le pilote lit ce rapport et fusionne.
 7. Verdict défavorable : chaque ticket fautif repasse à `TODO`, `retry_count = 0`, avec dans `review_notes` l'écart précis, la sortie de commande et ce qui manque pour atteindre 95. Les autres tickets restent `IN_REVIEW`. Aucune fusion. La session concernée reprend, puis la barrière se rejoue.
@@ -99,7 +101,7 @@ vague. Rends ton verdict par rubric, consigne-le, et termine par la ligne VERDIC
 ## 5. Procédure de fusion (orchestrateur)
 
 1. Vérifie le verdict dans `05_QA_Gate_Verdicts` et que tous les tickets de la vague sont `DONE`.
-2. Pour chaque PR, dans l'ordre de la matrice : mets la branche à jour sur `origin/main` par une fusion (jamais de rebase forcé), résous `pnpm-lock.yaml` par `pnpm install`, relance `pnpm verify:fast`, pousse, puis fusionne la PR (commit de fusion).
+2. Pour chaque PR, dans l'ordre de la matrice et des dépendances (une branche qui importe un paquet d'une autre n'est verte qu'après la fusion de l'autre : P2-A, puis P2-B, puis P2-C) : mets la branche à jour sur `origin/main` par une fusion (jamais de rebase forcé), résous `pnpm-lock.yaml` par `pnpm install`, relance `pnpm verify:fast`, pousse, puis fusionne la PR par commit de fusion (jamais squash) avec `expectedHeadSha` complet de 40 caractères (`git rev-parse`, jamais complété à la main). Le commit de fusion qui touche plusieurs périmètres se fait avec `FISCA_ORCHESTRATOR_MODE=1`. La fusion se constate dans git : `git merge-base --is-ancestor origin/<branche> origin/main` (ERRATA B-16).
 3. Applique le correctif des tests adverses sur une branche `feat/wN-gate-vectors` en mode orchestrateur, PR, fusion.
 4. Sur `main` à jour : `pnpm verify:fast` vert. Sinon, annule la dernière fusion par une PR de retour et rouvre le ticket en cause.
 5. Passe les tickets de la barrière (T-Gx-01 à T-Gx-03) à `DONE`, mets à jour `01_Current_Wave_Status` (vague suivante autorisée, compteur de tickets `DONE`), puis commite par PR `.meta/backlog-snapshot-main.json` et `.meta/openapi.snapshot.json` régénéré.
@@ -115,6 +117,8 @@ Avant le lancement :
 Au lancement :
 
 - Accorder l'accès npm aux 8 fils (le pilote et ses 7 voies) : chaque demande apparaît dans la boîte de réception, bouton Allow. L'accord vaut pour le fil, une fois pour toutes.
+
+Avant chaque vague, consulter `prerequis-proprietaire.md` : il liste, par échéance, les secrets, comptes, textes officiels, jeux de données et décisions attendus, et ce qui se passe s'ils manquent (blocage dur, `STOP_OWNER`, repli documenté).
 
 Pendant la construction :
 

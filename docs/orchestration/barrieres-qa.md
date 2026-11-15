@@ -6,6 +6,17 @@ Les quatre barrières d'audit indépendant (G1 à G4) et la session finale de mi
 > Schémas (ERRATA B-13 révisé) : `pnpm test:xsd` valide contre le schéma présent, officiel s'il est déposé dans `docs/reference/dgi/`, provisoire sinon. Un schéma provisoire n'est pas une clause éliminatoire ; l'auditeur vérifie qu'il dérive strictement de Doc_07, qu'il est marqué provisoire, que son contrat est `PROVISIONAL` (et le reste), et qu'aucun écran ni texte ne prétend à une conformité officielle.
 
 ## 1. Synthèse Opérationnelle des Barrières QA et de la Release S5
+
+**Enseignements du pont S0, de G1 et de G2 (2026-11-14), à appliquer à G3, G4 et S5.**
+- Un tour 1 défavorable est normal et utile : G1 (R1 0 par une clause éliminatoire, R2 89) puis G2 (R3 79) ont chacun trouvé un défaut réel que les voies n'avaient pas vu. Le tour 2 réaudite ce qui a changé mais **refait toujours les contrôles bloquants**.
+- Une branche qui importe un paquet d'une autre (P2-B importe `ubl-xades`, de P2-A) est auditée sur une **branche d'intégration locale** (`audit/gate-N`, jamais poussée) ; seule, elle est rouge, ce qui est attendu. L'ordre de fusion suit les dépendances.
+- **Parité client et serveur** : rejouer les mêmes vecteurs d'or des deux côtés (tuples d'empreinte, libellés de type, séquences). Un test qui construit son entrée à la main ne prouve rien.
+- Les tests adverses de l'auditeur sont versés (patch `git format-patch`) ; le pilote les intègre à la branche concernée ou par PR sur `main` selon le périmètre.
+- Les rubriques R1, R2 et R3 sont toutes appliquées à ce que les branches touchent, seuil de 95 sur chacune ; l'auditeur note ses propres scores (aucun outil juge séparé).
+- Mémoire : `pnpm verify:fast` à froid dans un bac à sable de 4 Go demande `TURBO_CONCURRENCY=1` ; Turbo ne transmet pas `JAVA_HOME` (le script `verify-gate.sh` l'exporte).
+- Lighthouse, `tools-check`, `csp-check`, `cgnc-check` et la preuve OPFS se rejouent avec Chromium de `bootstrap-sandbox.sh --playwright` ; la largeur 1024 px (tablette POS) n'a pas été capturée à G2 : à ajouter à G4.
+- Un faux positif de l'auditeur se retire sur preuve (G1 : deux routes 404) ; un chiffre rapporté par une voie se vérifie dans le code.
+
 Chaque barrière s'ouvre dans un fil Hyperagent neuf en mode Auto uniquement lorsque tous les tickets constructeurs de la vague correspondante affichent le statut de revue dans fisca_master_backlog.
 
 | Étape | Agent Actif | Branches Auditées | Rubrics Exigées | Tickets |
@@ -64,8 +75,8 @@ COORDINATION : @fisca_master_backlog @fisca_contracts_registry @FISCA_STATE_AND_
 PROTOCOLE D'AUDIT DÉTERMINISTE (TICKETS T-G2-01 À T-G2-03) :
 1. Assemblage des 3 Flux Parallèles : crée `audit/gate-2` depuis `origin/main` et fusionne séquentiellement `origin/feat/w2-xhub-4320-merkle`, `origin/feat/w2-ui-pme-pos` puis `origin/feat/w2-astro-growth`. Vérifie l'absence totale de conflit Git et le respect strict des `FISCA_SCOPE_DIRS` de chaque branche.
 2. Ticket T-G2-01 (Audit Clearance, Merkle & Extourne POS — Rubric R1) :
-   - Exécute `pnpm test:xsd` et le conteneur Java `PHIVE` : exige 0 erreur XSD/Schematron EN 16931 sur les 5 types UBL (`380`, `381`, `383`, `386`, `389`), y compris débours hors TVA, retenue garantie BTP et timbre espèces 25 bps.
-   - Vérifie le PDF/A-3b Factur-X bilingue FR/AR (double arrêté en lettres déterministe, polices `Geist` et `Noto Sans Arabic` embarquées sans arabe disjoint) et le rejet immédiat `ADR_06_LOI4320_CERT_MISMATCH` si l'`OID` du certificat Barid eSign diffère de l'ICE/IF émetteur.
+   - Exécute `pnpm test:xsd` et le conteneur Java `PHIVE` : exige 0 erreur XSD, et pour EN 16931 exactement les écarts connus `KNOWN_PHIVE_DEVIATIONS` (régime provisoire, ERRATA B-13 ; `FISCA_REQUIRE_PHIVE=1`, Java 21) sur les 5 types UBL (`380`, `381`, `383`, `386`, `389`), y compris débours hors TVA, retenue garantie BTP et timbre espèces 25 bps.
+   - Vérifie le PDF/A-3b Factur-X bilingue FR/AR (double arrêté en lettres déterministe, polices embarquées sans arabe disjoint : `IBM Plex Sans Arabic` pour l'arabe du PDF (arbitrage D-23 ; le texte d'origine citait `Noto Sans Arabic`, réservée au Web), police latine selon `containers/fiscal-java`) et le rejet immédiat `ADR_06_LOI4320_CERT_MISMATCH` si l'`OID` du certificat Barid eSign diffère de l'ICE/IF émetteur.
    - Vérifie que 500 archives `archival_packages` sur une même journée ne déclenchent qu'un seul appel TSA `RFC 3161` sur la racine quotidienne de Merkle, et que la conversion QR d'un ticket POS post-clôture Z génère dans la même transaction atomique la facture B2B xHub et l'écriture d'extourne B2C (`UNIQUE(pos_ticket_id)`).
 3. Ticket T-G2-02 (Audit Design Mercury, POS 72h & Astro SEO/GEO — Rubric R3) :
    - Vérifie 0 classe CSS physique gauche/droite, 0 hexadécimal hors `tokens.css`, alignement `tabular-nums` en `dir="ltr"` en modes clair et sombre, et `CLS == 0` lors de l'injection SSE de 100 lignes en densités `44px` et `28px`.
