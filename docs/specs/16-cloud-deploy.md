@@ -7,9 +7,18 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 16 — Guide de Déploiement Cloud & Infrastructure
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 01 à 12 | Rien n'est déployé : P4-C ; prérequis externes (jeton GitHub avec permission Workflows, comptes Cloudflare) ; staging seulement par la compétence dédiée | ERRATA B-12 ; `etat-04` |
+
 Ce document constitue le manuel d'ingénierie cloud, de déploiement Cloudflare Edge, de configuration Multi-DNS, d'installation du serveur miroir souverain au Maroc et d'automatisation GitHub Actions de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes à être importées dans Hyperagent avec la portée Projet (Doc_16_Cloud_Deploy).
 
 ## Section 01 — Topologie des 4 Environnements & Sous-Domaines ANRT
+**État au 2026-11-14.** Aucun environnement n'est provisionné et aucun workflow GitHub Actions n'existe : tout est prévu en **P4-C** (`.github/workflows/`, `ops/`, `scripts/provision-cloudflare-prod.sh`, `apps/standby-vps`). Prérequis externes du propriétaire : jeton GitHub avec la permission Workflows (le jeton actuel expire le 2026-12-12 et n'a pas cette permission, ERRATA B-12), comptes et jetons Cloudflare, protection de la branche `main` (Pull Request obligatoire, 0 approbation, force-push et suppression bloqués) non posée. Les identifiants de ressources de `wrangler.toml` sont des zéros (Doc_04 section 11). Jonction après G2 non faite : ré-export de `DgiClearanceWorkflow`, `env.resolveClearancePorts`, file `fisca-xhub-clearance`. Le Dockerfile de `containers/fiscal-java` n'a jamais été construit (pas de Docker dans le bac à sable).
+
 L'infrastructure de Fisca sépare hermétiquement quatre environnements d'exécution afin qu'aucun test automatisé d'agent ni déploiement intermédiaire ne touche aux bases fiscales de production :
 
 | Environnement | Domaine Racine | Juridiction Stockage | Usage Opérationnel | Déclencheur |

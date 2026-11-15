@@ -7,8 +7,28 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 17 — Intégrations des Services Tiers
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 01 à 12 | Statut réel des intégrations : réalisé (Barid eSign/CSC en client de test, RFC 3161 partiel, xHub simulé) ; prévu (Infobip, SES, Payzone, WhatsApp, OMPIC, Google OAuth réel) | `packages/ubl-xades`, `packages/auth-rbac` ; `backlog.json` |
+
 Ce document spécifie l'architecture technique, les protocoles de sécurité, la gouvernance anti-bannissement Meta et les modes dégradés de tous les connecteurs externes de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 12 sections nommées sont prêtes à être importées dans Hyperagent avec la portée Projet (Doc_17_Third_Party_Integrations).
 ## Section 01 — Architecture Unifiée des Connecteurs Externes & Garde-Fous
+**État réel au 2026-11-14.**
+
+| Intégration | État | Détail |
+|---|---|---|
+| Barid eSign HSM (CSC API v2.0) | Réalisé en client, clés de test | `packages/ubl-xades/src/signature` : mTLS, conversion des formats de retour, échec fermé ; aucun certificat réel |
+| Horodatage RFC 3161 | Contrôle partiel | Empreinte, `genTime`, nonce ; signature de la TSA, chaîne et révocation non évaluées |
+| Passerelle xHub / DGI | Simulée | Pilote `simulated` seul ; schémas officiels non publiés (ERRATA B-13) |
+| Google OAuth | Réalisé sans appel réel | `packages/auth-rbac/src/oauth-google-routes.ts` ; callback en JSON, 302 à fragment décidé (D-23) non construit |
+| Infobip, WhatsApp, Amazon SES, Payzone, DirectInfo OMPIC | Prévu : vague 3 (P3-C) | `packages/external-integrations` : squelette |
+| Odoo, Sage 100, Camel | Prévu : vague 3 (P3-C) | un fichier chacun |
+
+Les comptes, jetons et contrats de ces fournisseurs sont des prérequis du propriétaire : voir `docs/orchestration/prerequis-proprietaire.md`.
+
 Tous les appels vers des fournisseurs tiers sont centralisés dans le package packages/external-integrations afin qu'aucune route métier n'appelle directement fetch sans contrôle de souveraineté, timeout ni disjoncteur.
 - Coupe-circuit réglementaire préalable : Chaque connecteur invoque d'abord assertSovereignEgressAllowed pour bloquer tout flux hors Maroc sur les dossiers ENT_SOUVERAIN (Loi n° 05-20 DGSSI).
 - Zéro secret en dehors du coffre : Les clés API et certificats clients mTLS résident exclusivement dans Cloudflare Secrets Store et ne sont jamais journalisés dans les traces OpenTelemetry.
