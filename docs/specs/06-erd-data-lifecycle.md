@@ -7,6 +7,37 @@ En cas de contradiction, ERRATA.md prime sur ce texte.
 -->
 
 # Document 06 — Modèle de Données (ERD) & Cycle de Vie de la Donnée
+
+### Journal des amendements
+
+| Date | Section | Amendement | Source |
+|---|---|---|---|
+| 2026-11-14 | 01 | Les migrations réelles du locataire (v1 à v11) et du plan de contrôle sont listées ; format de `X-Fisca-Company-Id` : `[A-Za-z0-9_-]{1,64}` | `packages/db-schema/src/tenant.ts` (`TENANT_MIGRATIONS`), ERRATA D-22 |
+| 2026-11-14 | 02 | Table `company_cpa_mandates` du plan de contrôle (source de vérité des mandats cabinet) | `packages/db-schema/src/control-plane.ts` |
+| 2026-11-14 | 03 | `invoices.sha256_hash` et `previous_pi_hash` sans CHECK de longueur (genèse PIH de 45 caractères admise) ; CHECK de `clearance_state` et `cdv_lifecycle_status` posés par la migration v4 ; v12 prévue | `tenant.ts` migration v4, ERRATA D-23 |
+| 2026-11-14 | 04 | Écarts assumés de la caisse (signature ECDSA `NOT NULL`, CHECK 64 caractères minuscules sur `ticket_sha256` et `z_sha256`, déclencheurs de v4, amorce de chaîne = 64 zéros) ; valeur `ESC_POS_TCP_IP` du CHECK de `pos_paired_peripherals` prévue | `tenant.ts` migrations v2, v4 ; ERRATA D-22, D-23 |
+| 2026-11-14 | 05 | Grand livre : genèse du journal de 45 caractères conforme ; déclencheurs v3 à v11 (exercice clos, solde de caisse 5161, `POSTED` seulement depuis `REVISEE_CYCLE`, indicateur PII monotone) | `tenant.ts` migrations v3, v4, v6, v8, v9, v11 |
+| 2026-11-14 | 09 | Table d'idempotence : `idempotency_records` (v10) remplace `idempotency_keys` (v7) | `tenant.ts` migration v10 |
+
+#### Migrations réelles au 2026-11-14 (`main` `3496824`)
+
+| Version | Nom | Contenu |
+|---|---|---|
+| Plan de contrôle | `control-plane.ts` | Tables de la section 02, plus `company_cpa_mandates` (mandats cabinet) |
+| Locataire v1 | `tenant_part1_keys_partners_clearance` | Clés, tiers, factures et clearance (section 03) |
+| v2 | `tenant_part2_pos_sessions_tickets_z` | Caisse POS (section 04) |
+| v3 | `tenant_part3_general_ledger_cgnc_paf_triggers` | Grand livre et déclencheurs PAF (section 05) |
+| v4 | `tenant_part4_pilot_corrections_immutability_statuses` | Corrections du pilote : immutabilité POS, statuts de facture, exercice clos |
+| v5 | `tenant_part5_subledgers_payroll_9421_archival_worm` | Sous-livres, paie 9421, coffre AIP (section 06) |
+| v6 | `tenant_part6_pii_flag_monotone_all_tables` | `pii_restricted_flag` monotone 0 vers 1 sur toutes les tables concernées |
+| v7 | `tenant_part7_idempotency_keys` | Table d'idempotence initiale, remplacée en v10 |
+| v8 | `tenant_part8_g1_corrections_ledger_integrity` | Corrections de G1 (intégrité du grand livre) |
+| v9 | `tenant_part9_ledger_cash_balance_closed_year_source_types` | Solde de caisse 5161, exercice clos, types de source |
+| v10 | `tenant_part10_idempotency_records` | `idempotency_records` (remplace `idempotency_keys`) |
+| v11 | `tenant_part11_posted_only_from_revised_cycle` | `POSTED` uniquement depuis `REVISEE_CYCLE` |
+| **v12 (prévue, non faite)** | à créer par le ticket de jonction | `EN_ATTENTE_XHUB` et `ECHEC_TECHNIQUE_XHUB` dans le CHECK de `clearance_state` ; `ESC_POS_TCP_IP` dans le CHECK de `pos_paired_peripherals` (ERRATA D-23) |
+
+Les sommes SHA-256 des migrations (`expectedSha256Hex`) sont figées : une migration livrée ne se modifie plus, on en ajoute une.
 Ce document spécifie les schémas relationnels SQL, les déclencheurs d'inaltérabilité, l'indexation aveugle E2EE et la gouvernance de rétention décennale de Fisca (fisca.ma), édité par SYNAPTIC SYSTEMS SARL AU (Rabat, Maroc). Ses 10 sections nommées sont prêtes pour Hyperagent avec la portée Projet (Doc_06_ERD).
 ## Section 01 — Architecture de Persistance à 3 Plans & Conventions
 La persistance de Fisca sépare physiquement la gouvernance globale, les comptabilités isolées par entreprise et l'état transactionnel local afin d'éliminer toute fuite inter-clients.
@@ -20,7 +51,7 @@ La persistance de Fisca sépare physiquement la gouvernance globale, les comptab
 | POS Local | SQLite WASM OPFS | 1 base par tablette | Appareil physique | Catalogue, tickets hors-ligne 72h, Z |
 
 Cinq conventions de typage s'appliquent sans exception à toutes les tables du projet :
-- Clés primaires triables : Toutes les tables utilisent des identifiants TEXT au format UUIDv7 ordonnés chronologiquement pour optimiser les index B-Tree.
+- Clés primaires triables : Toutes les tables utilisent des identifiants TEXT au format UUIDv7 ordonnés chronologiquement pour optimiser les index B-Tree. **Réalisé :** UUIDv7 par défaut pour les lignes générées par Fisca ; l'identifiant de société de l'en-tête `X-Fisca-Company-Id` est validé au format `[A-Za-z0-9_-]{1,64}` (décision du propriétaire, ERRATA D-22) ; la clé d'idempotence reste un UUIDv7.
 - Entiers monétaires stricts : Les montants sont stockés en centimes entiers (_cents), les taux en points de base (_bps), les quantités en milli-unités (_milli) et les cours BAM en micro-unités (_micro).
 - Dates canoniques : Les dates comptables utilisent le texte ISO YYYY-MM-DD et les horodatages système le format UTC YYYY-MM-DDTHH:MM:SSZ.
 - Portabilité SQL : Le DDL n'utilise que des types et contraintes compatibles entre SQLite (Cloudflare D1) et PostgreSQL 16 (serveur souverain Maroc).
@@ -198,6 +229,8 @@ CREATE TABLE archival_merkle_batches (
 ```
 
 ## Section 03 — Schéma Locataire (TENANT_DB Partie 1) : E2EE, Tiers & Clearance xHub
+**Réalisé et amendé (migrations v1, v4).** `invoices.sha256_hash` et `previous_pi_hash` n'ont aucun CHECK de longueur : la genèse de la chaîne PIH, `GENESIS_HASH_` + 32 zéros (45 caractères), y est admise (ERRATA D-22 ; empreinte d'or `0ec5abda99c2661c14b933a1133263083d83965fcbea0d4d55ac147eda3aa797`). `clearance_state` porte les 8 statuts de la FSM 01 de Doc_02 § 02 et `cdv_lifecycle_status` porte `NONE` et 5 sous-états commerciaux, par déclencheurs SQLite et contraintes PostgreSQL nommées (`invoices_clearance_state_check`, `invoices_cdv_lifecycle_status_check`). **Prévu (migration v12, jonction après G2, ERRATA D-23) :** `EN_ATTENTE_XHUB` et `ECHEC_TECHNIQUE_XHUB` s'ajoutent au CHECK de `clearance_state` ; en attendant, un échec définitif de télétransmission est une ligne d'audit.
+
 Chaque société cliente reçoit ce premier groupe de tables gérant les enveloppes cryptographiques multi-acteurs, le référentiel tiers indexé à l'aveugle, le rapprochement multi-BL et les factures UBL 2.1 :
 
 ```sql
@@ -357,6 +390,8 @@ CREATE TABLE invoice_lines (
 ```
 
 ## Section 04 — Schéma Locataire (TENANT_DB Partie 2) : Caisse Fisca POS & Ticket Z
+**Réalisé et amendé (migrations v2, v4).** Écarts assumés avec le DDL d'origine : `pos_tickets.ecdsa_signature_b64` (NOT NULL) est ajoutée ; `ticket_sha256` et `z_sha256` portent un CHECK de 64 caractères en minuscules ; `prev_ticket_sha256` et `prev_z_sha256` n'ont pas de CHECK en v2 mais leur format est imposé par des déclencheurs de v4 : **l'amorce de chaîne est donc 64 zéros** (et non la genèse de 45 caractères du grand livre et du PIH, ERRATA D-22) ; `RETURN_REFUND` exige `origin_ticket_id` ; `expected_closing_cash_cents` et `blind_counted_cash_cents` sont >= 0. Les tickets et clôtures Z sont immuables (UPDATE interdit) sauf l'exception étroite et monotone de la conversion B2B (`b2b_conversion_state` de `NONE` vers `CONVERTI_B2B_AVANT_Z` ou `CONVERTI_B2B_POST_Z_NEUTRALISE`, avec `converted_invoice_id` de NULL vers une valeur) et la pose unique de `gl_journal_entry_id` et `aip_archive_id` sur la clôture Z. `ticket_kind` stocké vaut `SALE_B2C` ou `RETURN_REFUND` ; le tuple d'empreinte utilise le libellé `SALE` pour `SALE_B2C` (table `POS_TICKET_KIND_TUPLE_LABEL`, `packages/ubl-xades/src/pos/hash.ts`). `terminal_seq_number` est un TEXT unique global `{terminalId}-{9 chiffres}`, alors que le tuple porte l'entier de la séquence. **Prévu (jonction après G2, D-23) :** `ESC_POS_TCP_IP` n'est pas encore dans le CHECK de `pos_paired_peripherals`.
+
 Ces tables équipent à la fois la base SQLite WASM locale du terminal hors-ligne (pos-pwa) et la base TENANT_DB synchronisée, garantissant le chaînage SHA-256 de l'Article 145 du CGI et l'absence de double imposition lors d'une conversion de ticket B2C en facture B2B :
 
 ```sql
@@ -422,6 +457,8 @@ CREATE TABLE pos_z_closures (
 ```
 
 ## Section 05 — Schéma Locataire (TENANT_DB Partie 3) : Grand Livre CGNC Immuable & Triggers PAF
+**Réalisé et amendé (migrations v3, v4, v6, v8, v9, v11).** `journals.last_entry_hash` démarre à `GENESIS_HASH_` + 32 zéros (45 caractères), conforme à ce DDL ; l'empreinte d'une pièce est le SHA-256 de `JSON.stringify` du tuple `FISCA_GL_ENTRY_V1` (la clôture d'exercice : `FISCA_GL_CLOSE_V1`), sans les colonnes `_enc` (ERRATA D-22). Déclencheurs ajoutés par rapport au DDL d'origine : exercice CLOSED figé, solde de la caisse 5161 jamais négatif (v9), indicateur `pii_restricted_flag` monotone 0 vers 1 y compris sur un exercice CLOSED (v6, décision du propriétaire : l'opposition Loi 09-08 n'altère ni les montants ni `entry_hash`), contre-passation unique par pièce (`reversal_of_entry_id`, index `uq_journal_entries_reversal_of`), et `POSTED` seulement depuis `REVISEE_CYCLE` (v11). L'extourne partielle B2C vers B2B (`B2C_TO_B2B_REVERSAL`) est liée par `invoice_id`, sans `reversal_of_entry_id`.
+
 Cette section implémente le Grand Livre électronique conforme aux articles 145-I et 211 du CGI, la vue de balance à 6 colonnes pour SIMPL-IS v2.0.3 et cinq déclencheurs matériels SQLite empêchant toute altération d'écriture validée ou tout solde de caisse 5161 négatif :
 
 ```sql
