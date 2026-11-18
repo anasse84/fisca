@@ -1,0 +1,192 @@
+{
+  "baseConfigId": null,
+  "sourceAgentId": "cmwd18sft001o08adr4cb2fq6",
+  "mode": "existing",
+  "name": "Fisca-QA-Security-Auditor",
+  "description": "Auditeur qualité et sécurité de Fisca, en lecture seule : relit chaque ticket, exécute les tests et le note selon les rubrics R1, R2 et R3 (seuil d'acceptation 95/100).",
+  "icon": "🛡️",
+  "tools": [
+    {
+      "id": "browser",
+      "enabled": true
+    },
+    {
+      "id": "globalTablesEnabled",
+      "enabled": true
+    }
+  ],
+  "skills": [
+    "cmwd0c8of01uq08ada5qsqrmn",
+    "cmwd0ch2x01th07ad9zn73ool",
+    "cmwd0dxgi02gl08ad92hfz113",
+    "cmwd0e1il01ow08adrwdqzq0g",
+    "cmwd0e8l301ty07ad0klrpdai",
+    "cmwd0ecpk02av07ade82x66x4",
+    "cmwd0eij5026i07ad62bk47rx",
+    "cmwd0enr901v807ad972kahr1"
+  ],
+  "memories": [
+    "cmwf79ls400p407ad94xnsmm4"
+  ],
+  "integrations": [
+    {
+      "id": "github",
+      "resourceScope": {
+        "version": 1,
+        "repos": [
+          {
+            "owner": "anasse84",
+            "repo": "fisca"
+          }
+        ],
+        "toolsets": [
+          "context",
+          "git",
+          "issues",
+          "pull_requests",
+          "repos"
+        ]
+      }
+    }
+  ],
+  "modelSettings": {
+    "modelId": "sonnet-latest",
+    "defaultSubagentModel": null,
+    "maxThinkingTokens": null,
+    "effort": "medium",
+    "speed": null,
+    "maxBudgetUsd": null
+  },
+  "learning": {
+    "skillLoadMode": "discover",
+    "skillScope": "global",
+    "enableMemorySuggestions": true,
+    "enableSkillSuggestions": true,
+    "enablePromptSuggestions": true,
+    "enableRubricSuggestions": false,
+    "autoSaveMemories": null,
+    "autoSaveSkills": null,
+    "autoSaveAgents": false,
+    "autoSavePrompts": false
+  },
+  "contextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "name": "FISCA_STATE_AND_HANDOFF",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "name": "fisca_master_backlog",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "name": "fisca_contracts_registry",
+      "isPinned": true
+    }
+  ],
+  "scheduledInvocations": [],
+  "persistBrowser": false,
+  "delegation": {
+    "scope": "explicit_list",
+    "approvalMode": "never_ask"
+  },
+  "baseLinkedMemoryIds": [
+    "cmwf79ls400p407ad94xnsmm4"
+  ],
+  "baseOwnedMemoryIds": [],
+  "baseSkillIds": [
+    "cmwd0c8of01uq08ada5qsqrmn",
+    "cmwd0ch2x01th07ad9zn73ool",
+    "cmwd0dxgi02gl08ad92hfz113",
+    "cmwd0e1il01ow08adrwdqzq0g",
+    "cmwd0e8l301ty07ad0klrpdai",
+    "cmwd0ecpk02av07ade82x66x4",
+    "cmwd0eij5026i07ad62bk47rx",
+    "cmwd0enr901v807ad972kahr1"
+  ],
+  "baseContextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "isPinned": true
+    }
+  ],
+  "baselineUpdatedAt": "2026-11-15T01:04:08.940Z",
+  "executionMode": "auto",
+  "changedFields": [],
+  "accessPolicy": {
+    "version": 2,
+    "defaultEffect": "deny",
+    "statements": [
+      {
+        "label": "statement yMpiVQ8MT1JC",
+        "words": "allow every write (append, write, delete) on runs none of a schedule, Live, a webhook, an inbound email or an MCP client started",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement zdyNihuqqUHf",
+        "words": "\"Je veux que cet agent tourne en automatique, sans approbation de ma part.\" on runs started by scheduled",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement UiyHYOEYxTff",
+        "words": "allow every write (append, write, delete) on runs started by alive",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement woYterDJ0555",
+        "words": "allow every write (append, write, delete) on runs started by webhook",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement JiLhbvWcpDJo",
+        "words": "allow every write (append, write, delete) on runs started by email",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement TzHkE6mqJ7nh",
+        "words": "allow every write (append, write, delete) on runs started by mcp",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement PWpTZf65KU92",
+        "words": "\"Sur GitHub, il est en lecture seule (lecture Git et tests seuls) : toute écriture GitHub lui est interdite, qu'il s'agisse de créer une branche, de commiter, de pousser, d'ouvrir une Pull Request ou de fusionner.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      },
+      {
+        "label": "statement YEDminhBV2tZ",
+        "words": "\"Sur GitHub, il est en lecture seule (lecture Git et tests seuls) : toute écriture GitHub lui est interdite, qu'il s'agisse de créer une branche, de commiter, de pousser, d'ouvrir une Pull Request ou de fusionner.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      },
+      {
+        "label": "statement oSIqN8g8PxrX",
+        "words": "\"La suppression de dépôt (delete_repository) et le force-push sont interdits.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      }
+    ]
+  }
+}

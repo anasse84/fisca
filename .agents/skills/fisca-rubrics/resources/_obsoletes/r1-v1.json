@@ -1,0 +1,35 @@
+{
+  "id": "cmwd10uya000m07adpeaavth7",
+  "name": "R1 — Conformité CGI, CGNC & XSD",
+  "description": "Rubric R1 du plan d'usine logicielle Fisca : conformité fiscale, comptable et XSD du code livré sur un ticket. Modèle juge prévu : GPT-6 Astra (à choisir à chaque évaluation, ne jamais laisser Judge Model sur « Same as thread »). Score minimal d'acceptation d'un ticket : 95/100.",
+  "taskType": "fisca_conformite_fiscale",
+  "isGeneral": false,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 3,
+  "criteria": [
+    {
+      "name": "Zéro float, centimes entiers et équilibre Débit == Crédit",
+      "weight": 0.4,
+      "description": "Aucun montant monétaire n'est stocké ni calculé en nombre à virgule flottante : centimes entiers, taux en points de base, quantités en milli-unités, cours de change en micro-unités. Chaque écriture comptable est équilibrée (total_debit_cents == total_credit_cents).",
+      "scoringGuide": "1 = un montant monétaire en float est présent, ou une écriture peut être enregistrée déséquilibrée. 3 = entiers partout, mais l'équilibre Débit == Crédit repose sur le code applicatif sans contrainte SQL CHECK ni test qui le prouve. 5 = entiers exclusivement (centimes, bps, milli- et micro-unités) et équilibre garanti par contrainte SQL CHECK, démontré par des tests verts.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Règles 100 % dynamiques en D1 + TVA 2026 (20/10/0 %)",
+      "weight": 0.35,
+      "description": "Aucune règle fiscale n'est codée en dur : chaque règle est un arbre AST JSON validé par Zod, lu depuis dynamic_fiscal_rules et tax_regimes_catalog sur D1. Les nouvelles factures n'admettent que les taux de TVA 20 %, 10 % et 0 % exonéré ; les taux 7 % et 14 % sont bloqués hors lecture d'archives antérieures à 2026.",
+      "scoringGuide": "1 = un taux, un seuil ou une règle fiscale est codé en dur, ou un taux de 7 % ou 14 % est accepté sur une nouvelle facture. 3 = les règles viennent de D1 mais sans validation Zod, ou le blocage des anciens taux n'est couvert par aucun test. 5 = toutes les règles proviennent de D1 sous forme d'AST validé par Zod, et des tests prouvent que seuls 20 %, 10 % et 0 % passent sur les factures émises depuis le 1er janvier 2026.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Validation xmllint XSD / UBL 2.1 sans erreur",
+      "weight": 0.25,
+      "description": "Chaque flux XML produit (UBL 2.1, SIMPL-TVA, SIMPL-IS, État 9421, DRVT, FEC-MA) est validé contre son schéma XSD officiel avec xmllint, sans erreur.",
+      "scoringGuide": "1 = un XML produit n'a pas été validé, ou xmllint signale une erreur. 3 = la validation passe sur le cas nominal mais la preuve (commande et sortie) manque, ou des cas limites du schéma ne sont pas testés. 5 = chaque XML concerné est validé par xmllint contre le XSD officiel, sans erreur, avec la commande et sa sortie jointes ou intégrées aux tests. Si le ticket ne produit aucun XML, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-12T04:07:04.882Z",
+  "updatedAt": "2026-11-13T09:53:40.197Z"
+}

@@ -1,0 +1,18 @@
+{
+  "_doc": "Voies de l'usine (équivalent des fils Hyperagent). Une voie = un worktree git + une conversation agy reprise de tour en tour (conversation_id dans ~/.fisca-runtime/lanes/<VOIE>/).",
+  "lanes": {
+    "BACK-1":  { "agent": "fisca-core-backend-fiscal",    "sessions": ["J2", "S1A", "S1B", "P3-B", "P4-B"] },
+    "BACK-2":  { "agent": "fisca-core-backend-fiscal",    "sessions": ["P4-C"] },
+    "EDI-1":   { "agent": "fisca-containers-edi-erp",     "sessions": ["P2-A", "P3-A"] },
+    "EDI-2":   { "agent": "fisca-containers-edi-erp",     "sessions": ["P3-C"] },
+    "FRONT-1": { "agent": "fisca-frontend-mobile-growth", "sessions": ["P2-B", "P4-A"] },
+    "FRONT-2": { "agent": "fisca-frontend-mobile-growth", "sessions": ["P2-C"] },
+    "AUDIT":   { "agent": "fisca-qa-security-auditor",    "sessions": ["G1", "G2", "G3", "G4", "S5-AUDIT"] }
+  },
+  "branches": {
+    "J2": "fix/w2-junctions", "P3-A": "feat/w3-edi-simpl-fec", "P3-B": "feat/w3-ai-agents-mcp",
+    "P3-C": "feat/w3-erp-third-party", "G3": "audit/gate-3",
+    "P4-A": "feat/w4-oec-corp-mobile", "P4-B": "feat/w4-billing-factor-pra", "P4-C": "feat/w4-sovereign-cicd",
+    "G4": "audit/gate-4", "S5": "feat/w5-release-v1.0.0"
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "baseConfigId": null,
+  "sourceAgentId": "cmwd194bf001i06ad3xbmlqb3",
+  "mode": "existing",
+  "name": "Fisca-Wiki-Memory-Curator",
+  "description": "Curateur de la mémoire évolutive de Fisca : chaque nuit à 04h00, recoupe les tables, le document d'état et le wiki avec l'état réel du dépôt, corrige ce qui est vérifiable et signale le reste.",
+  "icon": "📚",
+  "tools": [
+    {
+      "id": "globalTablesEnabled",
+      "enabled": true
+    }
+  ],
+  "skills": [],
+  "memories": [
+    "cmwlhe4p301q907adoplodspw",
+    "cmwlhebpn01lp07adovy8b46y",
+    "cmwlheiba01u207ad9ovixrnb",
+    "cmwlheojg01fp07ady0ne56nb"
+  ],
+  "integrations": [
+    {
+      "id": "github",
+      "resourceScope": {
+        "version": 1,
+        "repos": [
+          {
+            "owner": "anasse84",
+            "repo": "fisca"
+          }
+        ],
+        "toolsets": [
+          "context",
+          "git",
+          "issues",
+          "pull_requests",
+          "repos"
+        ]
+      }
+    }
+  ],
+  "modelSettings": {
+    "modelId": "sonnet-latest",
+    "defaultSubagentModel": null,
+    "maxThinkingTokens": null,
+    "effort": "medium",
+    "speed": null,
+    "maxBudgetUsd": null
+  },
+  "learning": {
+    "skillLoadMode": "discover",
+    "skillScope": "global",
+    "enableMemorySuggestions": true,
+    "enableSkillSuggestions": true,
+    "enablePromptSuggestions": true,
+    "enableRubricSuggestions": false,
+    "autoSaveMemories": null,
+    "autoSaveSkills": null,
+    "autoSaveAgents": false,
+    "autoSavePrompts": false
+  },
+  "contextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "name": "FISCA_STATE_AND_HANDOFF",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "name": "fisca_master_backlog",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "name": "fisca_contracts_registry",
+      "isPinned": true
+    }
+  ],
+  "scheduledInvocations": [
+    {
+      "id": "cmwd194k0001m06adry2bel58",
+      "name": "Curation nocturne 04h00",
+      "rrule": "FREQ=DAILY;BYHOUR=4;BYMINUTE=0",
+      "timezone": "Africa/Casablanca",
+      "prompt": "Passe nocturne quotidienne de curation : traite ce qui a changé depuis la passe précédente dans fisca_master_backlog, fisca_contracts_registry, FISCA_STATE_AND_HANDOFF et le dépôt, puis rends ton compte rendu.",
+      "threadStrategy": "new",
+      "status": "active",
+      "readOnlyMode": true,
+      "alertMode": false,
+      "runNotifications": [],
+      "delegatedAgentIds": []
+    }
+  ],
+  "persistBrowser": false,
+  "delegation": {
+    "scope": "explicit_list",
+    "approvalMode": "never_ask"
+  },
+  "baseLinkedMemoryIds": [
+    "cmwlhe4p301q907adoplodspw",
+    "cmwlhebpn01lp07adovy8b46y",
+    "cmwlheiba01u207ad9ovixrnb",
+    "cmwlheojg01fp07ady0ne56nb"
+  ],
+  "baseOwnedMemoryIds": [],
+  "baseSkillIds": [],
+  "baseContextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "isPinned": true
+    }
+  ],
+  "baselineUpdatedAt": "2026-11-15T01:04:35.649Z",
+  "executionMode": "auto",
+  "changedFields": [],
+  "accessPolicy": {
+    "version": 3,
+    "defaultEffect": "deny",
+    "statements": [
+      {
+        "label": "statement vyOYYhErSRoA",
+        "words": "allow every write (append, write, delete) on runs none of a schedule, Live, a webhook, an inbound email or an MCP client started",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement thH0mdL8XiNb",
+        "words": "write_limited_default every write (append, write, delete) on runs started by scheduled",
+        "rung": "strict",
+        "enforcement": "the policy's default, withholding every write no other statement lets through: held for the owner's approval where this run can ask, and refused where it cannot"
+      },
+      {
+        "label": "statement 9rwbYxXu8Tkv",
+        "words": "allow every write (append, write, delete) on runs started by alive",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement K983xLwE7tDd",
+        "words": "allow every write (append, write, delete) on runs started by webhook",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement 7nim7Acq2NY0",
+        "words": "allow every write (append, write, delete) on runs started by email",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement Zd5YPC3dN0vM",
+        "words": "allow every write (append, write, delete) on runs started by mcp",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement UNFHCLb3h0R9",
+        "words": "\"Sur GitHub, cet agent est en lecture seule : toute écriture est interdite, y compris branche, commit, Pull Request, commentaire, fusion, force-push et suppression de dépôt.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "cmwd3pjsq00bm06adr69ctc1q",
+  "name": "Fisca Wiki Memory Curator Performance Evaluation",
+  "description": "Evaluates the nightly execution performance, state reconciliation accuracy, boundary compliance, and reporting quality of the Fisca-Wiki-Memory-Curator agent.",
+  "taskType": "analysis",
+  "isGeneral": true,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 5,
+  "criteria": [
+    {
+      "name": "Repo & Memory Reconciliation Depth",
+      "weight": 0.25,
+      "description": "Measures how accurately and exhaustively the agent cross-checks GitHub repository artifacts (commits, branches, PRs, test results) against memory tables and handoff documentation to spot inconsistencies.",
+      "scoringGuide": "1: Fails to detect obvious contradictions or hallucinate alignment when repo state contradicts memory documentation. 2: Identifies simple discrepancies but misses deeper issues like orphan locks, unverified DONE tickets, or missing contract registry resources. 3: Accurately reconciles standard discrepancies between repo state and memory tables. 4: Thoroughly detects cross-table and repo-state inconsistencies, citing exact repo commits or branches as evidence. 5: Impeccably cross-references all memory sources against repo realities, identifying subtle edge-case contradictions with precise git evidence.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Boundary Adherence & Safe Corrections",
+      "weight": 0.25,
+      "description": "Measures the agent's strict adherence to operational boundaries—modifying only verifiable items with repo proof, respecting read-only repo rules, and avoiding unauthorized task creation, priority changes, or invented state.",
+      "scoringGuide": "1: Violates core constraints (e.g., invents unverified state, changes task priorities, or modifies unverified records). 2: Makes corrections without sufficient repo proof or occasionally oversteps into orchestrator governance territory. 3: Respects main boundaries and only corrects verifiable data backed by repository evidence. 4: Strictly adheres to boundaries, backing every correction with explicit repo proof and leaving unauthorized scope untouched. 5: Exemplary constraint adherence; strictly read-only on repo, makes zero unverified assumptions, and meticulously limits actions to verifiable memory updates.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Ambiguity Flagging & Escalation",
+      "weight": 0.2,
+      "description": "Measures the agent's ability to isolate ambiguous, stale, or contested items (e.g., old locks, disputed tickets) and flag them clearly for orchestrator decision without taking unauthorized actions.",
+      "scoringGuide": "1: Silently ignores ambiguous items or inappropriately modifies state that requires human or orchestrator arbitrage. 2: Flags some ambiguous items but fails to provide context on why an arbitrage decision is needed. 3: Correctly flags unresolved discrepancies for arbitrage without altering them. 4: Clearly categorizes and contextualizes unverified items, explaining specific conflicts for Fisca-Lead-Orchestrator. 5: Provides pristine escalation details outlining exact ambiguities, historical context, and actionable decision points for the orchestrator.",
+      "criterionType": "general"
+    },
+    {
+      "name": "State Persistence & Backup Integrity",
+      "weight": 0.15,
+      "description": "Measures the proper incremental updating of FISCA_STATE_AND_HANDOFF (section by section) and the reliable generation of JSON exports for unversioned memory tables.",
+      "scoringGuide": "1: Fails to export JSON tables or completely overwrites FISCA_STATE_AND_HANDOFF destructively. 2: Exports corrupted or incomplete JSON files, or makes sweeping unnecessary rewrites to the handoff document. 3: Successfully exports both JSON tables and updates relevant handoff sections incrementally. 4: Ensures clean, valid JSON exports for both tables and makes precise, section-specific handoff updates. 5: Flawlessly executes table backups and surgical section updates to FISCA_STATE_AND_HANDOFF, preserving document continuity perfectly.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Execution Report Clarity",
+      "weight": 0.15,
+      "description": "Measures the quality, conciseness, and accuracy of the end-of-pass summary report in French, detailing corrections made, open items needing decision, and generated export artifacts.",
+      "scoringGuide": "1: Fails to produce a report or outputs in a language other than French. 2: Output report is overly verbose, disorganized, or misses key sections like JSON exports or open items. 3: Provides a clear French report summarizing corrections, pending decision items, and exports (or a one-line summary if no action needed). 4: Delivers a well-structured, concise French report clearly itemizing actions taken, pending escalations, and JSON backups. 5: Exceptionally succinct and structured French report giving complete operational transparency in a single glance.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-12T05:22:16.058Z",
+  "updatedAt": "2026-11-13T09:54:32.628Z"
+}

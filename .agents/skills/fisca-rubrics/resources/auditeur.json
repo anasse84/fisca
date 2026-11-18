@@ -1,0 +1,42 @@
+{
+  "id": "cmwd3ozei00ei06adrnp6lguz",
+  "name": "QA & Security Auditor Performance Evaluation",
+  "description": "Evaluates the quality, rigor, evidence validation, and strict constraint adherence of the Fisca QA and Security Auditor agent.",
+  "taskType": "support",
+  "isGeneral": true,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 4,
+  "criteria": [
+    {
+      "name": "Read-Only Constraint & Scope Enforcement",
+      "weight": 0.2,
+      "description": "Measures strict adherence to read-only boundaries on the Git repo, ensuring the auditor never modifies code, creates PRs, or writes beyond the authorized backlog and handoff files.",
+      "scoringGuide": "1: Attempted Git modifications (commits, pushes, PRs), attempted to fix code directly, or wrote to unauthorized files.\n2: Did not attempt commits but provided code fixes instead of pass/fail verdicts, or mismanaged allowed status fields.\n3: Strictly adhered to read-only access and wrote only to allowed backlog/handoff fields, but included minor advice blurring auditor-builder boundaries.\n4: Complied fully with read-only rules, wrote strictly to permitted fields, and maintained a clear boundary as an auditor.\n5: Exemplary boundary control; perfectly restricted to read-only operations, accurately updated only `fisca_master_backlog` and `FISCA_STATE_AND_HANDOFF`, and maintained pure auditor objectivity.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Evidence-Based Verification Rigor",
+      "weight": 0.3,
+      "description": "Measures the extent to which audit claims are backed by direct, observable proof (exact file paths, line numbers, command execution outputs) rather than taking builder agent statements at face value.",
+      "scoringGuide": "1: Accepted builder agent assertions without verification, or provided vague feedback with no file/line references or test outputs.\n2: Verified some claims but accepted others on trust; omitted critical line numbers or test command logs.\n3: Verified most claims with specific file and line citations, but missed declaring unverified items when tests/access were unavailable.\n4: Rigorously backed every deduction with concrete evidence (file:line, CLI output) and explicitly flagged any unverified items as unearned.\n5: Flawless empirical verification; cited precise code locations, logged exact test run outputs, and transparently isolated unverified areas without assumption.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Rubric Scoring Precision & Threshold Enforcement",
+      "weight": 0.25,
+      "description": "Evaluates the accurate application of rubrics R1, R2, and R3, proper skill context loading, correct 40/35/25 weighting, and uncompromising enforcement of the 95/100 pass threshold.",
+      "scoringGuide": "1: Incorrectly calculated rubric weights, failed to apply relevant skills, or accepted a ticket below 95/100 or with failing tests.\n2: Applied skills and weighting inconsistently; accepted tickets close to 95 without all tests green.\n3: Correctly calculated scores using R1/R2/R3 weights and enforced the 95/100 threshold, but failed to load the correct domain skill beforehand.\n4: Accurately loaded relevant domain skills, applied exact R1/R2/R3 criteria and 40/35/25 weighting, and strictly enforced the 95/100 green-test gate.\n5: Perfectly executed weighted domain scoring with complete alignment to loaded Fisca skills, providing mathematically sound and objective score breakdowns.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Actionable Feedback & Remediation Clarity",
+      "weight": 0.25,
+      "description": "Evaluates how clearly and comprehensively rejection reports articulate identified gaps, exact deltas, and specific requirements to reach 95/100 in French.",
+      "scoringGuide": "1: Output not in French, or rejection feedback was vague, unhelpful, or missing key reasons for failure.\n2: Identified failure reasons but lacked specific details on what exact delta is required to reach the 95/100 threshold.\n3: Provided clear feedback in French listing main gaps, but builder agents would still need clarification to fix the issue.\n4: Delivered detailed rejection reports in French specifying exact code/test gaps and the precise changes needed to hit 95/100 without follow-ups.\n5: Exceptionally clear, highly actionable French verdict reports detailing exact deviations, line-by-line deficits, and clear criteria to achieve green status autonomously.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-12T05:21:49.626Z",
+  "updatedAt": "2026-11-13T09:54:35.451Z"
+}

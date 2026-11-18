@@ -1,0 +1,49 @@
+{
+  "id": "cmweht73502ok07adpm3qyqor",
+  "name": "R2 — Cybersécurité Zero-Trust, 2FA, E2EE, IA, CNDP et DGSSI (v2)",
+  "description": "Version à 5 critères issue des fiches de la Phase C (pondération 25/20/25/15/15 et clauses éliminatoires). Elle reprend les 4 critères de la R2 du 2026-11-12 (isolation, défi MFA, chiffrement, secrets et anonymisation) et y ajoute la séparation des tâches, la gouvernance des agents IA et la conformité CNDP et DGSSI. Engagée aux barrières pont S0, G1, G3, G4 et S5. Modèle juge à choisir à chaque évaluation (jamais « Same as thread »). Seuil : 95/100.",
+  "taskType": "fisca_securite",
+  "isGeneral": false,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 5,
+  "criteria": [
+    {
+      "name": "R2-C1 Isolation par société et zéro tenant_id côté IA",
+      "weight": 0.25,
+      "description": "Une base D1 par société, résolue côté serveur après authentification et contrôle d'appartenance. Aucun outil exposé à un LLM ou à MCP n'accepte tenantId, companyId ou un identifiant de base. Preuve : test d'accès inter-sociétés et balayage des schémas d'outils.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : une base résolue depuis un paramètre client non vérifié ; un outil LLM ou MCP acceptant tenantId ou companyId ; un accès inter-sociétés possible. 1 = isolation par convention, sans test. 3 = middleware correct, mais le refus 403 ABAC_TENANT_OUT_OF_SCOPE n'est pas prouvé par test. 5 = test d'intrusion inter-sociétés vert, assertSafeMcpToolSchema appliqué à tous les outils, sorties jointes.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R2-C2 Authentification, défi 2FA et RBAC, ABAC, SoD",
+      "weight": 0.2,
+      "description": "Connexion Google ou mot de passe (PBKDF2-HMAC-SHA512, 100 000 itérations, pepper). Avec second facteur actif, seul un mfa_challenge_token est émis avant validation TOTP ou OTP. Rejeu TOTP refusé. Authentification renforcée de moins de 300 secondes sur les actions sensibles. Séparation des tâches sur RIB, pain.001, réception et comptage de caisse.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : un JWT complet délivré avant le second facteur sur un profil 2FA actif ; une approbation par son auteur d'un changement de RIB ou d'un lot pain.001 en Corporate. 1 = défi MFA implémenté sans test automatisé. 3 = défi MFA et rôles testés, mais séparation des tâches ou authentification renforcée sans test. 5 = tests verts sur le défi MFA (Google et mot de passe), le rejeu TOTP, les 12 rôles, l'habilitation paie et SOD_DUAL_CONTROL_VIOLATION. Si le périmètre ne touche pas à l'authentification ni aux autorisations, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R2-C3 Signature Loi 43-20, E2EE avec AAD, Merkle et Shamir",
+      "weight": 0.25,
+      "description": "Contrôle OID du certificat contre l'ICE ou l'IF avant toute signature. AES-256-GCM avec AAD companyId|table|recordId|colonne sur tout champ _enc. Index aveugle HMAC-SHA256 sur 128 bits. Une racine de Merkle et un seul jeton d'horodatage par jour. Séquestre de Shamir 2-sur-3 sur GF(256). WebCrypto natif.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : signature sans contrôle OID contre ICE ou IF ; un champ _enc chiffré sans AAD ; une restitution Shamir 2-sur-3 en échec ; une primitive hors WebCrypto. 1 = primitives présentes sans test adverse. 3 = primitives testées, mais permutation de chiffré, Merkle unique ou Shamir non couverts. 5 = permutation de chiffré refusée, Shamir vérifié sur les trois paires, un seul appel d'horodatage pour 500 archives, rejet ADR_06_LOI4320_CERT_MISMATCH observé. Si le périmètre ne touche pas au chiffrement ni à la signature, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R2-C4 Gouvernance des agents IA, 4 règles d'arrêt et FinOps",
+      "weight": 0.15,
+      "description": "canMutateLedgerDirectly à faux sur les 11 agents et les outils MCP. Quatre règles d'arrêt : aucun montant deviné, lettrage ambigu en suspens 3497 et 4497, aucune cause de variation inventée, vérification du dernier échange avant relance. Routage à 3 paliers, plafond doux, cache par empreinte.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : un outil IA ou MCP capable d'écrire en POSTED ou de déclencher un paiement ; une des 4 règles d'arrêt violée ; un encaissement pour compte de tiers. 1 = règles énoncées sans test. 3 = règles d'arrêt testées, mais injection de prompt documentaire ou routage FinOps sans test. 5 = pièces adverses, canari d'injection (RIB intact) et vecteurs FinOps verts (zéro appel IA sur Factur-X et relevés structurés, repli au plafond doux). Si le périmètre ne touche pas aux agents IA, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R2-C5 Données personnelles, rétention WORM et zéro-egress",
+      "weight": 0.15,
+      "description": "Anonymisation en mémoire avant tout appel IA (noms, ICE, RIB, CIN, IF, CNSS, téléphones, e-mails). R2 en jurisdiction eu, D1 en weur. Rétention de 3 653 jours. Export décennal ouvert même en impayé. Mode souverain : aucun flux hors du Maroc. Aucun secret dans le dépôt. Fichiers de gouvernance intacts.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : une donnée personnelle non pseudonymisée envoyée à un modèle ; un bucket R2 de production sans jurisdiction eu ; l'export décennal bloqué en impayé ; un flux hors Maroc en mode STRICT_DGSSI_LAW_05_20_MOROCCO ; un secret en clair dans le dépôt ; AGENTS.md, les scripts de garde ou la suite d'or modifiés par une branche de construction. 1 = règles présentes sans test. 3 = anonymisation testée, mais arbitrage effacement contre Art. 211 ou zéro-egress sans test. 5 = interception de l'appel IA sans donnée réelle, DGSSI_LAW_05_20_EGRESS_BLOCKED observé, arbitrage d'effacement prouvé, balayage de secrets propre.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-13T04:44:47.009Z",
+  "updatedAt": "2026-11-13T04:44:47.009Z"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "cmwddozxt01j507ad6ao88x9l",
+  "name": "R2 — Sécurité Zero-Trust, E2EE & MFA",
+  "description": "Rubric R2 de l'usine logicielle Fisca, réécrite le 2026-11-12 : isolation multi-tenant, défi MFA avant tout accès aux données fiscales, chiffrement de bout en bout et protection des données personnelles sur un ticket. Modèle juge prévu : Claude Fable 5.2 (à choisir à chaque évaluation, ne jamais laisser Judge Model sur « Same as thread »). Score minimal d'acceptation d'un ticket : 95/100.",
+  "taskType": "fisca_securite",
+  "isGeneral": false,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 4,
+  "criteria": [
+    {
+      "name": "Isolation TENANT_DB stricte sans tenant_id côté LLM",
+      "weight": 5,
+      "description": "Chaque société a sa base D1 dédiée, résolue côté serveur. Aucun outil appelé par un LLM n'accepte tenant_id ou company_ice en argument : l'identifiant du tenant provient exclusivement du middleware d'authentification serveur.",
+      "scoringGuide": "5: L'identifiant du tenant vient uniquement du middleware d'authentification serveur, aucun outil LLM ne l'accepte en argument, et des tests démontrent le refus d'un accès inter-sociétés.\n3: L'identifiant vient du middleware, mais aucun test ne prouve qu'un accès inter-sociétés est refusé.\n1: Un outil exposé à un LLM, une route ou une requête accepte tenant_id ou company_ice fourni par l'appelant, ou une requête peut atteindre la base d'une autre société.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Défi MFA avant toute donnée fiscale (mfa_challenge_token)",
+      "weight": 4,
+      "description": "Une connexion Google sur un compte protégé par 2FA renvoie un mfa_challenge_token et n'ouvre aucun accès aux données fiscales tant que le code TOTP ou l'OTP Infobip n'est pas validé. Le test automatisé correspondant existe dans la suite et passe.",
+      "scoringGuide": "5: Des tests automatisés passent au vert : renvoi d'un mfa_challenge_token sur connexion Google d'un compte 2FA, aucune donnée fiscale servie avant validation du code TOTP ou de l'OTP Infobip, et accès accordé immédiatement après validation. Si le ticket ne touche pas à l'authentification, noter 5 et l'indiquer.\n3: Le défi MFA est implémenté (mfa_challenge_token renvoyé), mais aucun test automatisé ne démontre le blocage des données fiscales tant que le TOTP ou l'OTP Infobip n'est pas validé.\n1: Une connexion Google sur un compte 2FA donne accès aux données fiscales sans défi MFA validé, ou le test automatisé du défi MFA est absent de la suite.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Intégrité WebCrypto E2EE, AAD, Blind Index et Shamir",
+      "weight": 5,
+      "description": "Le chiffrement de bout en bout respecte le standard du projet : WebCrypto natif, enveloppes RSA-OAEP-256 dans tenant_key_grants, liaison AAD, index aveugle HMAC-SHA256 sur 128 bits et séquestre de Shamir 2-sur-3.",
+      "scoringGuide": "5: WebCrypto natif, enveloppes RSA-OAEP-256, liaison AAD, index aveugle HMAC-SHA256 128 bits et séquestre de Shamir 2-sur-3 implémentés tels que spécifiés et vérifiés par des tests, y compris l'échec du déchiffrement quand l'AAD est altérée. Si le ticket ne touche pas au chiffrement, noter 5 et l'indiquer.\n3: Les primitives sont correctes mais un élément (AAD, index aveugle ou séquestre de Shamir) n'est couvert par aucun test.\n1: Une primitive est remplacée ou affaiblie (bibliothèque non WebCrypto, AAD absente, index non aveugle), ou une donnée chiffrée est déchiffrable sans la clé prévue.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Zéro clé en clair, anonymisation PII avant IA",
+      "weight": 4,
+      "description": "Aucun secret ni clé n'apparaît en clair dans le code, les journaux, les fichiers de configuration ou les commits. Tout document téléversé passe par le typage strict avant tout LLM, et les noms, ICE, RIB, CIN et téléphones sont anonymisés par dictionnaire réversible avant tout envoi à un modèle IA.",
+      "scoringGuide": "5: Aucun secret en clair nulle part, et des tests prouvent que les cinq types de données sont anonymisés puis restitués correctement autour de chaque appel IA.\n3: Aucun secret en clair, mais l'anonymisation avant IA n'est prouvée par aucun test ou ne couvre pas tous les types (noms, ICE, RIB, CIN, téléphones).\n1: Une clé ou un secret est en clair dans le dépôt ou les journaux, ou une donnée personnelle part vers un modèle IA sans anonymisation.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-12T10:01:46.481Z",
+  "updatedAt": "2026-11-13T09:53:52.073Z"
+}
