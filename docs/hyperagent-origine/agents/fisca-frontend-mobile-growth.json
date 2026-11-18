@@ -1,0 +1,203 @@
+{
+  "baseConfigId": null,
+  "sourceAgentId": "cmwd18drg001p06adraz7bzxs",
+  "mode": "existing",
+  "name": "Fisca-Frontend-Mobile-Growth",
+  "description": "Agent constructeur des interfaces de Fisca : site public Astro, application React (espaces PME, fiduciaire et grandes entreprises), mobile Capacitor, design Mercury, i18n 6/3 langues et SEO.",
+  "icon": "🎨",
+  "tools": [
+    {
+      "id": "browser",
+      "enabled": true
+    },
+    {
+      "id": "globalTablesEnabled",
+      "enabled": true
+    }
+  ],
+  "skills": [
+    "cmwd0c8of01uq08ada5qsqrmn",
+    "cmwd0e8l301ty07ad0klrpdai",
+    "cmwd0ecpk02av07ade82x66x4"
+  ],
+  "memories": [
+    "cmwfnz6zt015y07ad78tx98sw",
+    "cmwfnzfqx01bv07ad45m7mkti",
+    "cmwfo3n1s00gz08adg9945gaq",
+    "cmwfqsgt6018207adpcax6ilg",
+    "cmwfqslq2010x07ad2sj4uip2",
+    "cmwg6ch6901e707adj0l7sfu3",
+    "cmwg77z3n01bo07adtjrnv4qn"
+  ],
+  "integrations": [
+    {
+      "id": "github",
+      "resourceScope": {
+        "version": 1,
+        "repos": [
+          {
+            "owner": "anasse84",
+            "repo": "fisca"
+          }
+        ],
+        "toolsets": [
+          "context",
+          "git",
+          "issues",
+          "pull_requests",
+          "repos"
+        ]
+      }
+    },
+    {
+      "id": "mcp-context7"
+    }
+  ],
+  "modelSettings": {
+    "modelId": "sonnet-latest",
+    "defaultSubagentModel": null,
+    "maxThinkingTokens": 32000,
+    "effort": "medium",
+    "speed": null,
+    "maxBudgetUsd": null
+  },
+  "learning": {
+    "skillLoadMode": "discover",
+    "skillScope": "global",
+    "enableMemorySuggestions": true,
+    "enableSkillSuggestions": true,
+    "enablePromptSuggestions": true,
+    "enableRubricSuggestions": false,
+    "autoSaveMemories": false,
+    "autoSaveSkills": null,
+    "autoSaveAgents": false,
+    "autoSavePrompts": false
+  },
+  "contextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "name": "FISCA_STATE_AND_HANDOFF",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "name": "fisca_master_backlog",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "name": "fisca_contracts_registry",
+      "isPinned": true
+    }
+  ],
+  "scheduledInvocations": [],
+  "persistBrowser": false,
+  "delegation": {
+    "scope": "explicit_list",
+    "approvalMode": "never_ask"
+  },
+  "baseLinkedMemoryIds": [
+    "cmwfnz6zt015y07ad78tx98sw",
+    "cmwfnzfqx01bv07ad45m7mkti",
+    "cmwfo3n1s00gz08adg9945gaq",
+    "cmwfqsgt6018207adpcax6ilg",
+    "cmwfqslq2010x07ad2sj4uip2",
+    "cmwg6ch6901e707adj0l7sfu3",
+    "cmwg77z3n01bo07adtjrnv4qn"
+  ],
+  "baseOwnedMemoryIds": [],
+  "baseSkillIds": [
+    "cmwd0c8of01uq08ada5qsqrmn",
+    "cmwd0e8l301ty07ad0klrpdai",
+    "cmwd0ecpk02av07ade82x66x4"
+  ],
+  "baseContextFiles": [
+    {
+      "type": "document",
+      "id": "cmwczkgbj01nc07ad7i2cqcee",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg2001iq06ad9boev2sa",
+      "isPinned": true
+    },
+    {
+      "type": "table",
+      "id": "cmwczkg6801r106adzlsd3vrg",
+      "isPinned": true
+    }
+  ],
+  "baselineUpdatedAt": "2026-11-15T01:02:59.486Z",
+  "executionMode": "auto",
+  "changedFields": [],
+  "accessPolicy": {
+    "version": 2,
+    "defaultEffect": "deny",
+    "statements": [
+      {
+        "label": "statement Ew2FZ6iS5toY",
+        "words": "allow every write (append, write, delete) on runs none of a schedule, Live, a webhook, an inbound email or an MCP client started",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement Z9s2V0RsmuH8",
+        "words": "write_limited_default every write (append, write, delete) on runs started by scheduled",
+        "rung": "strict",
+        "enforcement": "the policy's default, withholding every write no other statement lets through: held for the owner's approval where this run can ask, and refused where it cannot"
+      },
+      {
+        "label": "statement tgFppvVcZuHg",
+        "words": "allow every write (append, write, delete) on runs started by alive",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement bOgIe7gkEQ0z",
+        "words": "allow every write (append, write, delete) on runs started by webhook",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement J7yxFcrbq0iH",
+        "words": "allow every write (append, write, delete) on runs started by email",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement o5d5pUt3FSaE",
+        "words": "allow every write (append, write, delete) on runs started by mcp",
+        "rung": "strict",
+        "enforcement": "lifts the policy's default: writes go through at the agent's existing integration scope, and nothing widens beyond that scope, a read-only run, or any deny or ask above"
+      },
+      {
+        "label": "statement SA3q69XD8yKn",
+        "words": "\"Je veux que cet agent tourne en automatique, sans approbation de ma part.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      },
+      {
+        "label": "statement r7v6RLPO58gx",
+        "words": "\"Règles d'écriture GitHub : lecture, création de branches feat/* et fix/*, commits, push sur les branches de travail et ouverture de Pull Requests autorisés sans demander.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      },
+      {
+        "label": "statement F2lsehBfzzy9",
+        "words": "\"La fusion finale sur main est réservée à Fisca-Lead-Orchestrator : cet agent ne fusionne jamais de Pull Request et n'écrit jamais directement sur main.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      },
+      {
+        "label": "statement wLKkvQUS346C",
+        "words": "\"La suppression de dépôt (delete_repository) et le force-push sont interdits.\"",
+        "rung": "judged",
+        "enforcement": "judged per write on its content"
+      }
+    ]
+  }
+}

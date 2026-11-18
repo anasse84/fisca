@@ -96,3 +96,9 @@ Continuité : le pilote relance les fils (B-15) ; ne programme aucun rappel dans
 - Jamais de secret, de `.env` ni de clé dans le dépôt. Aucun fichier sous `.github/workflows/` hors ticket P4-C (B-12).
 - **Fichiers protégés** (liste de `.meta/session-scopes.json` ; hors mode orchestrateur, aucune modification ; les satellites suivent la même règle) : `AGENTS.md`, `CLAUDE.md`, `scripts/harness-check.sh`, `scripts/enforce-constitution.ts`, `packages/qa-harness/src/fiscal-golden-suite.ts`, `.meta/session-scopes.json`, `docs/specs/`. Après une barrière, changer une valeur attendue d'un vecteur exige le mode orchestrateur.
 - Avant la mise en production (v1.0.0), aucune donnée de production n'existe : aucune migration ne porte `[BREAKING_MIGRATION]` (B-11).
+
+## 9. Exécution sur Antigravity CLI (depuis 2026-11-18, B-18)
+
+- Harnais : Antigravity CLI (`agy`). Les agents sont dans `.agents/agents/`, les compétences et rubriques dans `.agents/skills/`, les règles complémentaires toujours actives dans `.agents/rules/fisca-memoire-active.md`, les mémoires détaillées dans `docs/memoire/` (index `docs/memoire/INDEX.md`), l'état dans `docs/state/` et `ops/state/`.
+- Les tables Hyperagent `fisca_master_backlog` et `fisca_contracts_registry` sont remplacées par `ops/state/backlog.json` (instantané) et `~/.fisca-runtime/state/backlog.json` (vivant, via `ops/antigravity/backlog.mjs`), et `ops/state/contracts-registry.json`. La préséance du § 1 est inchangée.
+- Une voie = un worktree git + une conversation `agy` ; le pilote lance et relance les voies (`ops/antigravity/`). Le clone principal reste sur `main`. Mode d'emploi : `docs/antigravity/00-LISEZ-MOI.md` et `09-orchestration-parallele.md`.

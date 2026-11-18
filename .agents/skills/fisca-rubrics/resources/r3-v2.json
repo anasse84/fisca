@@ -1,0 +1,49 @@
+{
+  "id": "cmwehtdop02sa07adzjcf7kur",
+  "name": "R3 — Design Mercury, i18n 6/3 langues, caisse hors-ligne et site Astro (v2)",
+  "description": "Version à 5 critères issue des fiches de la Phase C (pondération 20/25/25/15/15 et clauses éliminatoires). Elle remplace la R3 à 3 critères du 2026-11-12, dont la palette décrite ne correspondait pas aux tokens du Document 08 (#F8F9FB, #0B0F17 et #111827 au lieu de #FAF9F5, #0B0E14 et #121722), et qui ne couvrait ni la caisse hors-ligne, ni Factur-X, ni le site Astro. Engagée aux barrières G2, G4 et S5. Modèle juge à choisir à chaque évaluation (jamais « Same as thread »). Seuil : 95/100.",
+  "taskType": "fisca_ui_i18n",
+  "isGeneral": false,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 5,
+  "criteria": [
+    {
+      "name": "R3-C1 Tokens Mercury, densités et stabilité",
+      "weight": 0.2,
+      "description": "Seules les variables de tokens.css sont employées (clair : fond #FAF9F5, surface #FFFFFF ; sombre : fond #0B0E14, surface #121722 ; émeraude #0F5338 ou #10B981 ; indigo #4F46E5 ou #6366F1). Lignes de 44 px et 28 px. Montants, ICE et RIB en tabular-nums dans un bloc dir=ltr. Décalage de mise en page nul pendant l'injection SSE de 100 lignes.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : une couleur hexadécimale hors tokens.css ; un montant, un ICE ou un RIB non isolé en dir=ltr tabular-nums. 1 = mode sombre absent ou cassé. 3 = tokens et modes respectés, mais bascule 44/28 px ou stabilité sous SSE non prouvée. 5 = harness-check propre, captures claires et sombres, CLS égal à 0 mesuré dans les deux densités.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R3-C2 Langues par surface, lexique IRCAM et CSS logique RTL",
+      "weight": 0.25,
+      "description": "6 langues (fr, ar, ary, zgh-Latn, zgh-Tfng, en) sur le site Astro, l'espace PME et la caisse ; 3 langues strictes (fr, ar, en) sur /fiduciary, /enterprise et les domaines en marque blanche. dir=rtl sur ar et ary. Classes logiques seulement. Infobulle FR/AR en Tifinagh. Aucune clé de dictionnaire vide.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : ary, zgh-Latn ou zgh-Tfng proposé ou accepté sur un portail Fiduciaire ou Corporate ; une classe directionnelle physique (ml-, mr-, pl-, pr-, text-left, text-right) ; une clé i18n vide ; un signe moins ou un ICE inversé en RTL. 1 = langues présentes mais chaînes non traduites. 3 = jeux de langues corrects, défauts RTL mineurs ou infobulle IRCAM absente. 5 = matrice Playwright des 6 langues verte, refus des 3 langues interdites prouvé sur les portails, aucun défaut RTL.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R3-C3 Caisse hors-ligne 72 h, clé ECDSA et comptage aveugle",
+      "weight": 0.25,
+      "description": "SQLite WASM sur OPFS, séquence par terminal sans collision, chaîne SHA-256, signature ECDSA P-256 non extractible, solde attendu masqué au caissier pendant le comptage, cibles tactiles de 56 px.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : un ticket perdu ou une collision de séquence hors ligne ; une clé ECDSA extractible ; expected_closing_cash_cents visible du rôle CAISSIER_POS avant la fin du comptage ; un ticket au SQLite local falsifié accepté par le serveur. 1 = caisse fonctionnelle en ligne seulement. 3 = hors-ligne prouvé sur un seul terminal. 5 = 3 terminaux, 600 tickets, synchronisation sans collision, rejet d'un ticket modifié d'un centime, comptage aveugle prouvé. Si le périmètre ne touche pas à la caisse, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R3-C4 Factur-X bilingue et responsive",
+      "weight": 0.15,
+      "description": "PDF/A-3b bilingue français et arabe, polices Geist et Noto Sans Arabic embarquées, double arrêté en lettres. Aucun défilement horizontal à 375, 1024 et 1440 px, en clair et en sombre.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : un défilement horizontal parasite à 375, 1024 ou 1440 px ; des caractères arabes disjoints sur la facture. 1 = une seule largeur vérifiée. 3 = trois largeurs vérifiées dans un seul mode, ou facture non contrôlée par un validateur PDF/A. 5 = captures aux trois largeurs dans les deux modes, scrollWidth <= clientWidth prouvé, facture validée. Si le périmètre ne produit pas de Factur-X, juger le responsive seul et l'indiquer.",
+      "criterionType": "general"
+    },
+    {
+      "name": "R3-C5 Site Astro : Lighthouse, llms.txt, miroirs .md, outils gratuits",
+      "weight": 0.15,
+      "description": "Lighthouse au moins 98 en Performance, SEO et Accessibilité (médiane de 3 passes), /llms.txt et /robots.txt valides, miroir .md de chaque guide, graphe JSON-LD valide, hreflang réciproques des 6 langues, 6 outils gratuits exacts (dont le réparateur d'ICE Modulo 97), aucun traceur ni script tiers.",
+      "scoringGuide": "CLAUSE ÉLIMINATOIRE : un score Lighthouse sous 95 ; /llms.txt ou les miroirs .md absents ; un pixel, un traceur ou une police distante. 1 = site fonctionnel sans mesure. 3 = score entre 95 et 97, ou un outil gratuit sans vecteur de test. 5 = médiane d'au moins 98 jointe, points d'entrée IA valides, vecteurs des 6 outils verts (ICE 003042032000080 et 001534290000057 valides, 1534290000057 réparé). Si le périmètre ne touche pas au site Astro, noter 5 et l'indiquer.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-13T04:44:55.561Z",
+  "updatedAt": "2026-11-13T04:44:55.561Z"
+}

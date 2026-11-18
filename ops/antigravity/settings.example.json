@@ -1,0 +1,23 @@
+{
+  "toolPermission": "proceed-in-sandbox",
+  "enableTerminalSandbox": true,
+  "permissions": {
+    "allow": [
+      "command(git)", "command(gh pr)", "command(gh run)", "command(gh api)", "command(gh issue)",
+      "command(pnpm)", "command(node)", "command(npx)", "command(tsx)", "command(vitest)",
+      "command(mvn)", "command(java)", "command(docker)", "command(curl)", "command(rg)", "command(jq)",
+      "command(bash ops/)", "command(bash scripts/)", "command(tmux)",
+      "write_file(apps/)", "write_file(packages/)", "write_file(containers/)", "write_file(connectors/)",
+      "write_file(docs/)", "write_file(ops/)", "write_file(scripts/)", "write_file(.agents/)", "write_file(.meta/)",
+      "read_url(github.com)", "read_url(registry.npmjs.org)", "read_url(raw.githubusercontent.com)"
+    ],
+    "ask": [
+      "command(git push --force)", "command(git push -f)", "command(gh repo delete)"
+    ],
+    "deny": [
+      "command(sudo)", "command(rm -rf /)", "command(rm -rf ~)", "write_file(.git/)",
+      "command(git push origin main)", "command(git push origin HEAD:main)",
+      "command(git push --force)", "command(git push -f)", "command(gh repo delete)", "command(git filter-branch)"
+    ]
+  }
+}

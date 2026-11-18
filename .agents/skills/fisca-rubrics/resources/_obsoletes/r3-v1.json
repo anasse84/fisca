@@ -1,0 +1,35 @@
+{
+  "id": "cmwd113zh001c07addj5wnhl6",
+  "name": "R3 — UI Mercury, Mobile & i18n",
+  "description": "Rubric R3 du plan d'usine logicielle Fisca : fidélité visuelle, séparation des langues par surface et tenue responsive des interfaces livrées sur un ticket. Modèle juge prévu : Gemini 4 Argon (à choisir à chaque évaluation, ne jamais laisser Judge Model sur « Same as thread »). Score minimal d'acceptation d'un ticket : 95/100.",
+  "taskType": "fisca_ui_i18n",
+  "isGeneral": false,
+  "rubricType": "general",
+  "parentId": null,
+  "criteriaCount": 3,
+  "criteria": [
+    {
+      "name": "Fidélité palette Mercury clair/sombre, lignes 44px/28px et tabular-nums",
+      "weight": 0.4,
+      "description": "L'interface respecte le standard visuel du projet : palette claire (#FAF9F5 / #F8F9FB) et sombre (#0B0F17 / #111827), Vert Émeraude DGI #0F5338 et Indigo #4F46E5, lignes de tableau à 44px en vue dirigeant et 28px en haute densité, font-variant-numeric: tabular-nums sur tous les montants, ICE et RIB.",
+      "scoringGuide": "1 = couleurs hors palette, mode sombre absent ou cassé, ou montants sans tabular-nums. 3 = palette et modes respectés, mais un élément manque (bascule 44px/28px, ou tabular-nums absent sur certains montants, ICE ou RIB). 5 = palette claire et sombre exactes, bascule de densité 44px/28px fonctionnelle et tabular-nums appliqué à tous les montants, ICE et RIB, vérifié sur captures d'écran dans les deux modes.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Séparation stricte 6 langues (Astro/PME) vs 3 langues (B2B) + RTL",
+      "weight": 0.35,
+      "description": "Le site public Astro et l'espace PME/TPE/AE proposent les 6 langues (fr, ar, ary, zgh-Latn, zgh-Tfng, en) ; les portails Fiduciaires et Grandes Entreprises sont restreints à fr, ar et en. Les langues en alphabet arabe s'affichent correctement de droite à gauche.",
+      "scoringGuide": "1 = une surface expose un jeu de langues qui n'est pas le sien (langue manquante côté public ou PME, langue en trop côté Fiduciaire ou Grandes Entreprises), ou l'affichage RTL est cassé. 3 = les jeux de langues sont corrects, mais des chaînes restent non traduites ou la mise en page RTL présente des défauts mineurs. 5 = 6 langues complètes sur Astro et l'espace PME/TPE/AE, 3 langues strictes sur les portails B2B, RTL correct pour ar et ary, sans chaîne non traduite sur les écrans du ticket.",
+      "criterionType": "general"
+    },
+    {
+      "name": "Zéro débordement responsive Mobile (375px) et Desktop (1440px)",
+      "weight": 0.25,
+      "description": "Aucun contenu ne déborde, ne se chevauche ni ne provoque de défilement horizontal aux largeurs 375px (mobile) et 1440px (desktop).",
+      "scoringGuide": "1 = débordement, chevauchement ou défilement horizontal à 375px ou à 1440px. 3 = aucun débordement, mais la vérification n'est documentée que pour une des deux largeurs. 5 = aucun débordement ni défilement horizontal aux deux largeurs, prouvé par des captures d'écran à 375px et 1440px de chaque écran du ticket.",
+      "criterionType": "general"
+    }
+  ],
+  "createdAt": "2026-11-12T04:07:16.589Z",
+  "updatedAt": "2026-11-13T09:53:45.275Z"
+}
